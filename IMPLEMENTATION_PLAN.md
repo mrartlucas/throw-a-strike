@@ -363,6 +363,18 @@ Create a release candidate tag before polish. Each audio/effect/balance change i
 
 After obtaining (or formally recording the absence of) the official multiplayer sample and display specifications, implement a **pure regulation bowling scorer plus legal roll/rack state machine** in a new domain module with exhaustive tenth-frame tests. It is independently testable, requires no undocumented hardware API, fixes the highest-risk correctness defect, and becomes the scoring contract used by multiplayer and both displays. Do not begin by redesigning graphics or guessing the secondary screen.
 
+### Implementation status — Phase 0A: Regulation bowling scoring and rack-state core
+
+**IMPLEMENTED — LOCALLY VERIFIED.** Added `throw_a_strike/__init__.py`,
+`throw_a_strike/domain/__init__.py`, `throw_a_strike/domain/bowling.py`,
+`tests/__init__.py`, and `tests/test_bowling.py`; this status entry is the only
+other change. `python -m unittest discover -s tests -v` passed 31 tests, Python
+syntax compilation passed for all new Python files, and `git diff --check`
+passed. The module is deliberately not integrated with gameplay, rendering,
+physics, multiplayer, or hardware. Cabinet and Dartsnut hardware verification
+was not performed; the unresolved hardware limitations elsewhere in this plan
+remain.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |
