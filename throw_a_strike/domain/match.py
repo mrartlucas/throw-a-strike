@@ -102,15 +102,6 @@ class BowlingMatch:
         self._complete = False
 
     @property
-    def games(self) -> tuple[BowlingGame, ...]:
-        """The distinct games owned by active players.
-
-        This tuple is immutable, while each game is intentionally the player's
-        mutable scoring engine.  Callers should use :meth:`snapshot` for views.
-        """
-        return self._games
-
-    @property
     def is_complete(self) -> bool:
         return self._complete
 

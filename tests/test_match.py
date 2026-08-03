@@ -74,13 +74,17 @@ class BowlingMatchTests(unittest.TestCase):
         self.finish_open_frame(match)
         self.assertEqual(2, match.snapshot().current_frame)
 
-    def test_games_and_racks_are_independent(self):
+    def test_player_rolls_and_racks_are_independent_through_snapshots(self):
         match = BowlingMatch(2)
-        self.assertIsNot(match.games[0], match.games[1])
         match.roll(7)
         snapshot = match.snapshot()
         self.assertEqual(3, snapshot.players[0].bowling.pins_standing)
         self.assertEqual(10, snapshot.players[1].bowling.pins_standing)
+        self.assertEqual(1, len(snapshot.players[0].bowling.roll_history[0]))
+        self.assertEqual((), snapshot.players[1].bowling.roll_history[0])
+
+    def test_match_does_not_expose_mutable_player_games(self):
+        self.assertFalse(hasattr(BowlingMatch(2), "games"))
 
     def test_one_players_score_does_not_mutate_another(self):
         match = BowlingMatch(2)
