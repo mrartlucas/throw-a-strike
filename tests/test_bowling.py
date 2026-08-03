@@ -42,6 +42,22 @@ class BowlingGameTests(unittest.TestCase):
         game = self.game([6, 4, 3, 4])
         self.assertEqual([13, 7], [f.score for f in game.frames[:2]])
 
+    def test_ordinary_gutter_ten_marks_spare(self):
+        game = self.game([0, 10])
+        self.assertEqual(("-", "/"), game.frames[0].marks)
+
+    def test_ordinary_first_roll_strike_mark(self):
+        game = self.game([10])
+        self.assertEqual(("X",), game.frames[0].marks)
+
+    def test_ordinary_five_spare_marks(self):
+        game = self.game([5, 5])
+        self.assertEqual(("5", "/"), game.frames[0].marks)
+
+    def test_ordinary_nine_miss_marks(self):
+        game = self.game([9, 0])
+        self.assertEqual(("9", "-"), game.frames[0].marks)
+
     def test_known_mixed_game(self):
         # Canonical example: X 7/ 9- X -8 8/ -6 X X X81 = 167.
         self.assert_total([10, 7, 3, 9, 0, 10, 0, 8, 8, 2, 0, 6, 10, 10, 10, 8, 1], 167)

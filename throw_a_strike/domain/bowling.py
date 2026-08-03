@@ -225,10 +225,10 @@ class BowlingGame:
         for roll_index, pins in enumerate(rolls):
             if pins == 0:
                 mark = "-"
-            elif pins == 10:
-                mark = "X"
             elif roll_index > 0 and sum(rolls[:2]) == 10:
                 mark = "/"
+            elif roll_index == 0 and pins == 10:
+                mark = "X"
             else:
                 mark = str(pins)
             marks.append(mark)
