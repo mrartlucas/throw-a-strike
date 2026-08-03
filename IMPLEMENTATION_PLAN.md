@@ -638,6 +638,58 @@ explicit fallback composition remain future work.
 - Limitations: this phase publishes nothing and supplies no visual layout or user-facing localized copy. A future coordinator and verified adapters remain necessary.
 - No rendering, drawing, dimensions, display operations, application loop, input handling, physics, audio playback, persistence, Dartsnut API, or hardware integration was introduced.
 
+## Phase 0I: Pure presentation ports, publisher, and deterministic fakes
+
+**Status: IMPLEMENTED - LOCALLY VERIFIED**
+
+- Exact files changed: created `throw_a_strike/application/publisher.py`,
+  `throw_a_strike/application/publisher_fakes.py`, and
+  `tests/test_publisher.py`; updated `throw_a_strike/application/__init__.py`
+  and `IMPLEMENTATION_PLAN.md`.
+- Verification: `python -m unittest discover -s tests -v` passes all **229
+  tests** (the unchanged 208-test baseline plus 21 publisher test methods), and
+  `python -m unittest tests.test_publisher -v` passes all 21 focused tests.
+  The requested compilation, protected-file, prohibited-import, scope,
+  whitespace, and repository-status checks also pass.
+- Public types: `PublicationTarget`, frozen `PublicationReceipt`, runtime
+  protocols `MainPresentationPort` and `SecondaryPresentationPort`,
+  `PresentationPublisher`, `InvalidPresentationPublisherValueError`,
+  `PresentationPublishError`, `FakeMainPresentationPort`, and
+  `FakeSecondaryPresentationPort` are exported without removing earlier API.
+- The presentation-specific signatures are
+  `MainPresentationPort.present(MainDisplayViewModel) -> None` and
+  `SecondaryPresentationPort.present(SecondaryScoreboardViewModel) -> None`;
+  each exposes only an immutable `DisplayCapabilities` property.
+- Construction structurally validates ports and exact capability types without
+  presenting. Every publish preflight re-reads the exact main capability and,
+  only when the supplied bundle contains a secondary model, the configured
+  secondary capability. All required ports must be available before the first
+  output operation; dimensions are never inspected.
+- `NONE` and `MAIN` bundles publish their exact main object once and never call
+  the secondary port. `SECONDARY` bundles publish the exact main object once,
+  then the exact secondary object once. Placement is preserved: no scoreboard
+  is copied, duplicated, rebuilt, rerouted, or automatically sent elsewhere.
+- A successful frozen receipt always records main publication. `NONE` and
+  `MAIN` record no secondary publication; `SECONDARY` records both. Receipts
+  never represent partial failure.
+- A main operation exception is chained in a `PresentationPublishError`
+  targeting `MAIN`, with both progress flags false, no secondary attempt, and
+  no retry. A secondary operation exception is chained targeting `SECONDARY`,
+  with main true and secondary false, with no retry or fallback.
+- Cross-port publication is explicitly **not transactional**. Once main
+  publication completes, a secondary failure cannot be rolled back; the error
+  exposes this partial-publication state rather than claiming atomicity.
+- Both deterministic fake ports validate exact immutable view-model types,
+  reject unavailable use atomically, retain accepted objects in order, and
+  expose fresh immutable tuple histories. Retained history snapshots do not
+  change retroactively, and no mutable collection or port is publicly exposed
+  by the publisher.
+- Remaining limitations: there is no controller, adapter, layout, localization,
+  backpressure policy, or cross-display transaction mechanism. This phase adds
+  no rendering, drawing, pixels, input polling, application loop, dimension
+  interpretation, timing, physics, audio, storage backend, persistence,
+  networking, Pygame, Dartsnut, or actual hardware integration.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |

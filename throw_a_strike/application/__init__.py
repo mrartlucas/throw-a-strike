@@ -49,6 +49,16 @@ from .presentation import (
     WinnerViewModel,
     build_presentation,
 )
+from .publisher import (
+    InvalidPresentationPublisherValueError,
+    MainPresentationPort,
+    PresentationPublishError,
+    PresentationPublisher,
+    PublicationReceipt,
+    PublicationTarget,
+    SecondaryPresentationPort,
+)
+from .publisher_fakes import FakeMainPresentationPort, FakeSecondaryPresentationPort
 
 __all__ = (
     "SessionPhase",
@@ -92,4 +102,13 @@ __all__ = (
     "PresentationBundle",
     "InvalidPresentationValueError",
     "build_presentation",
+    "PublicationTarget",
+    "PublicationReceipt",
+    "MainPresentationPort",
+    "SecondaryPresentationPort",
+    "PresentationPublisher",
+    "InvalidPresentationPublisherValueError",
+    "PresentationPublishError",
+    "FakeMainPresentationPort",
+    "FakeSecondaryPresentationPort",
 )
