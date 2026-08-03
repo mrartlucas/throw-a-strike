@@ -34,6 +34,21 @@ from .fakes import (
     FakeSecondaryDisplayPort,
     FakeStoragePort,
 )
+from .presentation import (
+    FrameScoreViewModel,
+    InvalidPresentationValueError,
+    MainDisplayViewModel,
+    PlayerScoreViewModel,
+    PresentationBundle,
+    PresentationPrompt,
+    ScoreboardPlacement,
+    ScoreboardViewModel,
+    SecondaryScoreboardViewModel,
+    StandingViewModel,
+    ThrowResultViewModel,
+    WinnerViewModel,
+    build_presentation,
+)
 
 __all__ = (
     "SessionPhase",
@@ -64,4 +79,17 @@ __all__ = (
     "FakeClockPort",
     "FakeAudioPort",
     "FakeStoragePort",
+    "PresentationPrompt",
+    "ScoreboardPlacement",
+    "FrameScoreViewModel",
+    "PlayerScoreViewModel",
+    "StandingViewModel",
+    "WinnerViewModel",
+    "ThrowResultViewModel",
+    "ScoreboardViewModel",
+    "MainDisplayViewModel",
+    "SecondaryScoreboardViewModel",
+    "PresentationBundle",
+    "InvalidPresentationValueError",
+    "build_presentation",
 )

@@ -619,6 +619,25 @@ dart-color mapping, or any other hardware integration. `GameSession` and all
 domain behavior remain unchanged. Presentation/view-model transformation and
 explicit fallback composition remain future work.
 
+## Phase 0H: Pure main-display and secondary-scoreboard view models
+
+**Status: IMPLEMENTED - LOCALLY VERIFIED**
+
+- Exact files changed: `throw_a_strike/application/presentation.py`, `tests/test_presentation.py`, `throw_a_strike/application/__init__.py`, and `IMPLEMENTATION_PLAN.md`.
+- Full verification command: `python -m unittest discover -s tests -v`; all **208 tests** pass (the 187-test baseline plus 21 presentation test methods). The requested focused presentation suite, `py_compile`, protected-file, forbidden-import, `git diff --check`, and status checks also pass.
+- Public API: `PresentationPrompt`, `ScoreboardPlacement`, the frozen frame, player, standing, winner, throw-result, scoreboard, main-display, secondary-scoreboard, and bundle view models, `InvalidPresentationValueError`, and `build_presentation` are exported without removing prior application exports.
+- Locked identity: configured models use `LOCKED_BRANDING`; mode labels are exactly `10-Pin`, `100-Pin`, `Remix`, and `Party`, and theme labels are exactly `Regular` and `Blacklight`.
+- Phase prompts map configuring, ready, awaiting throw, showing result, player transition, frame transition, game over, and cancelled to their eight specified semantic prompt keys.
+- Regulation scorecards copy every domain frame, roll value, mark, resolved or unresolved score, cumulative score, completion state, and confirmed total without recalculation.
+- Cumulative scorecards copy accepted point values and maximums, use decimal roll labels, and derive only the specified running presentation total while distinguishing untouched frames from started zero-point frames.
+- Accepted session results are copied field-for-field. Awaiting input suppresses stale results; result and terminal/transition phases retain the accepted result when present.
+- Scoreboard focus uses normalized session fields while awaiting, the accepted throw while showing a result, the advanced match-level fields during player/frame transitions, and no focus at game over or cancellation.
+- An available secondary capability receives the sole scoreboard model even with unknown dimensions. An unavailable secondary capability puts the sole complete scoreboard on the main model. A session without a match has no scoreboard and `NONE` placement.
+- Domain standing order and competition ranks are copied without sorting; every domain-provided tied winner is retained in domain order.
+- All presentation models are frozen and strictly validate exact constructor types; every public collection rejects lists, dictionaries, and sets and accepts only exact tuples of exact model values. Input snapshots are checked for phase, configuration, match, result, normalized input-window, and mode-specific schedule consistency before projection. Models contain only detached immutable snapshots and identities, so retained bundles cannot advance with a source session and expose no session, match engine, port, or mutable collection.
+- Limitations: this phase publishes nothing and supplies no visual layout or user-facing localized copy. A future coordinator and verified adapters remain necessary.
+- No rendering, drawing, dimensions, display operations, application loop, input handling, physics, audio playback, persistence, Dartsnut API, or hardware integration was introduced.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |
