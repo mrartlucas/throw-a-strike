@@ -448,8 +448,8 @@ systems and all previously recorded hardware limitations remain future work.
 `tests/test_config.py`, and `tests/test_schedule.py`; updated
 `throw_a_strike/domain/__init__.py` with the new public exports; and added this
 status section to `IMPLEMENTATION_PLAN.md`. The full command
-`python -m unittest discover -s tests -v` passed all 143 tests (the unchanged
-103-test baseline plus 40 configuration and schedule test methods). The
+`python -m unittest discover -s tests -v` passed all 147 tests (the unchanged
+103-test baseline plus 44 configuration and schedule test methods). The
 requested Python syntax compilation, protected-file check, prohibited-code
 search, `git diff --check`, and repository status inspection also passed.
 

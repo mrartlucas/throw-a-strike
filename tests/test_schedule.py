@@ -83,6 +83,25 @@ class RemixTests(unittest.TestCase):
             with self.subTest(item=item), self.assertRaises(InvalidScheduleConfigurationError):
                 RemixSchedule.from_payload(item)
 
+    def test_direct_construction_rejects_non_integer_frame_maximums(self):
+        schedule = build_remix_schedule(config())
+        for malformed in (10.0, True, "10"):
+            maximums = (malformed, 10, 10)
+            with self.subTest(malformed=malformed), self.assertRaises(
+                InvalidScheduleConfigurationError
+            ):
+                RemixSchedule(schedule.config, schedule.frames, maximums)  # type: ignore[arg-type]
+
+    def test_payload_rejects_non_integer_frame_maximums(self):
+        base = build_remix_schedule(config()).to_payload()
+        for malformed in (10.0, True, "10"):
+            payload = copy.deepcopy(base)
+            payload["frame_max_scores"][0] = malformed
+            with self.subTest(malformed=malformed), self.assertRaises(
+                InvalidScheduleConfigurationError
+            ):
+                RemixSchedule.from_payload(payload)
+
     def test_schedule_frames_and_collections_are_frozen_tuples(self):
         schedule = build_remix_schedule(config())
         self.assertIsInstance(schedule.frames, tuple)
@@ -206,6 +225,38 @@ class PartyScheduleTests(unittest.TestCase):
             item=copy.deepcopy(base); mutate(item); variants.append(item)
         for item in variants:
             with self.assertRaises(InvalidScheduleConfigurationError): PartySchedule.from_payload(item)
+
+    def test_direct_construction_rejects_non_integer_frame_maximums(self):
+        one_point_catalog = (
+            PartySetupDefinition("one", "single", ("target",), (), (), 1),
+        )
+        schedule = build_party_schedule(self.party_config(), one_point_catalog)
+        for malformed in (1.0, True, "1"):
+            maximums = (malformed, 1, 1)
+            with self.subTest(malformed=malformed), self.assertRaises(
+                InvalidScheduleConfigurationError
+            ):
+                PartySchedule(
+                    schedule.config,
+                    schedule.catalog_fingerprint,
+                    schedule.frames,
+                    maximums,  # type: ignore[arg-type]
+                )
+
+    def test_payload_rejects_non_integer_frame_maximums(self):
+        one_point_catalog = (
+            PartySetupDefinition("one", "single", ("target",), (), (), 1),
+        )
+        base = build_party_schedule(
+            self.party_config(), one_point_catalog
+        ).to_payload()
+        for malformed in (1.0, True, "1"):
+            payload = copy.deepcopy(base)
+            payload["frame_max_scores"][0] = malformed
+            with self.subTest(malformed=malformed), self.assertRaises(
+                InvalidScheduleConfigurationError
+            ):
+                PartySchedule.from_payload(payload)
 
     def test_schedules_frames_and_all_metadata_are_frozen_tuples(self):
         schedule = build_party_schedule(self.party_config(), catalog())

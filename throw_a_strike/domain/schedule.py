@@ -82,15 +82,21 @@ class RemixSchedule:
     def __post_init__(self) -> None:
         if not isinstance(self.config, MatchConfig) or self.config.mode is not Mode.REMIX:
             raise ScheduleModeError("Remix schedules require Remix configuration")
-        if not isinstance(self.frames, tuple) or not isinstance(self.frame_max_scores, tuple):
-            raise InvalidScheduleConfigurationError("schedule collections must be tuples")
+        if not isinstance(self.frames, tuple):
+            raise InvalidScheduleConfigurationError("frames must be a tuple")
+        if not isinstance(self.frame_max_scores, tuple):
+            raise InvalidScheduleConfigurationError("frame_max_scores must be a tuple")
         if any(not isinstance(frame, RemixFrameSchedule) for frame in self.frames):
             raise InvalidScheduleConfigurationError("frames must be RemixFrameSchedule values")
         if len(self.frames) != self.config.frame_count:
             raise InvalidScheduleConfigurationError("Remix frame count does not match configuration")
         if tuple(frame.frame_number for frame in self.frames) != tuple(range(1, len(self.frames) + 1)):
             raise InvalidScheduleConfigurationError("Remix frame numbering must be contiguous")
-        if self.frame_max_scores != (10,) * len(self.frames):
+        if any(type(maximum) is not int for maximum in self.frame_max_scores):
+            raise InvalidScheduleConfigurationError(
+                "Remix frame maximums must be non-boolean integers"
+            )
+        if any(maximum != 10 for maximum in self.frame_max_scores):
             raise InvalidScheduleConfigurationError("Remix frame maximums must all be 10")
 
     def to_payload(self) -> dict[str, object]:
@@ -191,14 +197,23 @@ class PartySchedule:
         if (not isinstance(self.catalog_fingerprint, str) or len(self.catalog_fingerprint) != 64
                 or any(c not in "0123456789abcdef" for c in self.catalog_fingerprint)):
             raise InvalidScheduleConfigurationError("catalog_fingerprint must be SHA-256 hex")
-        if not isinstance(self.frames, tuple) or not isinstance(self.frame_max_scores, tuple):
-            raise InvalidScheduleConfigurationError("schedule collections must be tuples")
+        if not isinstance(self.frames, tuple):
+            raise InvalidScheduleConfigurationError("frames must be a tuple")
+        if not isinstance(self.frame_max_scores, tuple):
+            raise InvalidScheduleConfigurationError("frame_max_scores must be a tuple")
         if any(not isinstance(frame, PartyFrameSchedule) for frame in self.frames):
             raise InvalidScheduleConfigurationError("frames must be PartyFrameSchedule values")
         if len(self.frames) != self.config.frame_count:
             raise InvalidScheduleConfigurationError("Party frame count does not match configuration")
         if tuple(frame.frame_number for frame in self.frames) != tuple(range(1, len(self.frames) + 1)):
             raise InvalidScheduleConfigurationError("Party frame numbering must be contiguous")
+        if any(
+            type(maximum) is not int or maximum <= 0
+            for maximum in self.frame_max_scores
+        ):
+            raise InvalidScheduleConfigurationError(
+                "Party frame maximums must be positive non-boolean integers"
+            )
         if self.frame_max_scores != tuple(frame.maximum_score for frame in self.frames):
             raise InvalidScheduleConfigurationError("Party frame maximums do not match frames")
 
