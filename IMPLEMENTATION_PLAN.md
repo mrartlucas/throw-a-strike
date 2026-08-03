@@ -412,6 +412,35 @@ integration, graphics, rendering, physics, menus, input, audio, Dartsnut API,
 dart-color mapping, or cabinet/hardware integration occurred. Those systems
 and all existing hardware limitations remain future work.
 
+### Implementation status — Phase 0D: Pure cumulative multiplayer match coordinator
+
+**IMPLEMENTED — LOCALLY VERIFIED.** Added
+`throw_a_strike/domain/cumulative_match.py` and
+`tests/test_cumulative_match.py`, updated `throw_a_strike/domain/__init__.py` to
+export all seven cumulative-match public types, and added this status section to
+`IMPLEMENTATION_PLAN.md`. `python -m unittest discover -s tests -v` passed all
+103 tests: the unchanged 31 bowling, 20 regulation multiplayer, and 26
+cumulative tests plus 26 cumulative-match tests. The requested Python syntax
+compilation, protected-file check, `git diff --check`, and repository status
+inspection also passed.
+
+The coordinator supports one through four players in fixed Blue, Red, Green,
+Yellow order. Every active player owns an independent cumulative game with the
+same immutable frame-maximum sequence. Each player retains the turn for both
+required rolls, including a required zero second roll after using all capacity;
+only the second accepted roll rotates. The independently tracked global frame
+advances and returns control to Blue only after every active player finishes
+that frame. Immutable detached snapshots expose player state, current global
+turn state, provisional/final competition-ranked standings, and every final
+winner tied at the highest score. Invalid rolls leave the complete match state
+unchanged.
+
+This remains domain-only coordination. It does not implement 100-pin
+formations, Remix object schedules, Party targets/reactions, mode or prototype
+integration, physics, rendering, menus, input, audio, Dartsnut APIs, secondary
+screens, physical dart-color mapping, hardware, or cabinet behavior. Those
+systems and all previously recorded hardware limitations remain future work.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |

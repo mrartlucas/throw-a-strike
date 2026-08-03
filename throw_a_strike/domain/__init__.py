@@ -25,6 +25,15 @@ from .match import (
     PlayerSnapshot,
     StandingSnapshot,
 )
+from .cumulative_match import (
+    CumulativeMatch,
+    CumulativeMatchCompleteError,
+    CumulativeMatchPlayerSnapshot,
+    CumulativeMatchRollResult,
+    CumulativeMatchSnapshot,
+    CumulativeStandingSnapshot,
+    InvalidCumulativeMatchConfigurationError,
+)
 
 __all__ = [
     "BowlingGame",
@@ -46,4 +55,11 @@ __all__ = [
     "PlayerColor",
     "PlayerSnapshot",
     "StandingSnapshot",
+    "CumulativeMatch",
+    "CumulativeMatchCompleteError",
+    "CumulativeMatchPlayerSnapshot",
+    "CumulativeMatchRollResult",
+    "CumulativeMatchSnapshot",
+    "CumulativeStandingSnapshot",
+    "InvalidCumulativeMatchConfigurationError",
 ]
