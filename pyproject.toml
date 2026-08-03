@@ -1,0 +1,13 @@
+[project]
+name = "bowling-game"
+version = "0.1.0"
+description = "A classic bowling game. Control aim with buttons or throw darts to roll!"
+requires-python = ">=3.11"
+dependencies = [
+    "pygame>=2.0.0",
+    "numpy>=1.20.0",
+    "pydartsnut",
+]
+
+[tool.uv]
+package = false

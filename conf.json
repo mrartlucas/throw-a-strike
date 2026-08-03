@@ -1,0 +1,11 @@
+{
+  "id": "bowling-game",
+  "type": "game",
+  "name": "Bowling",
+  "author": "Dartsnut Team",
+  "version": "0.1.0",
+  "description": "A classic bowling game. Control aim with buttons or throw darts to roll!",
+  "size": [128, 160],
+  "fields": [],
+  "preview": [""]
+}
