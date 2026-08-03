@@ -19,8 +19,8 @@
 
 1. **10-Pin:** regulation ten-pin bowling; ten frames; correct strikes, spares, opens, and tenth-frame bonuses; highest final score wins.
 2. **100-Pin:** 100 pins arranged for domino-like chain reactions; two throws per player per frame; throw two uses the pins remaining from throw one; one point per fallen pin; formation resets for each player; selectable 3, 5, or 10 frames; no strike/spare bonuses; highest cumulative score wins.
-3. **Remix:** changes the thrown object (including tennis ball, baseball, basketball, beach ball, football, soccer ball, golf ball, medicine ball, and rubber ball), with distinct size, speed, weight, bounce, and impact behavior; every player receives the same object sequence within a frame; selectable 3, 5, or 10 frames; highest cumulative score wins.
-4. **Party:** changes pins, formations, targets, and reactions (including firework, explosive, balloon, heavy, and mystery pins plus domino walls, stars, circles, spirals, arrows, and zigzags); every player receives the same setup within a frame; selectable 3, 5, or 10 frames; highest cumulative score wins.
+3. **Remix:** uses a standard 10-pin rack and exactly two throws per player per frame. Throw two continues against the pins remaining after throw one; the rack then resets for the next player. Each fallen pin scores one point, with no strike or spare bonuses. The thrown object may change on each throw (including tennis ball, baseball, basketball, beach ball, football, soccer ball, golf ball, medicine ball, and rubber ball), with distinct size, speed, weight, bounce, and impact behavior. Every player receives the exact same per-throw object sequence during a frame. Selectable 3, 5, or 10 frames; highest cumulative score wins.
+4. **Party:** uses special pins, targets, formations, and reactions (including firework, explosive, balloon, heavy, and mystery pins plus domino walls, stars, circles, spirals, arrows, and zigzags) with exactly two throws per player per frame. Throw two continues against whatever targets remain after throw one; the setup then resets for the next player. Each pin or target scores its defined point value. The full setup and available maximum score—including formation, pin types, reactions, mystery outcomes, and deterministic seed—are identical for every player during a frame. Selectable 3, 5, or 10 frames; highest cumulative score wins.
 
 ## Planning principles
 
@@ -194,15 +194,17 @@ Add fair per-frame thrown-object sequences with visibly and mechanically distinc
 ### Technical approach
 
 - Data-drive tennis ball, baseball, basketball, beach ball, football, soccer ball, golf ball, medicine ball, and rubber ball profiles: radius, mass, launch-speed mapping, restitution/bounce, drag/rolling behavior, and pin impulse.
-- Generate the object sequence once per match/frame/throw and apply the exact same sequence to every player for that frame. Persist schedule IDs/seeds in match state.
-- Keep two throws per player per frame and remaining pins on throw two unless product review explicitly changes it; because the locked Remix text does not explicitly state rack/throw rules, confirm this before implementation rather than silently inheriting 100-Pin behavior.
+- Generate a two-object sequence once per frame and apply that exact throw-one/throw-two sequence to every player. The object may change between the two throws. Persist schedule IDs/seeds in match state.
+- Start every player with a standard 10-pin rack, allow exactly two throws, preserve the standing pins between those throws, and reset the rack before the next player.
 - Normalize input affordances so unusual shapes (football) remain controllable. Preview the current/next object and give a one-line property hint on the first occurrence.
-- Use cumulative fallen-pin scoring only; no bonuses.
+- Award one point for each unique standing-to-fallen pin transition. Use cumulative scoring only, with no strike or spare bonuses.
 
 ### Acceptance tests
 
 - All nine required example objects load with validated parameters and noticeably distinct deterministic fixture outcomes.
 - Every player sees the identical object sequence for each frame/throw; different seeds may vary schedules without biasing players.
+- Every player starts each frame with ten pins, receives exactly two throws, and faces only the pins remaining after throw one on throw two; the rack resets before the next player.
+- Each pin scores at most once, frame scores remain within 0–10, and strike/spare bonuses are never applied.
 - 3/5/10-frame matches total correctly and highest/all-tied winners are correct.
 - UI identifies object and essential behavior before a throw; no object can create NaN, escape forever, or exceed simulation timeout.
 
@@ -216,8 +218,8 @@ Add fair per-frame thrown-object sequences with visibly and mechanically distinc
 
 ### Dependencies and unresolved questions
 
-- Product decision required: pin count/formation and rack persistence for Remix; number of throws (the plan must not assume unstated rules).
-- Art/audio format and budget approval; physics balancing criteria; whether each frame uses one object for both throws or a shared per-throw sequence.
+- Art/audio format and budget approval; physics balancing criteria and acceptable differences among object profiles.
+- Main-display dimensions, audio routing, emulator support, asset packaging limits, and dart-index/color mapping remain hardware blockers.
 
 ### Rollback point
 
@@ -235,16 +237,18 @@ Add fair shared Party setups with special pins/targets, formations, and determin
 
 ### Technical approach
 
-- Define versioned setup recipes containing formation, target/pin types, reactions, score value, deterministic seed, and explanation key.
+- Define versioned setup recipes containing formation, target/pin types, reactions, each target's point value, available maximum score, deterministic seed, and explanation key.
 - Implement firework, explosive, balloon, heavy, and mystery pin behaviors plus domino walls, stars, circles, spirals, arrows, and zigzags as composable components.
-- Generate one setup per frame and reuse it unchanged for every player. Mystery outcomes must also be precommitted by seed so later players face the same mechanics.
+- Generate one complete setup per frame and reuse its formation, pin/target types, reactions, mystery outcomes, point values, maximum score, and deterministic seed unchanged for every player.
+- Give each player exactly two throws. Preserve whatever targets remain for throw two, then reset the complete setup before the next player.
 - Use a bounded event queue for chain reactions, maximum particle/audio concurrency, flash-reduction option, and deterministic scoring ledger.
-- Cumulative scoring, selected 3/5/10 frames, highest score wins; explain each setup in one title plus one action sentence before the first player.
+- Add each unique removed/achieved pin or target's defined point value to a deterministic scoring ledger. Use cumulative scoring over the selected 3/5/10 frames; highest score wins. Explain each setup in one title plus one action sentence before the first player.
 
 ### Acceptance tests
 
 - Every required pin type and formation has a deterministic fixture and bounded completion time.
-- Setup/seed is identical for every player in a frame; scores count each target once and never change after result finalization.
+- Setup/seed, point values, and available maximum score are identical for every player in a frame; scores count each target once and never change after result finalization.
+- Every player receives exactly two throws, throw two retains precisely the targets left after throw one, and the complete setup resets before the next player.
 - Event queue/effect caps hold under worst-case explosions. Mystery behavior is reproducible and fair.
 - 3/5/10-frame lifecycle, totals, ties, winner, and first-turn explanations pass snapshots and domain tests.
 
@@ -259,8 +263,8 @@ Add fair shared Party setups with special pins/targets, formations, and determin
 
 ### Dependencies and unresolved questions
 
-- Product decision required: exact Party pin count, throws per frame, scoring values for non-pin targets, and rack persistence.
-- Confirm photosensitivity/flash and audio requirements, hardware budgets, and asset packaging constraints.
+- Confirm the content catalog and balance of defined target values without changing the locked equal-maximum-score rule.
+- Main-display dimensions, secondary-screen API, dart-index/color mapping, audio routing, emulator support, hardware budgets, photosensitivity/flash requirements, and asset packaging constraints remain unresolved hardware or platform matters.
 
 ### Rollback point
 
@@ -366,7 +370,7 @@ After obtaining (or formally recording the absence of) the official multiplayer 
 | Main display is 128×128 while project submits 128×160 | High / Critical | Resolve from official spec and framebuffer length before UI implementation; native hardware pattern test. |
 | No game-accessible secondary screen/API | High / Critical | Obtain official sample/API; design snapshot publisher and capability handling; escalate product layout if platform owns it. |
 | Dart index is not a stable color identity | High / High | Official mapping plus repeated cabinet trace; keep turn identity separate; never hard-code guesses. |
-| Unspecified Remix/Party throw/rack/scoring details | High / High | Product decisions before those phases; encode approved rules in acceptance fixtures. |
+| Remix/Party shared schedules or setups diverge between players | Medium / High | Persist one authoritative per-frame sequence/setup and seed; assert identical maximum opportunity and reset state for every player. |
 | Random/chaotic physics overwhelms skill or biases turn order | Medium / High | Deterministic simulation, shared schedules/seeds, repeatability and outcome-distribution tests, recorded hardware balancing. |
 | 100-pin/Party chains miss frame budget | Medium / High | Spatial broad phase, event/effect caps, pooling, fixed timestep, early cabinet profiling and worst-case benchmark. |
 | SDK changes under unconstrained dependency | Medium / High | Pin audited version; contract tests; review upgrade diffs deliberately. |
@@ -398,8 +402,8 @@ After obtaining (or formally recording the absence of) the official multiplayer 
 - 1–4 players use P1 Blue/P2 Red/P3 Green/P4 Yellow through the verified Dartsnut multiplayer flow; color mapping has documentary and physical-test evidence.
 - 10-Pin implements regulation legal rolls and scoring, including every tenth-frame edge, and passes exhaustive/property/reference fixtures with final scores 0–300.
 - 100-Pin provides exactly 100 pins, two throws against persistent remaining pins per player/frame, per-player resets, 3/5/10 frames, one point per pin, and no bonuses.
-- Remix includes all named example objects with distinct tested behavior and an identical documented sequence for every player in each frame; approved throw/rack rules and cumulative scoring are implemented.
-- Party includes all named example pin types/formations with bounded reactions and identical setup/outcome seed conditions for every player in each frame; approved throw/scoring rules are implemented.
+- Remix includes all named example objects with distinct tested behavior, a standard 10-pin rack reset for each player, exactly two throws against one persistent rack, one point per fallen pin, no bonuses, and an identical per-throw object sequence for every player in each frame.
+- Party includes all named example pin types/formations with bounded reactions, exactly two throws against remaining targets, a per-player setup reset, defined target values, and identical setup, maximum score, reactions, mystery outcomes, and deterministic seed for every player in each frame.
 - All modes declare the highest cumulative/final score winner and represent ties correctly; standings and totals never diverge between displays.
 - Regular and Blacklight themes show a slightly overhead, complete, large/readable formation with minimal lane and first-turn comprehension validated with novice testing.
 - Main display focuses on gameplay. Using the verified secondary API, the secondary display shows current player color, frame, throw, frame scores/marks, totals, standings, and winner at the correct native resolution.
