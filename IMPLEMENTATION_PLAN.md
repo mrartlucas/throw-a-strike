@@ -624,7 +624,7 @@ explicit fallback composition remain future work.
 **Status: IMPLEMENTED - LOCALLY VERIFIED**
 
 - Exact files changed: `throw_a_strike/application/presentation.py`, `tests/test_presentation.py`, `throw_a_strike/application/__init__.py`, and `IMPLEMENTATION_PLAN.md`.
-- Full verification command: `python -m unittest discover -s tests -v`; all **194 tests** pass (the 187-test baseline plus 7 presentation test methods). The requested `py_compile`, protected-file, forbidden-import, `git diff --check`, and status checks also pass.
+- Full verification command: `python -m unittest discover -s tests -v`; all **208 tests** pass (the 187-test baseline plus 21 presentation test methods). The requested focused presentation suite, `py_compile`, protected-file, forbidden-import, `git diff --check`, and status checks also pass.
 - Public API: `PresentationPrompt`, `ScoreboardPlacement`, the frozen frame, player, standing, winner, throw-result, scoreboard, main-display, secondary-scoreboard, and bundle view models, `InvalidPresentationValueError`, and `build_presentation` are exported without removing prior application exports.
 - Locked identity: configured models use `LOCKED_BRANDING`; mode labels are exactly `10-Pin`, `100-Pin`, `Remix`, and `Party`, and theme labels are exactly `Regular` and `Blacklight`.
 - Phase prompts map configuring, ready, awaiting throw, showing result, player transition, frame transition, game over, and cancelled to their eight specified semantic prompt keys.
@@ -634,7 +634,7 @@ explicit fallback composition remain future work.
 - Scoreboard focus uses normalized session fields while awaiting, the accepted throw while showing a result, the advanced match-level fields during player/frame transitions, and no focus at game over or cancellation.
 - An available secondary capability receives the sole scoreboard model even with unknown dimensions. An unavailable secondary capability puts the sole complete scoreboard on the main model. A session without a match has no scoreboard and `NONE` placement.
 - Domain standing order and competition ranks are copied without sorting; every domain-provided tied winner is retained in domain order.
-- All presentation models are frozen and all public collections are tuples. Models contain only detached immutable snapshots and identities, so retained bundles cannot advance with a source session and expose no session, match engine, port, or mutable collection.
+- All presentation models are frozen and strictly validate exact constructor types; every public collection rejects lists, dictionaries, and sets and accepts only exact tuples of exact model values. Input snapshots are checked for phase, configuration, match, result, normalized input-window, and mode-specific schedule consistency before projection. Models contain only detached immutable snapshots and identities, so retained bundles cannot advance with a source session and expose no session, match engine, port, or mutable collection.
 - Limitations: this phase publishes nothing and supplies no visual layout or user-facing localized copy. A future coordinator and verified adapters remain necessary.
 - No rendering, drawing, dimensions, display operations, application loop, input handling, physics, audio playback, persistence, Dartsnut API, or hardware integration was introduced.
 
