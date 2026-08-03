@@ -7,6 +7,16 @@ from .bowling import (
     IllegalRollError,
     RollSnapshot,
 )
+from .match import (
+    BowlingMatch,
+    InvalidMatchConfigurationError,
+    MatchCompleteError,
+    MatchRollResult,
+    MatchSnapshot,
+    PlayerColor,
+    PlayerSnapshot,
+    StandingSnapshot,
+)
 
 __all__ = [
     "BowlingGame",
@@ -14,5 +24,12 @@ __all__ = [
     "FrameSnapshot",
     "IllegalRollError",
     "RollSnapshot",
+    "BowlingMatch",
+    "InvalidMatchConfigurationError",
+    "MatchCompleteError",
+    "MatchRollResult",
+    "MatchSnapshot",
+    "PlayerColor",
+    "PlayerSnapshot",
+    "StandingSnapshot",
 ]
-

@@ -375,6 +375,22 @@ physics, multiplayer, or hardware. Cabinet and Dartsnut hardware verification
 was not performed; the unresolved hardware limitations elsewhere in this plan
 remain.
 
+### Implementation status — Phase 0B: Pure multiplayer match and turn-order domain
+
+**IMPLEMENTED — LOCALLY VERIFIED.** Added
+`throw_a_strike/domain/match.py` and `tests/test_match.py`, and updated
+`throw_a_strike/domain/__init__.py` to export the public match types; this status
+entry is the only other change. `python -m unittest discover -s tests -v` passed
+all 51 tests (the existing 31 bowling tests and 20 multiplayer tests), Python
+syntax compilation passed for both domain modules and both test modules, and
+`git diff --check` passed. The model supports the locked one-to-four-player
+color order, independent games and racks, regulation frame rotation, immutable
+snapshots, competition standings, and tied winner sets. It remains a pure
+domain model and is not integrated with the prototype. No Dartsnut input or API,
+dart-index/color hardware mapping, rendering, physics, menus, audio, secondary
+screen, or cabinet hardware work occurred. Those integrations and all existing
+hardware limitations remain future work.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |
