@@ -441,6 +441,62 @@ integration, physics, rendering, menus, input, audio, Dartsnut APIs, secondary
 screens, physical dart-color mapping, hardware, or cabinet behavior. Those
 systems and all previously recorded hardware limitations remain future work.
 
+### Implementation status — Phase 0E: Immutable match configuration and deterministic shared schedules
+
+**IMPLEMENTED — LOCALLY VERIFIED.** Added
+`throw_a_strike/domain/config.py`, `throw_a_strike/domain/schedule.py`,
+`tests/test_config.py`, and `tests/test_schedule.py`; updated
+`throw_a_strike/domain/__init__.py` with the new public exports; and added this
+status section to `IMPLEMENTATION_PLAN.md`. The full command
+`python -m unittest discover -s tests -v` passed all 143 tests (the unchanged
+103-test baseline plus 40 configuration and schedule test methods). The
+requested Python syntax compilation, protected-file check, prohibited-code
+search, `git diff --check`, and repository status inspection also passed.
+
+The locked modes are 10-Pin, 100-Pin, Remix, and Party, represented by
+`ten_pin`, `hundred_pin`, `remix`, and `party`. The locked presentation themes
+are Regular and Blacklight. Branding is frozen exactly as presenter
+“Throw A Way Games,” game title “Throw a Strike,” and the two-line title
+treatment “Throw A Way Games presents” followed by “Throw a Strike.” Frozen
+`MatchConfig` values require actual mode/theme enum members, one through four
+players, and an unsigned 64-bit seed. 10-Pin requires exactly ten frames;
+100-Pin, Remix, and Party permit exactly three, five, or ten.
+
+Configuration and schedule payloads use schema version 1, primitive JSON-safe
+values, complete nested match configuration, detached mutable payload
+containers, strict reconstruction validation, and equality-preserving replay.
+All domain-side definitions, frames, schedules, and their exposed collections
+are frozen or tuples. Party replay embeds the selected setup's complete
+identifier metadata and frame maximum, so reconstruction does not require the
+source catalog.
+
+Schedule selection uses SHA-256 over canonical UTF-8 fields beginning
+`throw-a-strike|schedule|v1`, the decimal unsigned match seed, and documented
+purpose-specific fields. The first eight digest bytes form an unsigned
+big-endian selection value. Remix deterministically selects exactly two values
+from the locked nine-object catalog for each one-based frame, with a maximum of
+10 per frame. Party requires a caller-provided, nonempty immutable catalog with
+unique setup IDs and validated identifier tuples/positive maximums. A canonical
+JSON SHA-256 fingerprint covers the complete ordered catalog; that fingerprint
+drives deterministic setup selection, per-frame unsigned 64-bit seeds, and
+mystery-outcome ordering. Party frame maximums exactly mirror selected setup
+maximums. Exact seed-42 Remix and Party vectors, including the Party catalog
+fingerprint, selections, mystery order, maximums, and frame seeds, lock the
+algorithm against drift.
+
+Schedules are authoritative match-level values rather than per-player values.
+Player count and presentation theme are deliberately absent from competitive
+derivation, so every player receives the same frame/throw sequence and changing
+only player count or theme preserves competitive results. The full
+configuration remains attached for replay.
+
+This phase records only configuration and supplied Party metadata; it does not
+invent Party mechanics, reactions, scoring rules, target behavior, object
+physics, or rendering properties. No menu, mode, existing match, prototype,
+graphics, physics, rendering, input, audio, display, Dartsnut, physical
+dart-color mapping, cabinet, or hardware integration occurred. Those systems
+and all previously recorded hardware limitations remain future work.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |
