@@ -40,7 +40,7 @@ class BowlingSnapshot:
     """Complete read-only view suitable for a future scoreboard."""
 
     current_frame: int
-    current_roll: int
+    current_roll: int | None
     pins_standing: int
     frames: tuple[FrameSnapshot, ...]
     roll_history: tuple[tuple[RollSnapshot, ...], ...]
@@ -69,8 +69,10 @@ class BowlingGame:
         return self._frame_index + 1
 
     @property
-    def current_roll(self) -> int:
-        """One-based next roll within the current frame."""
+    def current_roll(self) -> int | None:
+        """One-based next roll within the frame, or ``None`` when complete."""
+        if self._complete:
+            return None
         return len(self._rolls[self._frame_index]) + 1
 
     @property
@@ -216,18 +218,41 @@ class BowlingGame:
 
     @staticmethod
     def _marks(index: int, rolls: list[int]) -> tuple[str, ...]:
+        if index == 9:
+            return BowlingGame._tenth_frame_marks(rolls)
+
         marks: list[str] = []
         for roll_index, pins in enumerate(rolls):
             if pins == 0:
                 mark = "-"
             elif pins == 10:
                 mark = "X"
-            elif roll_index > 0 and (
-                (index < 9 and sum(rolls[:2]) == 10)
-                or (index == 9 and pins < 10 and rolls[roll_index - 1] + pins == 10)
-            ):
+            elif roll_index > 0 and sum(rolls[:2]) == 10:
                 mark = "/"
             else:
                 mark = str(pins)
             marks.append(mark)
         return tuple(marks)
+
+    @staticmethod
+    def _tenth_frame_marks(rolls: list[int]) -> tuple[str, ...]:
+        """Format tenth-frame rolls according to the rack each ball used."""
+        marks: list[str] = []
+        for roll_index, pins in enumerate(rolls):
+            if roll_index == 0:
+                mark = "X" if pins == 10 else BowlingGame._pin_mark(pins)
+            elif roll_index == 1:
+                if rolls[0] == 10:
+                    mark = "X" if pins == 10 else BowlingGame._pin_mark(pins)
+                else:
+                    mark = "/" if rolls[0] + pins == 10 else BowlingGame._pin_mark(pins)
+            elif rolls[0] == 10 and rolls[1] < 10:
+                mark = "/" if rolls[1] + pins == 10 else BowlingGame._pin_mark(pins)
+            else:
+                mark = "X" if pins == 10 else BowlingGame._pin_mark(pins)
+            marks.append(mark)
+        return tuple(marks)
+
+    @staticmethod
+    def _pin_mark(pins: int) -> str:
+        return "-" if pins == 0 else str(pins)

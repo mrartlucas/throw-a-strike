@@ -59,13 +59,46 @@ class BowlingGameTests(unittest.TestCase):
         self.assert_total([0, 0] * 9 + [7, 3, 10], 20)
 
     def test_tenth_gutter_spare_strike(self):
-        self.assert_total([0, 0] * 9 + [0, 10, 10], 20)
+        game = self.game([0, 0] * 9 + [0, 10, 10])
+        self.assertEqual(("-", "/", "X"), game.frames[9].marks)
+        self.assertEqual(20, game.confirmed_score)
+
+    def test_tenth_strike_gutter_spare_marks(self):
+        game = self.game([0, 0] * 9 + [10, 0, 10])
+        self.assertEqual(("X", "-", "/"), game.frames[9].marks)
+
+    def test_tenth_three_strikes_marks(self):
+        game = self.game([0, 0] * 9 + [10, 10, 10])
+        self.assertEqual(("X", "X", "X"), game.frames[9].marks)
+
+    def test_tenth_strike_seven_spare_marks(self):
+        game = self.game([0, 0] * 9 + [10, 7, 3])
+        self.assertEqual(("X", "7", "/"), game.frames[9].marks)
 
     def test_open_tenth_ends_after_two(self):
         game = self.game([0, 0] * 9 + [7, 2])
         self.assertTrue(game.is_complete)
+        self.assertIsNone(game.current_roll)
+        self.assertIsNone(game.snapshot().current_roll)
         with self.assertRaises(IllegalRollError):
             game.roll(0)
+
+    def test_current_roll_is_none_after_completed_bonus_tenth(self):
+        strike = self.game([0, 0] * 9 + [10, 10, 10])
+        spare = self.game([0, 0] * 9 + [7, 3, 10])
+        self.assertIsNone(strike.current_roll)
+        self.assertIsNone(strike.snapshot().current_roll)
+        self.assertIsNone(spare.current_roll)
+        self.assertIsNone(spare.snapshot().current_roll)
+
+    def test_active_current_roll_is_one_based(self):
+        game = BowlingGame()
+        self.assertEqual(1, game.current_roll)
+        game.roll(4)
+        self.assertEqual(2, game.current_roll)
+        game.roll(3)
+        self.assertEqual(1, game.current_roll)
+        self.assertEqual(1, game.snapshot().current_roll)
 
     def test_roll_greater_than_standing_is_rejected_without_mutation(self):
         game = self.game([7])

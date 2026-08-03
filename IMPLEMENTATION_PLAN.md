@@ -368,7 +368,7 @@ After obtaining (or formally recording the absence of) the official multiplayer 
 **IMPLEMENTED — LOCALLY VERIFIED.** Added `throw_a_strike/__init__.py`,
 `throw_a_strike/domain/__init__.py`, `throw_a_strike/domain/bowling.py`,
 `tests/__init__.py`, and `tests/test_bowling.py`; this status entry is the only
-other change. `python -m unittest discover -s tests -v` passed 22 tests, Python
+other change. `python -m unittest discover -s tests -v` passed 27 tests, Python
 syntax compilation passed for all new Python files, and `git diff --check`
 passed. The module is deliberately not integrated with gameplay, rendering,
 physics, multiplayer, or hardware. Cabinet and Dartsnut hardware verification
