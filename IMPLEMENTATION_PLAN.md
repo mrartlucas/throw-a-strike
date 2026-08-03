@@ -566,6 +566,59 @@ handling, audio, Dartsnut API, secondary display, persistence, networking,
 prototype integration, physical dart-color mapping, or hardware behavior was
 added.
 
+## Phase 0G: Pure application ports, capability models, and test fakes
+
+**Status: IMPLEMENTED - LOCALLY VERIFIED**
+
+This phase created `throw_a_strike/application/ports.py`,
+`throw_a_strike/application/fakes.py`, and `tests/test_ports.py`, and updated
+`throw_a_strike/application/__init__.py` and this implementation plan. The full
+command `python -m unittest discover -s tests -v` passed all 187 tests (the
+unchanged 165-test baseline plus 22 port test methods). The requested
+`py_compile` command, protected-file check, prohibited-import and scope
+searches, `git diff --check`, and repository status inspection also passed.
+
+Six runtime-checkable structural protocols now define the pure boundaries:
+`MainDisplayPort.present(SessionSnapshot)`,
+`SecondaryDisplayPort.present(SessionSnapshot)`, `InputPort.poll()`,
+`ClockPort.monotonic_seconds()`, `AudioPort.play(AudioRequest)` plus `stop()`,
+and `StoragePort.load()`, `save()`, plus `delete()`. Each protocol exposes only
+its matching immutable capability snapshot and contains no implementation
+state. Runtime checks confirm all six fakes satisfy their respective protocol.
+
+Frozen `PortCapabilities`, `DisplayCapabilities`, `StorageCapabilities`, and
+`ApplicationCapabilities` values strictly reject coercion and invalid field
+types. Displays explicitly support available-but-unknown dimensions without
+inventing defaults. Capability collection reads capability snapshots only,
+copies them into a detached frozen aggregate, and represents an omitted
+secondary display, audio port, or storage port as explicitly unavailable. This
+models optional secondary display capability without claiming that platform
+support exists.
+
+The frozen neutral input model contains only a `DART_HIT` or `CONTROL` kind,
+sequence, monotonic timestamp, and the fields appropriate to that kind. Dart
+indices and control IDs remain opaque; coordinates are finite raw real values.
+No color, player, named control, score, force, pressure, speed, or bowling
+result is inferred. Frozen audio requests similarly retain only an opaque cue
+ID, loop flag, and bounded volume, without defining a cue catalog.
+
+Deterministic in-memory main and secondary displays record immutable session
+snapshots; input queues and drains events FIFO; the clock advances only by
+validated nonnegative amounts; audio records play and stop requests; and
+storage provides sorted byte-keyed contents. Every public history, queue, or
+contents view is a newly returned tuple, never the fake's internal list or
+dictionary. Invalid operations are atomic. Unavailable fakes reject all
+operational use, while available read-only storage permits loads but rejects
+saves and deletes without mutation.
+
+This phase remains contracts and test infrastructure only. It did not add an
+adapter, runner, renderer, drawing, application loop, physics, menus, audio
+playback, file or persistence backend, networking, database, Dartsnut access,
+secondary-display integration, hardware dimensions, control interpretation,
+dart-color mapping, or any other hardware integration. `GameSession` and all
+domain behavior remain unchanged. Presentation/view-model transformation and
+explicit fallback composition remain future work.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |
