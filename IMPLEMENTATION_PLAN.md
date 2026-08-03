@@ -690,6 +690,73 @@ explicit fallback composition remain future work.
   interpretation, timing, physics, audio, storage backend, persistence,
   networking, Pygame, Dartsnut, or actual hardware integration.
 
+## Phase 0J: Pure command-driven ApplicationController
+
+**Status: IMPLEMENTED - LOCALLY VERIFIED**
+
+- Exact files changed: created `throw_a_strike/application/controller.py` and
+  `tests/test_controller.py`; updated `throw_a_strike/application/__init__.py`
+  and `IMPLEMENTATION_PLAN.md`.
+- Verification: `python -m unittest discover -s tests -v` passes all **248
+  tests** (the unchanged 229-test baseline plus 19 controller test methods),
+  and `python -m unittest tests.test_controller -v` passes all 19 focused
+  tests. The requested `py_compile`, protected-file, forbidden-import and scope
+  searches, `git diff --check`, and repository-status checks also pass.
+- Public command API: the exact eight-member string enum
+  `ApplicationCommandKind` and frozen `ConfigureCommand`, `StartCommand`,
+  `SubmitThrowCommand`, `AcknowledgeResultCommand`,
+  `ContinueTransitionCommand`, `ReplayCommand`, `CancelCommand`, and
+  `PublishCurrentCommand` use explicit, strictly validated values rather than
+  strings, payload mappings, or generic parameters.
+- Construction accepts only exact `ApplicationCapabilities` and
+  `PresentationPublisher` values, publishes nothing, retains the immutable
+  capability snapshot privately without inspecting dimensions, and creates
+  and privately owns one new `GameSession`. No public property exposes the
+  session, publisher, capabilities, or ports.
+- Exact command dispatch is Configure→`configure`, Start→`start`,
+  SubmitThrow→`submit_throw`, AcknowledgeResult→`acknowledge_result`,
+  ContinueTransition→`continue_transition`, Replay→`replay`, Cancel→`cancel`,
+  and PublishCurrent→`snapshot`. Exact command types are required, subclasses
+  are rejected, and no command invokes a second or automatic operation.
+- Every successful operation produces one snapshot, calls
+  `build_presentation` once with that snapshot and the stored capability
+  value, and calls `PresentationPublisher.publish` once with the exact bundle.
+  `PublishCurrentCommand` obtains a fresh snapshot and republishes without
+  mutating, deduplicating, or repeating an earlier session command.
+- Frozen `ApplicationCommandResult` values strictly require and retain the
+  exact command kind, session snapshot, presentation bundle passed to the
+  publisher, and publication receipt returned by it. They contain no service,
+  port, engine, or mutable collection.
+- Main-only and secondary-enabled behavior remains entirely authoritative in
+  `PresentationPublisher`: the controller neither alters placement nor
+  duplicates, reroutes, falls back, or rebuilds scoreboards. Secondary output
+  remains main-first and sequential, and dimensions have no dispatch effect.
+- Session transition, configuration, and domain scoring failures propagate
+  unchanged before presentation construction or publication. They are not
+  wrapped, retried, or converted into publication failures.
+- Publisher preflight and operation failures are chained in
+  `ApplicationControllerPublishError`, which retains the exact command kind,
+  advanced snapshot, failed bundle, original publisher-related cause, and
+  accurate main/secondary progress. Unrelated programming exceptions are not
+  caught.
+- Session mutation completes before publication. A publication failure can
+  therefore leave the controller in READY, AWAITING_THROW, SHOWING_RESULT, or
+  another successfully reached phase. There is deliberately **no rollback or
+  cross-layer transactionality**. A caller can later use
+  `PublishCurrentCommand` to publish that advanced state without reapplying the
+  original mutation; no retry or recovery is automatic.
+- The controller uses its construction-time immutable capability snapshot for
+  every presentation build and does not recollect capabilities or inspect
+  publisher ports. Actual publisher-port availability is checked later by the
+  publisher, so capability/port drift can correctly surface as a controller
+  publication error.
+- Remaining limitations: this is command coordination only. It adds no input
+  polling, command translation, application loop, timing, animation,
+  rendering, pixels/framebuffers, physics, coordinate or dart-index mapping,
+  audio, storage backend, persistence, Pygame, Dartsnut, networking, hardware
+  adapter, or hardware integration. The next task should be a verified
+  Dartsnut platform-contract spike, not a speculative adapter.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |
