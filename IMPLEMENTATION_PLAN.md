@@ -497,6 +497,75 @@ graphics, physics, rendering, input, audio, display, Dartsnut, physical
 dart-color mapping, cabinet, or hardware integration occurred. Those systems
 and all previously recorded hardware limitations remain future work.
 
+## Phase 0F: Pure application and game-session state machine
+
+**Status: IMPLEMENTED - LOCALLY VERIFIED**
+
+This phase created `throw_a_strike/application/__init__.py`,
+`throw_a_strike/application/session.py`, and `tests/test_session.py`, and updated
+only this implementation plan. The full command
+`python -m unittest discover -s tests -v` passed all 165 tests (the unchanged
+147-test baseline plus 18 session test methods). The requested `py_compile`
+command, protected-file check, prohibited-integration search,
+`git diff --check`, and repository status inspection also passed.
+
+The public string-valued session phases are `CONFIGURING`, `READY`,
+`AWAITING_THROW`, `SHOWING_RESULT`, `PLAYER_TRANSITION`, `FRAME_TRANSITION`,
+`GAME_OVER`, and `CANCELLED`. `GameSession` publicly provides `configure`,
+`start`, `submit_throw`, `acknowledge_result`, `continue_transition`, `replay`,
+`cancel`, and `snapshot`. Incorrect-phase calls raise
+`InvalidSessionTransitionError` atomically. Configuration requires an actual
+`MatchConfig`: 10-Pin and 100-Pin reject schedules, Remix requires a matching
+`RemixSchedule`, and Party requires a matching `PartySchedule`. Supplied
+schedules are consumed unchanged and are never regenerated.
+
+Starting and replay construct a fresh private engine in a local variable before
+committing session state. 10-Pin uses `BowlingMatch(player_count)`, 100-Pin uses
+`CumulativeMatch(player_count, (100,) * frame_count)`, and Remix and Party use
+`CumulativeMatch(player_count, schedule.frame_max_scores)`. No mutable match
+engine, games collection, or player collection is exposed; callers receive
+only the domain's immutable snapshots.
+
+Throws are accepted exclusively in `AWAITING_THROW`. An accepted throw records
+its player/color, global frame, throw number, value, capacity/rack before and
+after, transition flags, next player, and exact applicable schedule metadata,
+then enters `SHOWING_RESULT`. Domain roll errors propagate unchanged and leave
+the entire session unchanged. Result acknowledgment prioritizes match complete,
+global-frame completion, player-turn completion, and same-player continuation,
+entering `GAME_OVER`, `FRAME_TRANSITION`, `PLAYER_TRANSITION`, or
+`AWAITING_THROW`, respectively. Player/frame continuation only opens the next
+input window because the domain engine already performed rotation.
+
+Remix lookup uses the match's global frame and throw, ensuring each player gets
+the exact same scheduled object for a corresponding frame/throw. Party lookup
+uses the global frame only, ensuring both throws and every player share the
+exact immutable Party frame. Accepted-result snapshots retain that exact
+metadata. Neither mode invents mechanics, physical properties, or scoring
+beyond the supplied schedule maximums.
+
+Final throws remain in `SHOWING_RESULT` until acknowledged into `GAME_OVER`,
+where final immutable standings, all tied winners, configuration, schedule, and
+last throw remain available. Replay is available only there, clears the last
+throw, creates a zero-score engine, immediately opens the first throw, and
+retains the exact configuration and immutable schedule object. Cancellation is
+available from every non-cancelled phase, retains configuration, schedule,
+latest match snapshot, and last throw, closes normalized current fields, and
+permanently blocks every state-changing operation.
+
+`SessionSnapshot` and `SessionThrowSnapshot` are frozen dataclasses. Their
+reachable public collections come only from immutable schedule and domain
+snapshot tuples. Normalized current frame/player/color/throw/availability and
+schedule metadata are populated only in `AWAITING_THROW`; every blocked phase
+reports them as `None`. Retained snapshots remain detached from later engine
+mutation.
+
+This remains pure application logic. It does not provide clocks, ports,
+presentation timing, input queueing, or Party gameplay mechanics. No rendering,
+menus, visual widgets, physics, collision detection, input adapter, keyboard
+handling, audio, Dartsnut API, secondary display, persistence, networking,
+prototype integration, physical dart-color mapping, or hardware behavior was
+added.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |
