@@ -7,6 +7,14 @@ from .bowling import (
     IllegalRollError,
     RollSnapshot,
 )
+from .cumulative import (
+    CumulativeFrameSnapshot,
+    CumulativeGame,
+    CumulativeRollSnapshot,
+    CumulativeSnapshot,
+    IllegalCumulativeRollError,
+    InvalidCumulativeConfigurationError,
+)
 from .match import (
     BowlingMatch,
     InvalidMatchConfigurationError,
@@ -24,6 +32,12 @@ __all__ = [
     "FrameSnapshot",
     "IllegalRollError",
     "RollSnapshot",
+    "CumulativeFrameSnapshot",
+    "CumulativeGame",
+    "CumulativeRollSnapshot",
+    "CumulativeSnapshot",
+    "IllegalCumulativeRollError",
+    "InvalidCumulativeConfigurationError",
     "BowlingMatch",
     "InvalidMatchConfigurationError",
     "MatchCompleteError",

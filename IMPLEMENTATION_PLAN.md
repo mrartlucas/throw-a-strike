@@ -391,6 +391,27 @@ dart-index/color hardware mapping, rendering, physics, menus, audio, secondary
 screen, or cabinet hardware work occurred. Those integrations and all existing
 hardware limitations remain future work.
 
+### Implementation status — Phase 0C: Pure cumulative two-throw scoring core
+
+**IMPLEMENTED — LOCALLY VERIFIED.** Added
+`throw_a_strike/domain/cumulative.py` and `tests/test_cumulative.py`, and updated
+`throw_a_strike/domain/__init__.py` to export the cumulative game's six public
+types; this status entry is the only other change. The game accepts immutable
+tuples containing exactly 3, 5, or 10 positive, non-boolean integer frame
+maximums, including frame-specific maximums. Every frame requires exactly two
+rolls against one decreasing score capacity, even when roll one consumes all
+capacity, in which case roll two must be zero. Scores are the direct sum of
+accepted points; there are no strike, spare, fill-ball, or other bonuses.
+
+`python -m unittest discover -s tests -v` passed all 77 tests (the existing 31
+bowling tests, existing 20 multiplayer tests, and 26 cumulative tests). The
+requested Python syntax compilation, protected-file check, `git diff --check`,
+and repository status inspection also passed. This remains a one-player pure
+domain model. No cumulative multiplayer coordination, prototype/game
+integration, graphics, rendering, physics, menus, input, audio, Dartsnut API,
+dart-color mapping, or cabinet/hardware integration occurred. Those systems
+and all existing hardware limitations remain future work.
+
 ## Risk register
 
 | Risk | Likelihood / impact | Mitigation and trigger |
