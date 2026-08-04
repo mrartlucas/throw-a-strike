@@ -6,7 +6,7 @@ from throw_a_strike.domain import (
     ControlStyle, CurveLevel, InvalidThrowControlError, PowerFeedback,
     ThrowControlCommand, ThrowControlCommandKind as Kind, ThrowControlMachine,
     ThrowControlOutcome, ThrowControlOutcomeKind, ThrowControlPhase as Phase,
-    ThrowControlSnapshot, ThrowSetup,
+    ThrowControlSnapshot, ThrowSetup, THROW_FOUL_SECONDS, THROW_WARNING_SECONDS,
 )
 
 
@@ -15,6 +15,10 @@ def command(kind, timestamp, **values):
 
 
 class ValueTests(unittest.TestCase):
+    def test_public_throw_deadlines(self):
+        self.assertEqual(THROW_WARNING_SECONDS, 20.0)
+        self.assertEqual(THROW_FOUL_SECONDS, 30.0)
+
     def test_curve_order_labels_and_strengths(self):
         self.assertEqual([x.name for x in CurveLevel], ["LEFT_3", "LEFT_2", "LEFT_1", "STRAIGHT", "RIGHT_1", "RIGHT_2", "RIGHT_3"])
         self.assertEqual([x.label for x in CurveLevel], ["L3", "L2", "L1", "STR", "R1", "R2", "R3"])
@@ -195,9 +199,9 @@ class MachineTests(unittest.TestCase):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.RIGHT, 0)); machine.apply(command(Kind.CONFIRM, 0)); machine.apply(command(Kind.CONFIRM, .15))
         self.assertEqual((machine.snapshot.curve_level, machine.snapshot.locked_power_percent), (CurveLevel.RIGHT_1, 80))
-        machine.apply(command(Kind.TICK, 30.149)); self.assertFalse(machine.snapshot.warning_active)
-        machine.apply(command(Kind.TICK, 30.15)); self.assertTrue(machine.snapshot.warning_active)
-        machine.apply(command(Kind.TICK, 60.15)); self.assertIs(machine.snapshot.phase, Phase.FOUL)
+        machine.apply(command(Kind.TICK, 20.149)); self.assertFalse(machine.snapshot.warning_active)
+        machine.apply(command(Kind.TICK, 20.15)); self.assertTrue(machine.snapshot.warning_active)
+        machine.apply(command(Kind.TICK, 30.15)); self.assertIs(machine.snapshot.phase, Phase.FOUL)
         self.assertIs(machine.snapshot.outcome.kind, ThrowControlOutcomeKind.FOUL)
         self.assertIsNone(machine.snapshot.outcome.setup)
 
@@ -232,6 +236,32 @@ class MachineTests(unittest.TestCase):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.TICK, 100))
         self.assertIs(machine.snapshot.phase, Phase.FOUL)
+
+    def test_quick_warning_and_foul_exact_boundaries(self):
+        machine = ThrowControlMachine(ControlStyle.QUICK)
+        machine.apply(command(Kind.TICK, 19.999)); self.assertFalse(machine.snapshot.warning_active)
+        machine.apply(command(Kind.TICK, 20.0)); self.assertTrue(machine.snapshot.warning_active)
+        machine.apply(command(Kind.TICK, 29.999))
+        self.assertEqual((machine.snapshot.phase, machine.snapshot.warning_active), (Phase.THROW_READY, True))
+        result = machine.apply(command(Kind.TICK, 30.0))
+        self.assertEqual((result.phase, result.warning_active), (Phase.FOUL, False))
+        self.assertIs(result.outcome.kind, ThrowControlOutcomeKind.FOUL)
+        self.assertIsNone(result.outcome.setup)
+
+    def test_dart_deadline_precedence(self):
+        before = ThrowControlMachine(ControlStyle.QUICK)
+        self.assertIs(before.apply(command(Kind.DART_HIT, 29.999, dart_index=0, x=1, y=2)).phase, Phase.COMPLETE)
+        for timestamp in (30.0, 30.001):
+            with self.subTest(timestamp=timestamp):
+                machine = ThrowControlMachine(ControlStyle.QUICK)
+                result = machine.apply(command(Kind.DART_HIT, timestamp, dart_index=0, x=1, y=2))
+                self.assertIs(result.phase, Phase.FOUL)
+                self.assertIsNone(result.outcome.setup)
+
+    def test_sparse_quick_ticks_at_and_beyond_foul(self):
+        for timestamp in (30.0, 300.0):
+            machine = ThrowControlMachine(ControlStyle.QUICK)
+            self.assertIs(machine.apply(command(Kind.TICK, timestamp)).phase, Phase.FOUL)
 
     def test_no_public_reset(self):
         self.assertFalse(hasattr(ThrowControlMachine(ControlStyle.QUICK), "reset"))

@@ -47,6 +47,7 @@ from .throw_controls import (
     CurveLevel, InvalidThrowControlError, PowerFeedback, ThrowControlCommand,
     ThrowControlCommandKind, ThrowControlMachine, ThrowControlOutcome,
     ThrowControlOutcomeKind, ThrowControlPhase, ThrowControlSnapshot, ThrowSetup,
+    THROW_FOUL_SECONDS, THROW_WARNING_SECONDS,
 )
 from .schedule import (
     InvalidScheduleConfigurationError,
@@ -101,6 +102,8 @@ __all__ = [
     "ThrowControlOutcome",
     "ThrowControlSnapshot",
     "ThrowControlMachine",
+    "THROW_WARNING_SECONDS",
+    "THROW_FOUL_SECONDS",
     "InvalidMatchConfigError",
     "LOCKED_BRANDING",
     "MatchConfig",
