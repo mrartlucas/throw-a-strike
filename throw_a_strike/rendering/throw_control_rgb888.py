@@ -123,7 +123,9 @@ def render_round_throw_rgb888(presentation: ThrowControlPresentation, throw_numb
     _text(buf,f"THROW {throw_number}",2,90,_CYAN)
     _text(buf,f"DART {expected_dart_number}",105,90,_CYAN)
     primary=presentation.primary_prompt
-    if primary is not None:
+    if primary is not None and not (
+        primary is ThrowControlPrompt.THROW_READY and not blink_on
+    ):
         _center(buf,primary.label,96,_YELLOW)
     if presentation.secondary_prompt is not None:
         _center(buf,presentation.secondary_prompt.label,102,_RED)

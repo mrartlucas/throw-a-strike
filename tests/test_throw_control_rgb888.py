@@ -43,6 +43,13 @@ class RendererTests(unittest.TestCase):
         ready=build_throw_control_presentation(machine.snapshot)
         labels=self.assert_round_labels(ready,("THROW 1","DART 1","THROW READY",
                                                 "STR","70%","GOOD","Q"))
+        captured=[]; original=renderer._text
+        with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
+                          (captured.append(t),original(b,t,x,y,c,scale))[1]):
+            render_round_throw_rgb888(ready,1,1,False)
+        self.assertNotIn("THROW READY",captured)
+        for label in ("THROW 1","DART 1","STR","70%","GOOD","Q"):
+            self.assertIn(label,captured)
         warning=build_throw_control_presentation(machine.apply(
             ThrowControlCommand(ThrowControlCommandKind.TICK,THROW_WARNING_SECONDS)))
         labels=self.assert_round_labels(warning,("THROW 1","DART 1","THROW READY","THROW NOW"))
@@ -50,15 +57,28 @@ class RendererTests(unittest.TestCase):
         with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                           (captured.append(t),original(b,t,x,y,c,scale))[1]):
             render_round_throw_rgb888(warning,1,1,False)
-        self.assertIn("THROW READY",captured); self.assertIn("THROW NOW",captured)
+        self.assertNotIn("THROW READY",captured); self.assertIn("THROW NOW",captured)
+        for label in ("THROW 1","DART 1","STR","70%","GOOD","Q"):
+            self.assertIn(label,captured)
 
     def test_round_header_preserves_advanced_setup_and_recovery_prompts(self):
         curve_machine=ThrowControlMachine(ControlStyle.ADVANCED)
-        self.assert_round_labels(build_throw_control_presentation(curve_machine.snapshot),
-                                 ("THROW 1","DART 1","SET CURVE","STR","70%","GOOD","A"))
+        curve=build_throw_control_presentation(curve_machine.snapshot)
+        for blink in (True,False):
+            captured=[]; original=renderer._text
+            with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
+                              (captured.append(t),original(b,t,x,y,c,scale))[1]):
+                render_round_throw_rgb888(curve,1,1,blink)
+            for label in ("THROW 1","DART 1","SET CURVE","STR","70%","GOOD","A"):
+                self.assertIn(label,captured)
         power=build_throw_control_presentation(curve_machine.apply(
             ThrowControlCommand(ThrowControlCommandKind.CONFIRM,1)))
-        self.assert_round_labels(power,("SET POWER",))
+        for blink in (True,False):
+            captured=[]; original=renderer._text
+            with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
+                              (captured.append(t),original(b,t,x,y,c,scale))[1]):
+                render_round_throw_rgb888(power,1,1,blink)
+            self.assertIn("SET POWER",captured)
         recovery_machine=ThrowControlMachine(ControlStyle.ADVANCED)
         recovery=build_throw_control_presentation(recovery_machine.apply(
             ThrowControlCommand(ThrowControlCommandKind.DART_HIT,1,dart_index=0,x=1,y=2)))
