@@ -57,25 +57,65 @@ class PinfallResolution:
     def __post_init__(self):
         if type(self.result_kind) is not BowlingThrowResultKind:
             raise InvalidPinfallValueError("result_kind must be exact")
-        before=_pins(self.standing_before,"standing_before"); knocked=_pins(self.knocked_down,"knocked_down"); after=_pins(self.standing_after,"standing_after")
-        if self.direct_hit_pin is not None and (type(self.direct_hit_pin) is not int or self.direct_hit_pin not in before):
-            raise InvalidPinfallValueError("direct_hit_pin must be standing or None")
-        for value,name in ((self.contact_progress,"contact_progress"),(self.impact_dx,"impact_dx"),(self.impact_dy,"impact_dy")):
-            if type(value) is not float or not isfinite(value): raise InvalidPinfallValueError(f"{name} must be finite float")
-        if not 0.0 <= self.contact_progress <= 1.0: raise InvalidPinfallValueError("contact_progress out of range")
-        if type(self.contact_x) is not int or type(self.contact_y) is not int: raise InvalidPinfallValueError("contact point must be ints")
-        if type(self.impact_bias) is not PinImpactBias: raise InvalidPinfallValueError("impact_bias must be exact")
-        if type(self.fall_waves) is not tuple or any(type(w) is not tuple for w in self.fall_waves): raise InvalidPinfallValueError("fall_waves must be tuple of tuples")
-        flattened=tuple(pin for wave in self.fall_waves for pin in wave)
-        if any(_pins(w,"fall_wave") != w for w in self.fall_waves): pass
-        if flattened != knocked: raise InvalidPinfallValueError("fall_waves must flatten to knocked_down")
-        if any(pin not in before for pin in knocked): raise InvalidPinfallValueError("knocked pins must have been standing")
-        if after != tuple(pin for pin in before if pin not in knocked): raise InvalidPinfallValueError("standing_after mismatch")
+        before = _pins(self.standing_before, "standing_before")
+        knocked = _pins(self.knocked_down, "knocked_down")
+        after = _pins(self.standing_after, "standing_after")
+        if self.direct_hit_pin is not None and type(self.direct_hit_pin) is not int:
+            raise InvalidPinfallValueError("direct_hit_pin must be an exact int or None")
+        for value, name in ((self.contact_progress, "contact_progress"),
+                            (self.impact_dx, "impact_dx"), (self.impact_dy, "impact_dy")):
+            if type(value) is not float or not isfinite(value):
+                raise InvalidPinfallValueError(f"{name} must be finite float")
+        if not 0.0 <= self.contact_progress <= 1.0:
+            raise InvalidPinfallValueError("contact_progress out of range")
+        if type(self.contact_x) is not int or type(self.contact_y) is not int:
+            raise InvalidPinfallValueError("contact point must be exact ints")
+        if not 0 <= self.contact_x <= 127 or not 0 <= self.contact_y <= 127:
+            raise InvalidPinfallValueError("contact point must be inside the framebuffer")
+        if type(self.impact_bias) is not PinImpactBias:
+            raise InvalidPinfallValueError("impact_bias must be exact")
+        if type(self.fall_waves) is not tuple:
+            raise InvalidPinfallValueError("fall_waves must be an exact tuple")
+
+        seen = set()
+        flattened = []
+        for wave in self.fall_waves:
+            if type(wave) is not tuple:
+                raise InvalidPinfallValueError("each fall wave must be an exact tuple")
+            _pins(wave, "fall_wave")
+            if not wave:
+                raise InvalidPinfallValueError("fall waves must be non-empty")
+            for pin in wave:
+                if pin in seen:
+                    raise InvalidPinfallValueError("a pin may appear in only one fall wave")
+                seen.add(pin)
+                flattened.append(pin)
+        flattened = tuple(flattened)
+        if flattened != knocked:
+            raise InvalidPinfallValueError("fall_waves must flatten to knocked_down")
+        if any(pin not in before for pin in knocked):
+            raise InvalidPinfallValueError("knocked pins must have been standing")
+        if after != tuple(pin for pin in before if pin not in knocked):
+            raise InvalidPinfallValueError("standing_after mismatch")
+
         if self.result_kind is BowlingThrowResultKind.PIN_HIT:
-            if self.direct_hit_pin is None or not knocked: raise InvalidPinfallValueError("PIN_HIT requires knocked pins")
+            if self.direct_hit_pin not in before:
+                raise InvalidPinfallValueError("PIN_HIT direct_hit_pin must be standing")
+            if not self.fall_waves:
+                raise InvalidPinfallValueError("PIN_HIT requires fall waves")
+            if self.fall_waves[0] != (self.direct_hit_pin,):
+                raise InvalidPinfallValueError("PIN_HIT first wave must be the direct hit pin")
+            if self.direct_hit_pin not in knocked or not knocked:
+                raise InvalidPinfallValueError("PIN_HIT requires knocked direct hit pin")
         elif self.result_kind in (BowlingThrowResultKind.MISS, BowlingThrowResultKind.GUTTER):
-            if self.direct_hit_pin is not None or knocked or after != before or self.fall_waves != (): raise InvalidPinfallValueError("no-hit must preserve rack")
-        else: raise InvalidPinfallValueError("unsupported pinfall result kind")
+            if self.direct_hit_pin is not None:
+                raise InvalidPinfallValueError("no-hit direct_hit_pin must be None")
+            if self.contact_progress != 1.0:
+                raise InvalidPinfallValueError("no-hit contact_progress must be exactly one")
+            if self.fall_waves != () or knocked != () or after != before:
+                raise InvalidPinfallValueError("no-hit results must preserve the rack")
+        else:
+            raise InvalidPinfallValueError("unsupported pinfall result kind")
 
 def _point(trajectory, t):
     return ball_trajectory_point_at_progress(trajectory, t)

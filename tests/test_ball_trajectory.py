@@ -2,7 +2,8 @@ import unittest
 from throw_a_strike.domain import (
     BallTrajectory, BallTrajectorySample, ControlStyle, CurveLevel,
     InvalidBallTrajectoryValueError, ThrowSetup, build_ball_trajectory,
-    sample_ball_trajectory,
+    sample_ball_trajectory, sample_ball_trajectory_progress,
+    ball_trajectory_point_at_progress, ball_trajectory_derivative_at_progress,
 )
 
 class BallTrajectoryTests(unittest.TestCase):
@@ -36,6 +37,23 @@ class BallTrajectoryTests(unittest.TestCase):
     def test_exact_input_validation(self):
         with self.assertRaises(InvalidBallTrajectoryValueError): build_ball_trajectory(None)
         with self.assertRaises(InvalidBallTrajectoryValueError): sample_ball_trajectory(build_ball_trajectory(self.setup()),float('inf'))
+
+
+    def test_progress_helpers_reject_non_finite_bool_and_non_real_before_clamping(self):
+        trajectory = build_ball_trajectory(self.setup())
+        helpers = (
+            ball_trajectory_point_at_progress,
+            ball_trajectory_derivative_at_progress,
+            sample_ball_trajectory_progress,
+        )
+        bad_values = (float("nan"), float("inf"), float("-inf"), True, "0.5")
+        for helper in helpers:
+            for value in bad_values:
+                with self.subTest(helper=helper.__name__, value=repr(value)):
+                    with self.assertRaises(InvalidBallTrajectoryValueError):
+                        helper(trajectory, value)
+        self.assertEqual(sample_ball_trajectory_progress(trajectory, -10), BallTrajectorySample(0.0, 64, 84))
+        self.assertEqual(sample_ball_trajectory_progress(trajectory, 10), BallTrajectorySample(1.0, trajectory.target_x, trajectory.target_y))
 
     def test_public_value_constructors_validate_exact_metadata(self):
         trajectory = build_ball_trajectory(self.setup())

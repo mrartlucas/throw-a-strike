@@ -97,6 +97,56 @@ class PinfallTests(unittest.TestCase):
         self.assertEqual(tied, again)
         self.assertTrue(0.0 <= tied.contact_progress <= 1.0)
 
+
+    def test_constructor_rejects_corrupted_public_fields_and_relationships(self):
+        r = self.resolution()
+        fields = r.__dict__.copy()
+        corruptions = (
+            ("result_kind", "pin_hit"),
+            ("standing_before", [1, 2, 3]),
+            ("standing_before", (2, 1)),
+            ("direct_hit_pin", "1"),
+            ("direct_hit_pin", 9),
+            ("contact_progress", float("nan")),
+            ("contact_x", 128),
+            ("contact_y", -1),
+            ("impact_dx", 1),
+            ("impact_dy", float("inf")),
+            ("impact_bias", "center"),
+            ("fall_waves", [(1,)]),
+            ("fall_waves", ((),)),
+            ("fall_waves", ((2, 1),)),
+            ("fall_waves", ((1, 2), (2, 3))),
+            ("fall_waves", ((2,), (1, 3, 4, 5, 6))),
+            ("knocked_down", (1, 2)),
+            ("knocked_down", (1, 2, 3, 4, 5, 6, 7)),
+            ("standing_after", (7, 8, 9)),
+        )
+        for name, value in corruptions:
+            with self.subTest(field=name, value=repr(value)):
+                values = fields.copy(); values[name] = value
+                with self.assertRaises(InvalidPinfallValueError):
+                    PinfallResolution(**values)
+
+    def test_no_hit_constructor_relationships_are_exact(self):
+        miss = self.resolution(x=64, y=84)
+        self.assertEqual(miss.result_kind, BowlingThrowResultKind.MISS)
+        base = miss.__dict__.copy()
+        corruptions = (
+            ("direct_hit_pin", 1),
+            ("contact_progress", 0.5),
+            ("fall_waves", ((1,),)),
+            ("knocked_down", (1,)),
+            ("standing_after", (2, 3, 4, 5, 6, 7, 8, 9, 10)),
+        )
+        for name, value in corruptions:
+            with self.subTest(field=name):
+                values = base.copy(); values[name] = value
+                if name == "knocked_down":
+                    values["standing_after"] = tuple(range(2, 11))
+                with self.assertRaises(InvalidPinfallValueError):
+                    PinfallResolution(**values)
+
     def test_constructor_validation_and_roll_stops_at_contact(self):
         r = self.resolution()
         with self.assertRaises(InvalidPinfallValueError):

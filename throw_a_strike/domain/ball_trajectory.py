@@ -113,9 +113,10 @@ def ball_trajectory_point_at_progress(trajectory: BallTrajectory, progress: Real
         raise InvalidBallTrajectoryValueError("trajectory must be exact")
     if isinstance(progress, bool) or not isinstance(progress, Real):
         raise InvalidBallTrajectoryValueError("progress must be a finite real")
-    progress = min(1.0, max(0.0, float(progress)))
+    progress = float(progress)
     if not isfinite(progress):
         raise InvalidBallTrajectoryValueError("progress must be a finite real")
+    progress = min(1.0, max(0.0, progress))
     inverse = 1.0 - progress
     x = inverse * inverse * trajectory.start_x + 2 * inverse * progress * trajectory.control_x + progress * progress * trajectory.target_x
     y = inverse * inverse * trajectory.start_y + 2 * inverse * progress * trajectory.control_y + progress * progress * trajectory.target_y
@@ -128,9 +129,10 @@ def ball_trajectory_derivative_at_progress(trajectory: BallTrajectory, progress:
         raise InvalidBallTrajectoryValueError("trajectory must be exact")
     if isinstance(progress, bool) or not isinstance(progress, Real):
         raise InvalidBallTrajectoryValueError("progress must be a finite real")
-    progress = min(1.0, max(0.0, float(progress)))
+    progress = float(progress)
     if not isfinite(progress):
         raise InvalidBallTrajectoryValueError("progress must be a finite real")
+    progress = min(1.0, max(0.0, progress))
     inverse = 1.0 - progress
     dx = 2 * inverse * (trajectory.control_x - trajectory.start_x) + 2 * progress * (trajectory.target_x - trajectory.control_x)
     dy = 2 * inverse * (trajectory.control_y - trajectory.start_y) + 2 * progress * (trajectory.target_y - trajectory.control_y)
@@ -143,9 +145,10 @@ def sample_ball_trajectory_progress(trajectory: BallTrajectory, progress: Real) 
         raise InvalidBallTrajectoryValueError("trajectory must be exact")
     if isinstance(progress, bool) or not isinstance(progress, Real):
         raise InvalidBallTrajectoryValueError("progress must be a finite real")
-    progress = min(1.0, max(0.0, float(progress)))
+    progress = float(progress)
     if not isfinite(progress):
         raise InvalidBallTrajectoryValueError("progress must be a finite real")
+    progress = min(1.0, max(0.0, progress))
     if progress == 0.0:
         return BallTrajectorySample(0.0, trajectory.start_x, trajectory.start_y)
     if progress == 1.0:

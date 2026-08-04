@@ -4,7 +4,7 @@ from throw_a_strike.domain import PlayerColor, ThrowSetup
 from throw_a_strike.domain.pinfall import (PIN_CENTERS, PINFALL_PIN_DURATION_SECONDS,
     PINFALL_WAVE_DELAY_SECONDS, PinImpactBias, PinfallResolution)
 from .ball_animation_rgb888 import _draw_ball
-from .throw_control_rgb888 import _RED, _WHITE, _deck, _line, _rect, _canvas, _power_bar, _arrow, _text, _center, _HUD, _CYAN, _YELLOW, _MUTED, EMULATOR_MAIN_WIDTH, EMULATOR_MAIN_HEIGHT, render_dart_accepted_rgb888
+from .throw_control_rgb888 import _RED, _WHITE, _draw_upright_pin, _line, _rect, render_dart_accepted_rgb888
 from throw_a_strike.domain.ball_trajectory import BallTrajectorySample
 from throw_a_strike.domain.bowling_round import BowlingThrowResultKind
 from throw_a_strike.domain import ControlStyle
@@ -16,6 +16,9 @@ def _pose_offsets(bias, progress):
     return 0, round(-4*progress)
 
 def _draw_falling_pin(buf, x, y, bias, progress):
+    if progress == 0.0:
+        _draw_upright_pin(buf, x, y)
+        return
     ox, oy = _pose_offsets(bias, progress)
     width = 7; height = max(3, round(7 - 4*progress))
     _rect(buf, x-3+ox, y-height//2+oy, width, height, _WHITE)

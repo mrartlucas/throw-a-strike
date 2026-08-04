@@ -62,14 +62,17 @@ def _text(buf,text,x,y,c,scale=1):
                     if on=="1": _rect(buf,x+gx*scale,y+gy*scale,scale,scale,c)
         x += 4*scale
 def _center(buf,text,y,c,scale=1): _text(buf,text,(128-(len(text)*4-1)*scale)//2,y,c,scale)
+def _draw_upright_pin(buf, x, y):
+    _rect(buf,x-3,y-3,7,7,_WHITE); _pixel(buf,x-3,y-3,_LANE); _pixel(buf,x+3,y-3,_LANE)
+    _line(buf,x-2,y-1,x+2,y-1,_RED)
+
 def _deck(buf, standing_pins=FULL_RACK):
     _rect(buf,8,0,112,88,_LANE); _line(buf,8,0,8,87,_MUTED); _line(buf,119,0,119,87,_MUTED)
     if type(standing_pins) is not tuple:
         raise TypeError("standing_pins must be a tuple")
     for pin in standing_pins:
         x,y = PIN_CENTERS[pin]
-        _rect(buf,x-3,y-3,7,7,_WHITE); _pixel(buf,x-3,y-3,_LANE); _pixel(buf,x+3,y-3,_LANE)
-        _line(buf,x-2,y-1,x+2,y-1,_RED)
+        _draw_upright_pin(buf,x,y)
 def _arrow(buf,icon,x,y):
     if icon is ThrowControlCurveIcon.STRAIGHT:
         _line(buf,x+5,y+10,x+5,y+2,_CYAN); _line(buf,x+2,y+5,x+5,y+2,_CYAN); _line(buf,x+8,y+5,x+5,y+2,_CYAN)
