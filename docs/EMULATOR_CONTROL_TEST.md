@@ -72,3 +72,11 @@ observation does **not** establish physical-board removal behavior.
 
 This phase adds no trajectory, physics, pinfall, scoring integration, multiplayer
 rotation, coordinate transform, secondary-display, or audio behavior.
+
+## Phase 0T deterministic ball trajectory
+
+**Status: IMPLEMENTED - BALL TRAJECTORY RETEST READY**
+
+A ball appears only after a legal active-player dart completes throw setup. The emulator maps the visual target with the display-local clamp x=12..115 and y=4..84; this is not physical-board orientation or calibration, and `ThrowSetup` and diagnostic results retain the original raw coordinates. Curve selects a deterministic quadratic Bézier bend, while Power selects the exact duration (40–100 percent: 1.20, 1.10, 1.00, 0.90, 0.80, 0.70, and 0.60 seconds).
+
+Animation samples elapsed monotonic-clock time rather than frame count. BALL ROLL consumes no gameplay input and records the temporary MISS only when the ball arrives. The standing pin deck remains unchanged. This phase adds no collision, pinfall, scoring integration, multiplayer rotation, audio, physical calibration, or secondary-display behavior.

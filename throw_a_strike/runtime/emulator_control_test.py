@@ -11,16 +11,19 @@ from throw_a_strike.application import (ClockPort, InputEventKind, InvalidPortVa
     ThrowControlCoordinator, ThrowControlPresentation, ThrowControlStyleSelectionSnapshot,
     ThrowControlStyleSelector, build_throw_control_presentation, build_throw_control_step_presentation)
 from throw_a_strike.domain import (BowlingRoundMachine, BowlingThrowNumber, BowlingThrowResult,
-    BowlingThrowResultKind, PlayerColor, ThrowControlPhase, ThrowSetup,
+    BallTrajectory, BowlingThrowResultKind, PlayerColor,
+    ThrowControlPhase, ThrowSetup, build_ball_trajectory, sample_ball_trajectory,
     emulator_dart_indices_for_player, is_emulator_dart_for_player, player_color_for_number)
 from throw_a_strike.platform import DartsnutSdkFacade
 from throw_a_strike.rendering import (EMULATOR_RGB888_BYTE_LENGTH,
+    render_ball_arrival_rgb888, render_ball_roll_rgb888,
     render_dart_accepted_rgb888, render_round_complete_rgb888, render_round_throw_rgb888,
     render_style_selection_rgb888, render_throw_control_rgb888, render_wrong_color_rgb888)
 
 class EmulatorControlTestPhase(str, Enum):
     SELECT_STYLE="select_style"
     ATTEMPT="attempt"
+    BALL_ROLL="ball_roll"
     RECOVERY_HOLD="recovery_hold"
     FOUL_HOLD="foul_hold"
     ACCEPTED_HOLD="accepted_hold"
@@ -62,14 +65,15 @@ class EmulatorControlTestStep:
             valid = (self.selection.confirmed and self.presentation is not None
                      and self.presentation.terminal
                      and self.presentation.phase is ThrowControlPhase.FOUL)
+        elif self.phase is EmulatorControlTestPhase.BALL_ROLL:
+            valid = (self.selection.confirmed and self.presentation is not None
+                     and self.presentation.terminal
+                     and self.presentation.phase is ThrowControlPhase.COMPLETE)
         elif self.phase is EmulatorControlTestPhase.ACCEPTED_HOLD:
             valid = (self.selection.confirmed and self.presentation is not None
                      and self.presentation.terminal
                      and self.presentation.phase is ThrowControlPhase.COMPLETE
-                     and type(self.accepted_setup) is ThrowSetup
-                     and self.framebuffer == render_dart_accepted_rgb888(
-                         self.presentation,self.accepted_setup.dart_index,
-                         self.accepted_setup.aim_x,self.accepted_setup.aim_y))
+                     and type(self.accepted_setup) is ThrowSetup)
         elif self.phase is EmulatorControlTestPhase.ROUND_COMPLETE:
             valid = self.selection.confirmed and self.presentation is not None and self.presentation.terminal
         elif self.phase is EmulatorControlTestPhase.TERMINAL:
@@ -132,6 +136,7 @@ class EmulatorControlTestRuntime:
         self._phase=EmulatorControlTestPhase.SELECT_STYLE; self._cached=None; self._presentation=None
         self._foul_timestamp=None
         self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
+        self._ball_trajectory=None; self._ball_started_at=None
         self._recovery_dart_index=None
     @property
     def phase(self): return self._phase
@@ -144,6 +149,10 @@ class EmulatorControlTestRuntime:
     @property
     def accepted_setup(self): return self._accepted_setup
     @property
+    def ball_trajectory(self): return self._ball_trajectory
+    @property
+    def ball_started_at(self): return self._ball_started_at
+    @property
     def round_snapshot(self): return self._round.snapshot
     @property
     def active_player_number(self): return self._active_player_number
@@ -155,6 +164,7 @@ class EmulatorControlTestRuntime:
         self._coordinator=ThrowControlCoordinator(style,self._input,self._clock,started_at)
         self._foul_timestamp=None
         self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
+        self._ball_trajectory=None; self._ball_started_at=None
         self._presentation=build_throw_control_presentation(self._coordinator.snapshot)
         self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
                                                 self.active_player_number,self.active_player_color)
@@ -181,6 +191,33 @@ class EmulatorControlTestRuntime:
             self._phase=EmulatorControlTestPhase.ATTEMPT
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+        if self._phase is EmulatorControlTestPhase.BALL_ROLL:
+            now=self._clock.monotonic_seconds()
+            trajectory=self._ball_trajectory
+            deadline=self._ball_started_at+trajectory.duration_seconds
+            sample=sample_ball_trajectory(
+                trajectory,trajectory.duration_seconds
+                if now >= deadline else now-self._ball_started_at)
+            if sample.progress >= 1.0:
+                setup=self._accepted_setup
+                rack=self._round.snapshot.standing_pins
+                self._round.record_throw(BowlingThrowResult(
+                    BowlingThrowResultKind.MISS,rack,(),rack,
+                    setup.dart_index,setup.aim_x,setup.aim_y))
+                self._accepted_timestamp=deadline
+                self._cached=render_ball_arrival_rgb888(
+                    self._presentation,setup,self.active_player_color,sample)
+                self._phase=EmulatorControlTestPhase.ACCEPTED_HOLD
+                accepted=self._facade.submit_framebuffer(self._cached)
+                return EmulatorControlTestStep(
+                    self._phase,self._selector.snapshot,self._presentation,
+                    self._cached,accepted,setup)
+            self._cached=render_ball_roll_rgb888(
+                self._presentation,int(self._round.snapshot.throw_number),
+                self.active_player_number,self.active_player_color,sample)
+            accepted=self._facade.submit_framebuffer(self._cached)
+            return EmulatorControlTestStep(
+                self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         if self._phase is EmulatorControlTestPhase.WRONG_COLOR_HOLD:
             now=self._clock.monotonic_seconds()
             if now >= self._wrong_timestamp + WRONG_COLOR_HOLD_SECONDS:
@@ -251,13 +288,17 @@ class EmulatorControlTestRuntime:
             self._accepted_snapshot=result.snapshot
             self._accepted_setup=result.snapshot.outcome.setup
             setup=self._accepted_setup
-            rack=self._round.snapshot.standing_pins
-            self._round.record_throw(BowlingThrowResult(BowlingThrowResultKind.MISS,rack,(),rack,
-                                                        setup.dart_index,setup.aim_x,setup.aim_y))
-            self._accepted_timestamp=result.events[-1].timestamp
-            self._cached=render_dart_accepted_rgb888(
-                self._presentation,setup.dart_index,setup.aim_x,setup.aim_y)
-            self._phase=EmulatorControlTestPhase.ACCEPTED_HOLD
+            dart_events=tuple(event for event in result.events
+                              if event.kind is InputEventKind.DART_HIT)
+            if not dart_events:
+                raise InvalidPortValueError("completed throw requires its dart event")
+            self._ball_started_at=dart_events[-1].timestamp
+            self._ball_trajectory=build_ball_trajectory(setup)
+            sample=sample_ball_trajectory(self._ball_trajectory,0)
+            self._cached=render_ball_roll_rgb888(
+                self._presentation,int(self._round.snapshot.throw_number),
+                self.active_player_number,self.active_player_color,sample)
+            self._phase=EmulatorControlTestPhase.BALL_ROLL
         accepted=self._facade.submit_framebuffer(self._cached)
         return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
                                        self._accepted_setup if self._phase is EmulatorControlTestPhase.ACCEPTED_HOLD else None)

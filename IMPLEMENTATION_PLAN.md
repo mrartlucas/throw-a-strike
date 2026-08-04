@@ -1102,3 +1102,9 @@ trajectory, physics, pinfall, scoring integration, multiplayer rotation,
 coordinate transform, secondary-display, or audio work is included.
 
 **IMPLEMENTED - ADVANCED SKILL-STOP RETEST READY**
+
+### Phase 0T: deterministic ball trajectory and post-throw animation
+
+**Status: IMPLEMENTED - BALL TRAJECTORY RETEST READY**
+
+The emulator now builds one immutable quadratic Bézier trajectory only after a legal dart, retains raw aim metadata, and applies a declared display-local clamp solely for its visible target. Curve determines bend and Power determines the exact clock-derived duration. BALL ROLL polls no input; the diagnostic MISS is committed at arrival, with the standing rack unchanged. Collision, pinfall, scoring, multiplayer rotation, audio, physical calibration, and secondary-screen work remain future phases.

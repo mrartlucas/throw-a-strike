@@ -366,3 +366,9 @@ No trajectory, physics, pinfall, scoring integration, multiplayer rotation,
 coordinate transform, secondary display, or audio was added.
 
 **IMPLEMENTED - ADVANCED SKILL-STOP RETEST READY**
+
+## Phase 0T deterministic ball trajectory
+
+**Status: IMPLEMENTED - BALL TRAJECTORY RETEST READY**
+
+The pure trajectory model retains raw aim, mapped display target, Bézier control point, curve metadata, exact power duration, and final approach vector. The emulator renders a clipped player-color ball only after legal acceptance, derives every sample from elapsed clock time, consumes no input while rolling, and records its temporary MISS only at arrival. Pins remain standing and unchanged. The mapping is display-local and is not a physical calibration claim. No collision, pinfall, scoring integration, multiplayer rotation, audio, physical calibration, or secondary display was added; the physical `DartsnutInputPort` is unchanged.
