@@ -372,3 +372,9 @@ coordinate transform, secondary display, or audio was added.
 **Status: IMPLEMENTED - BALL TRAJECTORY RETEST READY**
 
 The pure trajectory model retains raw aim, mapped display target, Bézier control point, curve metadata, exact power duration, and final approach vector. The emulator renders a clipped player-color ball only after legal acceptance, derives every sample from elapsed clock time, consumes no input while rolling, and records its temporary MISS only at arrival. Pins remain standing and unchanged. The mapping is display-local and is not a physical calibration claim. No collision, pinfall, scoring integration, multiplayer rotation, audio, physical calibration, or secondary display was added; the physical `DartsnutInputPort` is unchanged.
+
+## IMPLEMENTED - PINFALL RETEST READY
+
+The emulator diagnostic round now resolves legal darts through a pure deterministic pinfall model: 6-pixel swept contact radius, exactly 256 collision subdivisions, immutable pin centers, immutable directed pin graph, and deterministic energy propagation. Runtime integration adds BALL_ROLL-to-PINFALL-to-ACCEPTED_HOLD flow while preserving wrong-color, FOUL, recovery, style, curve, and power behavior.
+
+Survivor racks are persisted after partial hits and rendered from the domain pin-center source of truth. First-throw rack clears complete the round early without adding regulation strike/spare scoring or frame scoring. No multiplayer, audio, calibration, secondary-display, or physical hardware scope was added.

@@ -13,17 +13,20 @@ from throw_a_strike.application import (ClockPort, InputEventKind, InvalidPortVa
 from throw_a_strike.domain import (BowlingRoundMachine, BowlingThrowNumber, BowlingThrowResult,
     BallTrajectory, BowlingThrowResultKind, PlayerColor,
     ThrowControlPhase, ThrowSetup, build_ball_trajectory, sample_ball_trajectory,
+    resolve_ball_pinfall, sample_ball_roll, PINFALL_DURATION_SECONDS,
     emulator_dart_indices_for_player, is_emulator_dart_for_player, player_color_for_number)
 from throw_a_strike.platform import DartsnutSdkFacade
 from throw_a_strike.rendering import (EMULATOR_RGB888_BYTE_LENGTH,
     render_ball_arrival_rgb888, render_ball_roll_rgb888,
     render_dart_accepted_rgb888, render_round_complete_rgb888, render_round_throw_rgb888,
+    render_pinfall_rgb888, render_throw_result_rgb888,
     render_style_selection_rgb888, render_throw_control_rgb888, render_wrong_color_rgb888)
 
 class EmulatorControlTestPhase(str, Enum):
     SELECT_STYLE="select_style"
     ATTEMPT="attempt"
     BALL_ROLL="ball_roll"
+    PINFALL="pinfall"
     RECOVERY_HOLD="recovery_hold"
     FOUL_HOLD="foul_hold"
     ACCEPTED_HOLD="accepted_hold"
@@ -65,7 +68,7 @@ class EmulatorControlTestStep:
             valid = (self.selection.confirmed and self.presentation is not None
                      and self.presentation.terminal
                      and self.presentation.phase is ThrowControlPhase.FOUL)
-        elif self.phase is EmulatorControlTestPhase.BALL_ROLL:
+        elif self.phase in (EmulatorControlTestPhase.BALL_ROLL, EmulatorControlTestPhase.PINFALL):
             valid = (self.selection.confirmed and self.presentation is not None
                      and self.presentation.terminal
                      and self.presentation.phase is ThrowControlPhase.COMPLETE)
@@ -137,6 +140,7 @@ class EmulatorControlTestRuntime:
         self._foul_timestamp=None
         self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
         self._ball_trajectory=None; self._ball_started_at=None
+        self._pinfall_resolution=None; self._pinfall_started_at=None
         self._recovery_dart_index=None
     @property
     def phase(self): return self._phase
@@ -153,6 +157,10 @@ class EmulatorControlTestRuntime:
     @property
     def ball_started_at(self): return self._ball_started_at
     @property
+    def pinfall_resolution(self): return self._pinfall_resolution
+    @property
+    def pinfall_started_at(self): return self._pinfall_started_at
+    @property
     def round_snapshot(self): return self._round.snapshot
     @property
     def active_player_number(self): return self._active_player_number
@@ -165,9 +173,11 @@ class EmulatorControlTestRuntime:
         self._foul_timestamp=None
         self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
         self._ball_trajectory=None; self._ball_started_at=None
+        self._pinfall_resolution=None; self._pinfall_started_at=None
         self._presentation=build_throw_control_presentation(self._coordinator.snapshot)
         self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
-                                                self.active_player_number,self.active_player_color)
+                                                self.active_player_number,self.active_player_color,
+                                                standing_pins=self._round.snapshot.standing_pins)
         self._phase=EmulatorControlTestPhase.ATTEMPT
         accepted=self._facade.submit_framebuffer(self._cached)
         return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
@@ -187,42 +197,52 @@ class EmulatorControlTestRuntime:
             self._presentation=build_throw_control_presentation(snapshot)
             self._cached=render_round_throw_rgb888(
                 self._presentation,int(self._round.snapshot.throw_number),
-                self.active_player_number,self.active_player_color)
+                self.active_player_number,self.active_player_color, standing_pins=self._round.snapshot.standing_pins)
             self._phase=EmulatorControlTestPhase.ATTEMPT
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         if self._phase is EmulatorControlTestPhase.BALL_ROLL:
             now=self._clock.monotonic_seconds()
-            trajectory=self._ball_trajectory
+            trajectory=self._ball_trajectory; resolution=self._pinfall_resolution
             deadline=self._ball_started_at+trajectory.duration_seconds
-            sample=sample_ball_trajectory(
-                trajectory,trajectory.duration_seconds
-                if now >= deadline else now-self._ball_started_at)
-            if sample.progress >= 1.0:
+            sample=sample_ball_roll(trajectory,resolution,trajectory.duration_seconds if now >= deadline else now-self._ball_started_at)
+            if now >= deadline:
                 setup=self._accepted_setup
+                if resolution.result_kind is BowlingThrowResultKind.PIN_HIT:
+                    self._pinfall_started_at=deadline; self._phase=EmulatorControlTestPhase.PINFALL
+                    self._cached=render_pinfall_rgb888(self._presentation,setup,self.active_player_color,sample,resolution,0.0)
+                    accepted=self._facade.submit_framebuffer(self._cached)
+                    return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
                 rack=self._round.snapshot.standing_pins
-                self._round.record_throw(BowlingThrowResult(
-                    BowlingThrowResultKind.MISS,rack,(),rack,
-                    setup.dart_index,setup.aim_x,setup.aim_y))
+                self._round.record_throw(BowlingThrowResult(resolution.result_kind,rack,(),rack,setup.dart_index,setup.aim_x,setup.aim_y))
                 self._accepted_timestamp=deadline
-                self._cached=render_ball_arrival_rgb888(
-                    self._presentation,setup,self.active_player_color,sample)
+                self._cached=render_throw_result_rgb888(self._presentation,setup,self.active_player_color,sample,resolution)
                 self._phase=EmulatorControlTestPhase.ACCEPTED_HOLD
                 accepted=self._facade.submit_framebuffer(self._cached)
-                return EmulatorControlTestStep(
-                    self._phase,self._selector.snapshot,self._presentation,
-                    self._cached,accepted,setup)
-            self._cached=render_ball_roll_rgb888(
-                self._presentation,int(self._round.snapshot.throw_number),
-                self.active_player_number,self.active_player_color,sample)
+                return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,setup)
+            self._cached=render_ball_roll_rgb888(self._presentation,int(self._round.snapshot.throw_number),
+                self.active_player_number,self.active_player_color,sample, standing_pins=resolution.standing_before)
             accepted=self._facade.submit_framebuffer(self._cached)
-            return EmulatorControlTestStep(
-                self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+        if self._phase is EmulatorControlTestPhase.PINFALL:
+            now=self._clock.monotonic_seconds(); setup=self._accepted_setup; resolution=self._pinfall_resolution
+            sample=sample_ball_roll(self._ball_trajectory,resolution,self._ball_trajectory.duration_seconds)
+            deadline=self._pinfall_started_at + PINFALL_DURATION_SECONDS
+            if now >= deadline:
+                rack=self._round.snapshot.standing_pins
+                self._round.record_throw(BowlingThrowResult(BowlingThrowResultKind.PIN_HIT,rack,resolution.knocked_down,resolution.standing_after,setup.dart_index,setup.aim_x,setup.aim_y))
+                self._accepted_timestamp=deadline; self._phase=EmulatorControlTestPhase.ACCEPTED_HOLD
+                self._cached=render_throw_result_rgb888(self._presentation,setup,self.active_player_color,sample,resolution)
+                accepted=self._facade.submit_framebuffer(self._cached)
+                return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,setup)
+            self._cached=render_pinfall_rgb888(self._presentation,setup,self.active_player_color,sample,resolution,now-self._pinfall_started_at)
+            accepted=self._facade.submit_framebuffer(self._cached)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         if self._phase is EmulatorControlTestPhase.WRONG_COLOR_HOLD:
             now=self._clock.monotonic_seconds()
             if now >= self._wrong_timestamp + WRONG_COLOR_HOLD_SECONDS:
                 self._phase=EmulatorControlTestPhase.ATTEMPT
-                self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),self.active_player_number,self.active_player_color)
+                self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),self.active_player_number,self.active_player_color, standing_pins=self._round.snapshot.standing_pins)
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         if self._phase is EmulatorControlTestPhase.FOUL_HOLD:
@@ -230,7 +250,7 @@ class EmulatorControlTestRuntime:
             if now >= self._foul_timestamp + FOUL_HOLD_SECONDS:
                 if self._round.snapshot.complete:
                     self._phase=EmulatorControlTestPhase.ROUND_COMPLETE
-                    self._cached=render_round_complete_rgb888(self._presentation)
+                    self._cached=render_round_complete_rgb888(self._presentation, standing_pins=self._round.snapshot.standing_pins)
                     accepted=self._facade.submit_framebuffer(self._cached)
                     return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
                 return self._begin_attempt(self._selector.snapshot.selected_style,now)
@@ -242,7 +262,7 @@ class EmulatorControlTestRuntime:
             if now >= self._accepted_timestamp + ACCEPTED_HOLD_SECONDS:
                 if self._round.snapshot.complete:
                     self._phase=EmulatorControlTestPhase.ROUND_COMPLETE
-                    self._cached=render_round_complete_rgb888(self._presentation)
+                    self._cached=render_round_complete_rgb888(self._presentation, standing_pins=self._round.snapshot.standing_pins)
                     accepted=self._facade.submit_framebuffer(self._cached)
                     return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
                 return self._begin_attempt(self._selector.snapshot.selected_style,now)
@@ -265,13 +285,15 @@ class EmulatorControlTestRuntime:
         if self._input.wrong_event is not None and not self._presentation.terminal:
             self._wrong_timestamp=self._input.wrong_event.timestamp
             self._cached=render_wrong_color_rgb888(self._presentation,int(self._round.snapshot.throw_number),
-                                                   self.active_player_number,self.active_player_color)
+                                                   self.active_player_number,self.active_player_color,
+                                                   standing_pins=self._round.snapshot.standing_pins)
             self._phase=EmulatorControlTestPhase.WRONG_COLOR_HOLD
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         blink=True if result.tick_timestamp is None else int(result.tick_timestamp*2)%2==0
         self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
-                                                self.active_player_number,self.active_player_color,blink)
+                                                self.active_player_number,self.active_player_color,blink,
+                                                standing_pins=self._round.snapshot.standing_pins)
         if self._presentation.phase is ThrowControlPhase.EARLY_DART_RECOVERY:
             dart_commands=tuple(command for command in result.commands
                                 if command.dart_index is not None)
@@ -294,10 +316,11 @@ class EmulatorControlTestRuntime:
                 raise InvalidPortValueError("completed throw requires its dart event")
             self._ball_started_at=dart_events[-1].timestamp
             self._ball_trajectory=build_ball_trajectory(setup)
-            sample=sample_ball_trajectory(self._ball_trajectory,0)
+            self._pinfall_resolution=resolve_ball_pinfall(self._ball_trajectory,self._round.snapshot.standing_pins)
+            sample=sample_ball_roll(self._ball_trajectory,self._pinfall_resolution,0)
             self._cached=render_ball_roll_rgb888(
                 self._presentation,int(self._round.snapshot.throw_number),
-                self.active_player_number,self.active_player_color,sample)
+                self.active_player_number,self.active_player_color,sample, standing_pins=self._round.snapshot.standing_pins)
             self._phase=EmulatorControlTestPhase.BALL_ROLL
         accepted=self._facade.submit_framebuffer(self._cached)
         return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,

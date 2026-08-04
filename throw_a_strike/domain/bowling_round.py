@@ -117,6 +117,15 @@ class BowlingRoundSnapshot:
             and self.first_result.pins_before == self.opening_rack
             and self.standing_pins == self.first_result.pins_after
         )
+        first_throw_clear = (
+            self.throw_number is BowlingThrowNumber.THROW_TWO
+            and type(self.first_result) is BowlingThrowResult
+            and self.second_result is None
+            and self.complete
+            and self.first_result.pins_before == self.opening_rack
+            and self.first_result.pins_after == ()
+            and self.standing_pins == ()
+        )
         complete = (
             self.throw_number is BowlingThrowNumber.THROW_TWO
             and type(self.first_result) is BowlingThrowResult
@@ -126,7 +135,7 @@ class BowlingRoundSnapshot:
             and self.second_result.pins_before == self.first_result.pins_after
             and self.standing_pins == self.second_result.pins_after
         )
-        if not (initial or after_first or complete):
+        if not (initial or after_first or first_throw_clear or complete):
             raise InvalidBowlingRoundValueError("snapshot does not describe a continuous two-throw round")
 
 
@@ -150,7 +159,7 @@ class BowlingRoundMachine:
             raise InvalidBowlingRoundValueError("result pins_before must equal the standing rack")
         if current.throw_number is BowlingThrowNumber.THROW_ONE:
             self._snapshot = BowlingRoundSnapshot(BowlingThrowNumber.THROW_TWO,
-                current.opening_rack, result.pins_after, result, None, False)
+                current.opening_rack, result.pins_after, result, None, result.pins_after == ())
         else:
             self._snapshot = BowlingRoundSnapshot(BowlingThrowNumber.THROW_TWO,
                 current.opening_rack, result.pins_after, current.first_result, result, True)

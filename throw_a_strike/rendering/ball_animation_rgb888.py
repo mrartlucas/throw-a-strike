@@ -2,6 +2,7 @@
 
 from throw_a_strike.application import ThrowControlPresentation
 from throw_a_strike.domain import BallTrajectorySample, PlayerColor, ThrowSetup
+from throw_a_strike.domain.bowling_round import FULL_RACK
 
 from .throw_control_rgb888 import (
     EMULATOR_MAIN_HEIGHT, EMULATOR_MAIN_WIDTH, render_dart_accepted_rgb888,
@@ -36,14 +37,14 @@ def _draw_ball(frame: bytes, sample: BallTrajectorySample, color: PlayerColor) -
 
 def render_ball_roll_rgb888(presentation: ThrowControlPresentation, throw_number: int,
                             player_number: int, player_color: PlayerColor,
-                            sample: BallTrajectorySample) -> bytes:
-    base = render_round_throw_rgb888(presentation, throw_number, player_number, player_color)
+                            sample: BallTrajectorySample, *, standing_pins=FULL_RACK) -> bytes:
+    base = render_round_throw_rgb888(presentation, throw_number, player_number, player_color, standing_pins=standing_pins)
     return _draw_ball(base, sample, player_color)
 
 
 def render_ball_arrival_rgb888(presentation: ThrowControlPresentation, setup: ThrowSetup,
-                               player_color: PlayerColor, sample: BallTrajectorySample) -> bytes:
+                               player_color: PlayerColor, sample: BallTrajectorySample, *, standing_pins=FULL_RACK, result_label: str="DART ACCEPTED") -> bytes:
     if type(setup) is not ThrowSetup:
         raise TypeError("setup must be exact")
-    base = render_dart_accepted_rgb888(presentation, setup.dart_index, setup.aim_x, setup.aim_y)
+    base = render_dart_accepted_rgb888(presentation, setup.dart_index, setup.aim_x, setup.aim_y, standing_pins=standing_pins, result_label=result_label)
     return _draw_ball(base, sample, player_color)

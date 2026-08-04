@@ -11,7 +11,7 @@ from throw_a_strike.application import (
 )
 from throw_a_strike.domain import (
     BowlingThrowNumber, BowlingThrowResultKind, PlayerColor, ControlStyle, CurveLevel, ThrowControlCommand, ThrowControlCommandKind,
-    ThrowControlMachine, ThrowControlOutcomeKind, ThrowControlPhase,
+    ThrowControlMachine, ThrowControlOutcomeKind, ThrowControlPhase, PINFALL_DURATION_SECONDS,
 )
 from throw_a_strike.platform import (
     DartsnutButtonId, DartsnutSdkFacade, DartsnutSdkOperation,
@@ -37,7 +37,11 @@ def arrive_ball(runtime, clock):
     duration = runtime.ball_trajectory.duration_seconds
     clock.values[:] = [value + duration for value in clock.values]
     clock.values.insert(0, runtime.ball_started_at + duration)
-    return runtime.step()
+    step = runtime.step()
+    if step.phase is EmulatorControlTestPhase.PINFALL:
+        clock.values.insert(0, runtime.pinfall_started_at + PINFALL_DURATION_SECONDS)
+        step = runtime.step()
+    return step
 
 
 def expire_accepted_hold(runtime, clock):
@@ -69,6 +73,168 @@ class RetainedDartSdk(FakeDartsnutSdk):
     """Models an emulator dart retained as active after its event was blocked."""
     def __init__(self, retained=RawDartHit(0,77,84)):
         super().__init__(); self.retained=retained
+
+
+class Phase0UPinfallRuntimeTests(unittest.TestCase):
+    def pixel(self, frame, x, y):
+        index = (y * 128 + x) * 3
+        return tuple(frame[index:index + 3])
+
+    def start_quick_throw(self, aim_x=64, aim_y=72, clock=None):
+        sdk = FakeDartsnutSdk(); clock = clock or Clock(1, 2, 2.1, 2.2, 3.5, 4)
+        runtime = EmulatorControlTestRuntime(DartsnutSdkFacade(sdk), clock, 0)
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        sdk.queue_dart_hits((RawDartHit(0, aim_x, aim_y),))
+        step = runtime.step()
+        self.assertEqual(step.phase, EmulatorControlTestPhase.BALL_ROLL)
+        return sdk, clock, runtime, step
+
+    def step_to_ball_deadline(self, runtime, clock):
+        deadline = runtime.ball_started_at + runtime.ball_trajectory.duration_seconds
+        clock.values[:] = [value for value in clock.values if value >= deadline]
+        clock.values.insert(0, deadline)
+        return runtime.step()
+
+    def step_to_pinfall_deadline(self, runtime, clock):
+        deadline = runtime.pinfall_started_at + PINFALL_DURATION_SECONDS
+        clock.values[:] = [value for value in clock.values if value >= deadline]
+        clock.values.insert(0, deadline)
+        return runtime.step()
+
+    def complete_current_throw(self, runtime, clock):
+        step = self.step_to_ball_deadline(runtime, clock)
+        if step.phase is EmulatorControlTestPhase.PINFALL:
+            step = self.step_to_pinfall_deadline(runtime, clock)
+        return step
+
+    def start_throw_two_after_partial_hit(self):
+        sdk, clock, runtime, _ = self.start_quick_throw(64, 72, Clock(1, 2, 3.5, 5, 1000, 1001, 1002, 1003))
+        accepted = self.complete_current_throw(runtime, clock)
+        self.assertEqual(accepted.phase, EmulatorControlTestPhase.ACCEPTED_HOLD)
+        self.assertEqual(runtime.round_snapshot.standing_pins, (7, 8, 9, 10))
+        clock.throw_two_started_at = runtime.accepted_timestamp + ACCEPTED_HOLD_SECONDS
+        next_step = expire_accepted_hold(runtime, clock)
+        self.assertEqual(next_step.phase, EmulatorControlTestPhase.ATTEMPT)
+        return sdk, clock, runtime, next_step
+
+    def test_hit_roll_pinfall_and_result_deadlines(self):
+        sdk, clock, runtime, roll = self.start_quick_throw(64, 72)
+        self.assertIsNone(runtime.round_snapshot.first_result)
+        self.assertIsNotNone(runtime.pinfall_resolution)
+        self.assertEqual(runtime.pinfall_resolution.result_kind, BowlingThrowResultKind.PIN_HIT)
+        pinfall = self.step_to_ball_deadline(runtime, clock)
+        self.assertEqual(pinfall.phase, EmulatorControlTestPhase.PINFALL)
+        self.assertIsNone(runtime.round_snapshot.first_result)
+        clock.values.insert(0, runtime.pinfall_started_at + 0.1)
+        active = runtime.step()
+        self.assertEqual(active.phase, EmulatorControlTestPhase.PINFALL)
+        self.assertIsNone(runtime.round_snapshot.first_result)
+        accepted = self.step_to_pinfall_deadline(runtime, clock)
+        first = runtime.round_snapshot.first_result
+        self.assertEqual(accepted.phase, EmulatorControlTestPhase.ACCEPTED_HOLD)
+        self.assertEqual(first.kind, BowlingThrowResultKind.PIN_HIT)
+        self.assertEqual(first.pins_knocked_down, (1, 2, 3, 4, 5, 6))
+        self.assertEqual(runtime.accepted_timestamp, runtime.pinfall_started_at + PINFALL_DURATION_SECONDS)
+        clock.values.insert(0, runtime.accepted_timestamp + PINFALL_DURATION_SECONDS + 10)
+        held = runtime.step()
+        self.assertIs(runtime.round_snapshot.first_result, first)
+        self.assertEqual(held.phase, EmulatorControlTestPhase.ATTEMPT)
+        self.assertEqual(sdk.reset_blocking_count, 0)
+
+    def test_miss_and_gutter_record_once_at_ball_deadline(self):
+        for aim_x, aim_y, kind in ((64, 84, BowlingThrowResultKind.MISS), (0, 4, BowlingThrowResultKind.GUTTER)):
+            with self.subTest(kind=kind):
+                sdk, clock, runtime, _ = self.start_quick_throw(aim_x, aim_y)
+                deadline = runtime.ball_started_at + runtime.ball_trajectory.duration_seconds
+                accepted = self.step_to_ball_deadline(runtime, clock)
+                first = runtime.round_snapshot.first_result
+                self.assertEqual(accepted.phase, EmulatorControlTestPhase.ACCEPTED_HOLD)
+                self.assertEqual(first.kind, kind)
+                self.assertEqual(first.pins_knocked_down, ())
+                self.assertEqual(runtime.accepted_timestamp, deadline)
+                clock.values.insert(0, deadline + 99)
+                runtime.step()
+                self.assertIs(runtime.round_snapshot.first_result, first)
+                self.assertIsNone(runtime.round_snapshot.second_result)
+                self.assertEqual(sdk.reset_blocking_count, 0)
+
+    def test_animation_steps_read_clock_once_submit_once_and_do_not_consume_queues(self):
+        sdk, clock, runtime, _ = self.start_quick_throw(64, 72)
+        sdk.queue_dart_hits((RawDartHit(4, 1, 2),)); sdk.queue_button_events((DartsnutButtonId.RIGHT,))
+        before_reads = clock.reads; before_frames = len(sdk.submitted_framebuffers)
+        clock.values.insert(0, runtime.ball_started_at + 0.1)
+        self.assertEqual(runtime.step().phase, EmulatorControlTestPhase.BALL_ROLL)
+        self.assertEqual(clock.reads, before_reads + 1)
+        self.assertEqual(len(sdk.submitted_framebuffers), before_frames + 1)
+        self.assertEqual((sdk.queued_dart_batch_count, sdk.queued_button_batch_count), (1, 1))
+        self.step_to_ball_deadline(runtime, clock)
+        before_reads = clock.reads; before_frames = len(sdk.submitted_framebuffers)
+        clock.values.insert(0, runtime.pinfall_started_at + 0.1)
+        self.assertEqual(runtime.step().phase, EmulatorControlTestPhase.PINFALL)
+        self.assertEqual(clock.reads, before_reads + 1)
+        self.assertEqual(len(sdk.submitted_framebuffers), before_frames + 1)
+        self.assertEqual((sdk.queued_dart_batch_count, sdk.queued_button_batch_count), (1, 1))
+
+    def test_survivor_rack_threads_through_throw_two_attempt_wrong_color_foul_and_complete(self):
+        sdk, clock, runtime, attempt = self.start_throw_two_after_partial_hit()
+        self.assertEqual(self.pixel(attempt.framebuffer, 64, 72), (52, 70, 79))
+        self.assertEqual(self.pixel(attempt.framebuffer, 34, 23), (238, 244, 236))
+        clock.values[0:0] = [clock.throw_two_started_at + 0.1, clock.throw_two_started_at + 0.1]
+        sdk.queue_dart_hits((RawDartHit(1, 7, 9),))
+        wrong = runtime.step()
+        self.assertEqual(wrong.phase, EmulatorControlTestPhase.WRONG_COLOR_HOLD)
+        self.assertEqual(self.pixel(wrong.framebuffer, 64, 72), (52, 70, 79))
+        clock.values.insert(0, 999.0)
+        returned = runtime.step()
+        self.assertEqual(self.pixel(returned.framebuffer, 64, 72), (52, 70, 79))
+        clock.values.insert(0, clock.throw_two_started_at + 30)
+        foul = runtime.step()
+        self.assertEqual(foul.phase, EmulatorControlTestPhase.FOUL_HOLD)
+        self.assertEqual(self.pixel(foul.framebuffer, 64, 72), (52, 70, 79))
+        clock.values.insert(0, clock.throw_two_started_at + 31.5)
+        complete = runtime.step()
+        self.assertEqual(complete.phase, EmulatorControlTestPhase.ROUND_COMPLETE)
+        self.assertEqual(self.pixel(complete.framebuffer, 64, 72), (52, 70, 79))
+        self.assertEqual(self.pixel(complete.framebuffer, 34, 23), (238, 244, 236))
+
+    def test_already_down_pins_cannot_collide_and_partial_throw_two_completes(self):
+        sdk, clock, runtime, _ = self.start_throw_two_after_partial_hit()
+        clock.values[0:0] = [clock.throw_two_started_at + 0.1, clock.throw_two_started_at + 0.1]
+        sdk.queue_dart_hits((RawDartHit(4, 64, 72),))
+        roll = runtime.step()
+        self.assertEqual(roll.phase, EmulatorControlTestPhase.BALL_ROLL)
+        self.assertNotEqual(runtime.pinfall_resolution.direct_hit_pin, 1)
+        accepted = self.complete_current_throw(runtime, clock)
+        self.assertEqual(accepted.phase, EmulatorControlTestPhase.ACCEPTED_HOLD)
+        complete = expire_accepted_hold(runtime, clock)
+        self.assertEqual(complete.phase, EmulatorControlTestPhase.ROUND_COMPLETE)
+        sticky_calls = len(sdk.calls); sticky_reads = clock.reads
+        sticky = runtime.step()
+        self.assertEqual(sticky.phase, EmulatorControlTestPhase.ROUND_COMPLETE)
+        self.assertEqual(clock.reads, sticky_reads)
+        self.assertEqual(sdk.calls[sticky_calls:], (DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION,))
+
+    def test_first_throw_rack_clear_skips_throw_two_and_empty_complete_deck(self):
+        sdk = FakeDartsnutSdk(); clock = Clock(1, 2, 3, 3, 4.2, 4.2, 6, 7, 8.5)
+        runtime = EmulatorControlTestRuntime(DartsnutSdkFacade(sdk), clock, 0)
+        sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        sdk.queue_button_events((DartsnutButtonId.A,)); ready = runtime.step()
+        self.assertEqual((ready.presentation.curve_level, ready.presentation.power_percent), (CurveLevel.STRAIGHT, 100))
+        sdk.queue_dart_hits((RawDartHit(0, 64, 72),)); self.assertEqual(runtime.step().phase, EmulatorControlTestPhase.BALL_ROLL)
+        accepted = self.complete_current_throw(runtime, clock)
+        self.assertEqual(runtime.round_snapshot.standing_pins, ())
+        self.assertTrue(runtime.round_snapshot.complete)
+        complete = expire_accepted_hold(runtime, clock)
+        self.assertEqual(complete.phase, EmulatorControlTestPhase.ROUND_COMPLETE)
+        self.assertEqual(self.pixel(complete.framebuffer, 64, 72), (52, 70, 79))
+        self.assertEqual(self.pixel(complete.framebuffer, 34, 23), (52, 70, 79))
+
+    def test_quick_and_advanced_setup_contracts_remain(self):
+        sdk, clock, runtime, _ = self.start_quick_throw(64, 72)
+        setup = runtime.accepted_setup
+        self.assertEqual((setup.curve_level, setup.power_percent), (CurveLevel.STRAIGHT, 70))
 
 
 class RuntimeFlowTests(unittest.TestCase):
