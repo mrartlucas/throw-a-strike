@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Phase 0R.1 is an interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
+Phase 0R.2 is an interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
 
 ## Current supported emulator behavior
 
-The harness selects Quick or Advanced control style, calls the verified `reset_blocking_state` operation before each fresh attempt, displays curve and power state, and accepts an unchanged dart index/x/y. COMPLETE and early recovery remain restart-only holds. FOUL holds for exactly 1.5 seconds and then starts a fresh attempt in the already selected style. It submits one packed, row-major RGB888 main framebuffer per iteration.
+The harness selects Quick or Advanced control style, calls the verified `reset_blocking_state` operation before each fresh attempt, displays curve and power state, and accepts an unchanged dart index/x/y. An accepted dart displays DART ACCEPTED with its unchanged raw D-index/X/Y, holds for exactly 1.5 seconds, and then starts a fresh attempt in the already selected style. Early recovery remains restart-only. FOUL retains its 1.5-second automatic retry. It submits one packed, row-major RGB888 main framebuffer per iteration.
 
 ## Exact controls
 
@@ -20,9 +20,9 @@ On **CONTROL STYLE**, Left selects **QUICK PLAY**, Right selects **ADVANCED PLAY
 4. Confirm with A.
 5. Verify THROW READY, STR, 70%, and GOOD.
 6. Throw one physical dart.
-7. Verify THROW READY disappears and COMPLETE holds.
+7. Verify **DART ACCEPTED** and the exact raw `D<index> X<x> Y<y>` line.
 8. Record whether the dart registered.
-9. Restart after a successful COMPLETE test.
+9. Verify a fresh Quick attempt begins after exactly 1.5 seconds.
 10. For FOUL testing, do not throw.
 11. Verify FOUL plus 0 PINS.
 12. Verify a fresh Quick attempt begins after 1.5 seconds.
@@ -55,11 +55,11 @@ The emulator visibly has a 64×32 control canvas, but no verified submission API
 
 No verified dart-removal signal exists and the coordinator intentionally has no rearm operation. Recovery hold therefore republishes cached artwork without polling, reading time, resetting hardware, or consuming future input. Restart the app to repeat the test.
 
-COMPLETE likewise remains held until restart so the accepted raw dart can be confirmed. Only FOUL automatically retries. The blocking-state reset and FOUL retry are based on emulator testing and are retest preparation, not proof of physical-cabinet parity.
+Accepted COMPLETE enters `ACCEPTED_HOLD`: the cached diagnostic is resubmitted without input polling or reset before its deadline, then the harness resets once and begins a fresh attempt after exactly 1.5 seconds. FOUL follows the same duration and fresh-attempt boundary. These retries are emulator retest preparation, not proof of physical-cabinet parity.
 
-## COMPLETE behavior
+## Accepted-dart behavior
 
-An accepted dart produces COMPLETE with the exact raw coordinates retained by the coordinator. COMPLETE has no completion prompt, ball animation, or calculated pin result; the deck and locked HUD remain.
+An accepted dart preserves the exact completed coordinator outcome and displays **DART ACCEPTED** plus raw `D<dart_index> X<x> Y<y>` without mapping or coordinate transformation. The pin deck and locked curve/power HUD remain; there is no bowling ball, pinfall, or score.
 
 ## What is not implemented
 
@@ -72,3 +72,9 @@ Use the repository's Python environment and run `python main.py`. For local veri
 ## Bug-report checklist
 
 Record the selected style, exact control sequence, elapsed time, displayed curve/power/feedback, prompt text, dart index/x/y, whether framebuffer submission was accepted, emulator version, main-canvas appearance, and whether the failure occurred in selection, attempt, recovery hold, or terminal hold. Do not infer cabinet behavior from an emulator report.
+
+## Evidence interpretation
+
+A log containing “event fired” confirms that the emulator emitted a dart event. “BLOCKED” may indicate that the active dart slot is suppressed from immediate duplicate firing until reset. An accepted dart now displays DART ACCEPTED and raw D-index/X/Y, and a fresh attempt begins after 1.5 seconds.
+
+The Deploy panel must say **Connected** before testing a physical board. Local screen clicks are emulator evidence only. The second screen remains unused, and no physical-board parity is claimed.

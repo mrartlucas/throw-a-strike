@@ -10,19 +10,21 @@ from throw_a_strike.adapters import DartsnutInputPort
 from throw_a_strike.application import (ClockPort, InvalidPortValueError, PortCapabilities,
     ThrowControlCoordinator, ThrowControlPresentation, ThrowControlStyleSelectionSnapshot,
     ThrowControlStyleSelector, build_throw_control_presentation, build_throw_control_step_presentation)
-from throw_a_strike.domain import ThrowControlPhase
+from throw_a_strike.domain import ThrowControlPhase, ThrowSetup
 from throw_a_strike.platform import DartsnutSdkFacade
 from throw_a_strike.rendering import (EMULATOR_RGB888_BYTE_LENGTH,
-    render_style_selection_rgb888, render_throw_control_rgb888)
+    render_dart_accepted_rgb888, render_style_selection_rgb888, render_throw_control_rgb888)
 
 class EmulatorControlTestPhase(str, Enum):
     SELECT_STYLE="select_style"
     ATTEMPT="attempt"
     RECOVERY_HOLD="recovery_hold"
     FOUL_HOLD="foul_hold"
+    ACCEPTED_HOLD="accepted_hold"
     TERMINAL="terminal"
 
 FOUL_HOLD_SECONDS = 1.5
+ACCEPTED_HOLD_SECONDS = 1.5
 
 @dataclass(frozen=True)
 class EmulatorControlTestStep:
@@ -31,6 +33,7 @@ class EmulatorControlTestStep:
     presentation: ThrowControlPresentation | None
     framebuffer: bytes
     framebuffer_accepted: bool
+    accepted_setup: ThrowSetup | None = None
     def __post_init__(self):
         if type(self.phase) is not EmulatorControlTestPhase: raise InvalidPortValueError("phase must be exact")
         if type(self.selection) is not ThrowControlStyleSelectionSnapshot: raise InvalidPortValueError("selection must be exact")
@@ -51,12 +54,22 @@ class EmulatorControlTestStep:
             valid = (self.selection.confirmed and self.presentation is not None
                      and self.presentation.terminal
                      and self.presentation.phase is ThrowControlPhase.FOUL)
+        elif self.phase is EmulatorControlTestPhase.ACCEPTED_HOLD:
+            valid = (self.selection.confirmed and self.presentation is not None
+                     and self.presentation.terminal
+                     and self.presentation.phase is ThrowControlPhase.COMPLETE
+                     and type(self.accepted_setup) is ThrowSetup
+                     and self.framebuffer == render_dart_accepted_rgb888(
+                         self.presentation,self.accepted_setup.dart_index,
+                         self.accepted_setup.aim_x,self.accepted_setup.aim_y))
         else:
             valid = (self.selection.confirmed and self.presentation is not None
                      and self.presentation.terminal
                      and self.presentation.phase is ThrowControlPhase.COMPLETE)
         if not valid:
             raise InvalidPortValueError("phase, selection, and presentation are inconsistent")
+        if self.phase is not EmulatorControlTestPhase.ACCEPTED_HOLD and self.accepted_setup is not None:
+            raise InvalidPortValueError("accepted_setup is allowed only during accepted hold")
     @property
     def terminal(self): return self.phase is EmulatorControlTestPhase.TERMINAL
 
@@ -77,10 +90,17 @@ class EmulatorControlTestRuntime:
         self._selector=ThrowControlStyleSelector(start); self._coordinator=None
         self._phase=EmulatorControlTestPhase.SELECT_STYLE; self._cached=None; self._presentation=None
         self._foul_timestamp=None
+        self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
     @property
     def phase(self): return self._phase
     @property
     def coordinator(self): return self._coordinator
+    @property
+    def accepted_timestamp(self): return self._accepted_timestamp
+    @property
+    def accepted_snapshot(self): return self._accepted_snapshot
+    @property
+    def accepted_setup(self): return self._accepted_setup
     def _begin_attempt(self, style, started_at):
         # Rearm before creating any state that could poll or render an attempt.
         self._facade.reset_blocking_state()
@@ -89,18 +109,28 @@ class EmulatorControlTestRuntime:
         self._cached=render_throw_control_rgb888(self._presentation)
         self._phase=EmulatorControlTestPhase.ATTEMPT
         self._foul_timestamp=None
+        self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
         accepted=self._facade.submit_framebuffer(self._cached)
         return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
     def step(self):
         if self._phase in (EmulatorControlTestPhase.RECOVERY_HOLD,EmulatorControlTestPhase.TERMINAL):
             accepted=self._facade.submit_framebuffer(self._cached)
-            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
+                                           self._accepted_setup)
         if self._phase is EmulatorControlTestPhase.FOUL_HOLD:
             now=self._clock.monotonic_seconds()
             if now >= self._foul_timestamp + FOUL_HOLD_SECONDS:
                 return self._begin_attempt(self._selector.snapshot.selected_style,now)
             accepted=self._facade.submit_framebuffer(self._cached)
-            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
+                                           self._accepted_setup)
+        if self._phase is EmulatorControlTestPhase.ACCEPTED_HOLD:
+            now=self._clock.monotonic_seconds()
+            if now >= self._accepted_timestamp + ACCEPTED_HOLD_SECONDS:
+                return self._begin_attempt(self._selector.snapshot.selected_style,now)
+            accepted=self._facade.submit_framebuffer(self._cached)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
+                                           self._accepted_setup)
         if self._phase is EmulatorControlTestPhase.SELECT_STYLE:
             events=self._input.poll()
             now=events[0].timestamp if events else self._clock.monotonic_seconds()
@@ -117,9 +147,17 @@ class EmulatorControlTestRuntime:
         elif self._presentation.phase is ThrowControlPhase.FOUL:
             self._foul_timestamp=result.tick_timestamp
             self._phase=EmulatorControlTestPhase.FOUL_HOLD
-        elif self._presentation.terminal: self._phase=EmulatorControlTestPhase.TERMINAL
+        elif self._presentation.terminal:
+            self._accepted_snapshot=result.snapshot
+            self._accepted_setup=result.snapshot.outcome.setup
+            setup=self._accepted_setup
+            self._accepted_timestamp=result.events[-1].timestamp
+            self._cached=render_dart_accepted_rgb888(
+                self._presentation,setup.dart_index,setup.aim_x,setup.aim_y)
+            self._phase=EmulatorControlTestPhase.ACCEPTED_HOLD
         accepted=self._facade.submit_framebuffer(self._cached)
-        return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+        return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
+                                       self._accepted_setup if self._phase is EmulatorControlTestPhase.ACCEPTED_HOLD else None)
 
 def run_emulator_control_test(facade: DartsnutSdkFacade, clock: ClockPort, started_at: float, *,
                               frame_seconds: float=1/30, sleeper: Callable[[float],object]=time.sleep,
