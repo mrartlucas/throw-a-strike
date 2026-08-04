@@ -210,3 +210,26 @@ Phase 0L itself selects and validates no display dimensions and adds no dart-to-
 **Evidence classification: VERIFIED_EMULATOR_OBSERVATION.** A recorded emulator run visibly confirms a **128×128 main gameplay display** and a **64×32 second/control display**. The deployment panel shown in the emulator screenshot was **not connected to the bound physical device** during this observation. These findings establish intended emulator canvas sizes only; they do not establish physical-cabinet parity.
 
 Future rendering candidates may therefore target **128×128 for the main renderer** and **64×32 for the secondary renderer**. The observation does not identify a supported secondary-screen SDK submission API. It does not change the Phase 0K package-source evidence JSON, and it does not add dimensions, validation, rendering, or secondary-output behavior to `DartsnutSdkFacade`.
+
+### Phase 0M neutral Dartsnut input adapter record
+
+Phase 0M adds an adapter boundary from an exact dependency-injected
+`DartsnutSdkFacade` and structurally valid injected `ClockPort` to the existing
+runtime-checkable `InputPort`. Each explicit available poll reads darts exactly
+once, then buttons exactly once, then reads one monotonic timestamp only when
+the combined batch is nonempty. Its deterministic batch composition places all
+darts before all buttons while preserving each source's order; this is not a
+claim about physical cross-source event order.
+
+The adapter assigns consecutive monotonic sequence values and commits its next
+value only after every immutable `InputEvent` is successfully constructed.
+Empty polls and failures do not advance it. Source reads remain
+nontransactional: darts may already be consumed when button reading fails, and
+both sources may be consumed when clock reading fails; there is no rollback,
+replay, or reconstruction. Facade and clock errors propagate unchanged.
+
+No automatic blocking reset, player/color mapping, coordinate transformation,
+gameplay command interpretation/dispatch, loop, rendering, or hardware access
+is introduced. The safe next boundary is Phase 0N: a pure emulator-targeted
+immutable 128×128 framebuffer model and deterministic RGB888 byte encoder,
+without SDK submission or physical-cabinet parity claims.
