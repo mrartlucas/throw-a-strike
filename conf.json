@@ -1,11 +1,11 @@
 {
-  "id": "bowling-game",
+  "id": "throw-a-strike",
   "type": "game",
-  "name": "Bowling",
-  "author": "Dartsnut Team",
-  "version": "0.1.0",
-  "description": "A classic bowling game. Control aim with buttons or throw darts to roll!",
-  "size": [128, 160],
+  "name": "Throw a Strike",
+  "author": "Throw A Way Games",
+  "version": "0.2.0",
+  "description": "Interactive Throw a Strike control test.",
+  "size": [128, 128],
   "fields": [],
   "preview": [""]
 }

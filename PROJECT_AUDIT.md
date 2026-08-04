@@ -263,3 +263,13 @@ No `REARMED`, blocking reset, loop, sleep, global clock, hardware/adapter/platfo
 The model assigns only semantic curve icon IDs: all three left levels use LEFT, Straight uses STRAIGHT, and all three right levels use RIGHT. It preserves the domain curve label and strength, displayed power percentage, feedback metadata, and locked-power state. The step-result builder uses only its snapshot; events, commands, and tick timestamp create no additional behavior.
 
 This boundary adds no display dimensions, layout, coordinates, pixels, framebuffer, fonts, colors, renderer, hardware access, clock access, input polling, command generation, `TICK`, `REARMED`, blocking reset, machine/coordinator mutation, physics, pinfall, scoring, player/color mapping, coordinate transformation, or secondary-display submission API. The safe next boundary is Phase 0R, a finite Emulator Control Test Vertical Slice that renders and wires the established semantics through verified APIs, targets observed emulator dimensions without claiming cabinet parity, and documents rather than guesses any secondary-output limitation.
+
+### Phase 0R interactive emulator control-test record
+
+**Status: IMPLEMENTED - EMULATOR TEST READY.** The obsolete random prototype is replaced by a small entry point using the Phase 0Q architecture: `DartsnutInputPort`, one selected `ThrowControlCoordinator`, the pure presentation builder, and a pure RGB888 renderer. Control-style selection defaults/times out to Quick at 15 seconds; Left/Right select and A confirms. Quick begins ready at Straight/70, while Advanced exposes curve and moving power lock before readiness.
+
+The observed emulator target is a 128×128, 49,152-byte main-only packed RGB888 frame with all ten pins above a compact prompt/curve/power/feedback/style HUD. This is an emulator observation and encoding assumption, not SDK dimension validation or physical-cabinet orientation/color/parity evidence. The observed 64×32 screen remains unresolved because no secondary API was found; none was invented.
+
+Each active iteration performs one finite selection poll or coordinator step and one main submission. Warning retains THROW NOW at 30 seconds; 60 seconds shows FOUL and 0 PINS. COMPLETE retains accepted raw dart coordinates in the coordinator outcome but shows no ball or pin result. Early recovery intentionally holds cached TOO SOON/REMOVE DART without polling, clock access, hardware reset, or REARMED until app restart. Terminal frames likewise hold.
+
+No trajectory, bowling-ball animation, collision, pin result, scoring, frame progression, multiplayer, player/color or dart-index mapping, coordinate transformation, audio, automatic reset, assets, or physical behavior claim is added.
