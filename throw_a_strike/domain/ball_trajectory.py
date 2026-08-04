@@ -107,16 +107,15 @@ def _pixel(value: float) -> int:
     return floor(value + 0.5)
 
 
-def sample_ball_trajectory(trajectory: BallTrajectory, elapsed_seconds: Real) -> BallTrajectorySample:
-    """Sample by elapsed time, using explicit half-up nonnegative rounding."""
+def sample_ball_trajectory_progress(trajectory: BallTrajectory, progress: Real) -> BallTrajectorySample:
+    """Sample by normalized trajectory progress, using half-up nonnegative rounding."""
     if type(trajectory) is not BallTrajectory:
         raise InvalidBallTrajectoryValueError("trajectory must be exact")
-    if isinstance(elapsed_seconds, bool) or not isinstance(elapsed_seconds, Real):
-        raise InvalidBallTrajectoryValueError("elapsed_seconds must be a finite real")
-    elapsed = float(elapsed_seconds)
-    if not isfinite(elapsed):
-        raise InvalidBallTrajectoryValueError("elapsed_seconds must be a finite real")
-    progress = min(1.0, max(0.0, elapsed / trajectory.duration_seconds))
+    if isinstance(progress, bool) or not isinstance(progress, Real):
+        raise InvalidBallTrajectoryValueError("progress must be a finite real")
+    progress = min(1.0, max(0.0, float(progress)))
+    if not isfinite(progress):
+        raise InvalidBallTrajectoryValueError("progress must be a finite real")
     if progress == 0.0:
         return BallTrajectorySample(0.0, trajectory.start_x, trajectory.start_y)
     if progress == 1.0:
@@ -125,3 +124,15 @@ def sample_ball_trajectory(trajectory: BallTrajectory, elapsed_seconds: Real) ->
     x = inverse * inverse * trajectory.start_x + 2 * inverse * progress * trajectory.control_x + progress * progress * trajectory.target_x
     y = inverse * inverse * trajectory.start_y + 2 * inverse * progress * trajectory.control_y + progress * progress * trajectory.target_y
     return BallTrajectorySample(progress, _pixel(x), _pixel(y))
+
+
+def sample_ball_trajectory(trajectory: BallTrajectory, elapsed_seconds: Real) -> BallTrajectorySample:
+    """Sample by elapsed time, retaining the Phase 0T timing contract."""
+    if isinstance(elapsed_seconds, bool) or not isinstance(elapsed_seconds, Real):
+        raise InvalidBallTrajectoryValueError("elapsed_seconds must be a finite real")
+    elapsed = float(elapsed_seconds)
+    if not isfinite(elapsed):
+        raise InvalidBallTrajectoryValueError("elapsed_seconds must be a finite real")
+    if type(trajectory) is not BallTrajectory:
+        raise InvalidBallTrajectoryValueError("trajectory must be exact")
+    return sample_ball_trajectory_progress(trajectory, elapsed / trajectory.duration_seconds)

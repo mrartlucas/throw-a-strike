@@ -61,8 +61,12 @@ from .ball_trajectory import (
     BALL_RADIUS_PIXELS, BALL_START_X, BALL_START_Y, BALL_MIN_X, BALL_MAX_X,
     BALL_MIN_Y, BALL_MAX_Y, MAX_CURVE_OFFSET_PIXELS,
     InvalidBallTrajectoryValueError, BallTrajectory, BallTrajectorySample,
-    build_ball_trajectory, sample_ball_trajectory,
+    build_ball_trajectory, sample_ball_trajectory, sample_ball_trajectory_progress,
 )
+from .pinfall import (InvalidPinfallValueError, PinImpactBias, PinfallResolution,
+    PIN_RADIUS_PIXELS, BALL_PIN_CONTACT_RADIUS_PIXELS, COLLISION_SUBDIVISIONS,
+    PINFALL_DURATION_SECONDS, PINFALL_WAVE_DELAY_SECONDS, PINFALL_PIN_DURATION_SECONDS,
+    PIN_CENTERS, PIN_CHILDREN, resolve_ball_pinfall, sample_ball_roll)
 from .schedule import (
     InvalidScheduleConfigurationError,
     PartyFrameSchedule,
@@ -126,7 +130,8 @@ __all__ = [
     "BALL_RADIUS_PIXELS", "BALL_START_X", "BALL_START_Y", "BALL_MIN_X",
     "BALL_MAX_X", "BALL_MIN_Y", "BALL_MAX_Y", "MAX_CURVE_OFFSET_PIXELS",
     "InvalidBallTrajectoryValueError", "BallTrajectory", "BallTrajectorySample",
-    "build_ball_trajectory", "sample_ball_trajectory",
+    "build_ball_trajectory", "sample_ball_trajectory", "sample_ball_trajectory_progress",
+    "InvalidPinfallValueError", "PinImpactBias", "PinfallResolution", "PIN_RADIUS_PIXELS", "BALL_PIN_CONTACT_RADIUS_PIXELS", "COLLISION_SUBDIVISIONS", "PINFALL_DURATION_SECONDS", "PINFALL_WAVE_DELAY_SECONDS", "PINFALL_PIN_DURATION_SECONDS", "PIN_CENTERS", "PIN_CHILDREN", "resolve_ball_pinfall", "sample_ball_roll",
     "InvalidMatchConfigError",
     "LOCKED_BRANDING",
     "MatchConfig",

@@ -5,6 +5,8 @@ from throw_a_strike.application.throw_control_presentation import (
 )
 from throw_a_strike.application.throw_control_style_selection import ThrowControlStyleSelectionSnapshot
 from throw_a_strike.domain import ControlStyle, PlayerColor, ThrowControlPhase
+from throw_a_strike.domain.bowling_round import FULL_RACK
+from throw_a_strike.domain.pinfall import PIN_CENTERS
 
 EMULATOR_MAIN_WIDTH = 128
 EMULATOR_MAIN_HEIGHT = 128
@@ -60,10 +62,12 @@ def _text(buf,text,x,y,c,scale=1):
                     if on=="1": _rect(buf,x+gx*scale,y+gy*scale,scale,scale,c)
         x += 4*scale
 def _center(buf,text,y,c,scale=1): _text(buf,text,(128-(len(text)*4-1)*scale)//2,y,c,scale)
-def _deck(buf):
+def _deck(buf, standing_pins=FULL_RACK):
     _rect(buf,8,0,112,88,_LANE); _line(buf,8,0,8,87,_MUTED); _line(buf,119,0,119,87,_MUTED)
-    positions=((64,72),(54,56),(74,56),(44,40),(64,40),(84,40),(34,23),(54,23),(74,23),(94,23))
-    for x,y in positions:
+    if type(standing_pins) is not tuple:
+        raise TypeError("standing_pins must be a tuple")
+    for pin in standing_pins:
+        x,y = PIN_CENTERS[pin]
         _rect(buf,x-3,y-3,7,7,_WHITE); _pixel(buf,x-3,y-3,_LANE); _pixel(buf,x+3,y-3,_LANE)
         _line(buf,x-2,y-1,x+2,y-1,_RED)
 def _arrow(buf,icon,x,y):
@@ -80,9 +84,9 @@ def _power_bar(buf,power):
     for index in range(7):
         _rect(buf,72+index*6,118,4,2,_CYAN if index < active else _MUTED)
 
-def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on: bool=True) -> bytes:
+def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on: bool=True, *, standing_pins=FULL_RACK) -> bytes:
     if type(presentation) is not ThrowControlPresentation or type(blink_on) is not bool: raise TypeError("invalid renderer argument")
-    buf=_canvas(); _deck(buf); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
+    buf=_canvas(); _deck(buf, standing_pins); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
     primary=presentation.primary_prompt
     if primary is not None and not (primary is ThrowControlPrompt.THROW_READY and not blink_on):
         _center(buf,primary.label,91,_YELLOW)
@@ -97,6 +101,7 @@ def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on
 
 def render_dart_accepted_rgb888(
     presentation: ThrowControlPresentation, dart_index: int, x: int, y: int,
+    *, standing_pins=FULL_RACK, result_label: str="DART ACCEPTED"
 ) -> bytes:
     """Render a completed throw with its unchanged input diagnostics."""
     if type(presentation) is not ThrowControlPresentation:
@@ -110,8 +115,8 @@ def render_dart_accepted_rgb888(
     diagnostic=f"D{dart_index} X{x} Y{y}"
     if (len(diagnostic)*4-1) > EMULATOR_MAIN_WIDTH:
         raise ValueError("diagnostic text must fit the framebuffer")
-    buf=_canvas(); _deck(buf); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
-    _center(buf,"DART ACCEPTED",91,_YELLOW)
+    buf=_canvas(); _deck(buf, standing_pins); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
+    _center(buf,result_label,91,_YELLOW)
     _center(buf,diagnostic,98,_RED)
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
@@ -123,14 +128,14 @@ def render_dart_accepted_rgb888(
 
 def render_round_throw_rgb888(presentation: ThrowControlPresentation, throw_number: int,
                               player_number: int, player_color: PlayerColor,
-                              blink_on: bool=True) -> bytes:
+                              blink_on: bool=True, *, standing_pins=FULL_RACK) -> bytes:
     """Render the active round throw with its player and color identity."""
     if type(throw_number) is not int or throw_number not in (1,2): raise TypeError("invalid throw number")
     if type(player_number) is not int or not 1 <= player_number <= 4: raise TypeError("invalid player number")
     if type(player_color) is not PlayerColor: raise TypeError("invalid player color")
     if type(presentation) is not ThrowControlPresentation or type(blink_on) is not bool:
         raise TypeError("invalid renderer argument")
-    buf=_canvas(); _deck(buf); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
+    buf=_canvas(); _deck(buf, standing_pins); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
     _text(buf,f"THROW {throw_number}",2,90,_CYAN)
     color=_BLUE if player_color is PlayerColor.BLUE else _CYAN
     _text(buf,f"P{player_number} {player_color.value.upper()}",99,90,color)
@@ -157,9 +162,9 @@ def render_wrong_color_rgb888(presentation: ThrowControlPresentation, throw_numb
     _center(buf,f"USE {player_color.value.upper()} DART",99,_RED)
     return bytes(buf)
 
-def render_round_complete_rgb888(presentation: ThrowControlPresentation) -> bytes:
+def render_round_complete_rgb888(presentation: ThrowControlPresentation, *, standing_pins=FULL_RACK) -> bytes:
     if type(presentation) is not ThrowControlPresentation: raise TypeError("presentation must be exact")
-    buf=_canvas(); _deck(buf); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
+    buf=_canvas(); _deck(buf, standing_pins); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
     _center(buf,"ROUND COMPLETE",94,_YELLOW)
     return bytes(buf)
 

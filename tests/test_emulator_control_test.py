@@ -37,7 +37,11 @@ def arrive_ball(runtime, clock):
     duration = runtime.ball_trajectory.duration_seconds
     clock.values[:] = [value + duration for value in clock.values]
     clock.values.insert(0, runtime.ball_started_at + duration)
-    return runtime.step()
+    step = runtime.step()
+    if step.phase is EmulatorControlTestPhase.PINFALL:
+        clock.values.insert(0, runtime._pinfall_started_at + 0.750)
+        step = runtime.step()
+    return step
 
 
 def expire_accepted_hold(runtime, clock):

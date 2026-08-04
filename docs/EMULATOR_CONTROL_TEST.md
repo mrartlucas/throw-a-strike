@@ -80,3 +80,11 @@ rotation, coordinate transform, secondary-display, or audio behavior.
 A ball appears only after a legal active-player dart completes throw setup. The emulator maps the visual target with the display-local clamp x=12..115 and y=4..84; this is not physical-board orientation or calibration, and `ThrowSetup` and diagnostic results retain the original raw coordinates. Curve selects a deterministic quadratic Bézier bend, while Power selects the exact duration (40–100 percent: 1.20, 1.10, 1.00, 0.90, 0.80, 0.70, and 0.60 seconds).
 
 Animation samples elapsed monotonic-clock time rather than frame count. BALL ROLL consumes no gameplay input and records the temporary MISS only when the ball arrives. The standing pin deck remains unchanged. This phase adds no collision, pinfall, scoring integration, multiplayer rotation, audio, physical calibration, or secondary-display behavior.
+
+## IMPLEMENTED - PINFALL RETEST READY
+
+Legal emulator darts build one deterministic ball trajectory, resolve one immutable pinfall result against the currently standing rack, and roll for the existing power duration. Hits stop visually at `contact_progress`; misses and gutters roll to progress 1. No gameplay input, queued dart, queued button, or reset behavior is consumed during BALL_ROLL or PINFALL.
+
+Pin collision is swept over the full visible path: the quadratic Bézier is split into exactly 256 segments and each segment is intersected against standing pin circles using the exact 6-pixel contact radius. Ties choose earliest progress, then lowest pin number.
+
+PINFALL lasts 0.750 seconds. Waves start every 0.120 seconds, individual pins animate for 0.300 seconds, and the deterministic energy graph uses `power_percent // 10` with CENTER 3/3, LEFT 2/4, and RIGHT 4/2 child costs. Throw 2 uses exactly the survivors from Throw 1. A first-throw rack clear enters ROUND_COMPLETE after accepted hold; this is diagnostic completion only, with no scoring, multiplayer, audio, calibration, or secondary-display expansion.

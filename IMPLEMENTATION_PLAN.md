@@ -1108,3 +1108,11 @@ coordinate transform, secondary-display, or audio work is included.
 **Status: IMPLEMENTED - BALL TRAJECTORY RETEST READY**
 
 The emulator now builds one immutable quadratic Bézier trajectory only after a legal dart, retains raw aim metadata, and applies a declared display-local clamp solely for its visible target. Curve determines bend and Power determines the exact clock-derived duration. BALL ROLL polls no input; the diagnostic MISS is committed at arrival, with the standing rack unchanged. Collision, pinfall, scoring, multiplayer rotation, audio, physical calibration, and secondary-screen work remain future phases.
+
+## IMPLEMENTED - PINFALL RETEST READY
+
+Phase 0U adds deterministic emulator-only swept ball-to-pin collision and pinfall. The ball path is divided into exactly 256 quadratic Bézier subdivisions and tested against standing pins with a 6-pixel ball/pin contact radius. Pin centers and child links are owned by `throw_a_strike.domain.pinfall` and are reused by rendering.
+
+Pinfall uses an authored deterministic energy graph: initial energy is `power_percent // 10`; CENTER sends through left/right costs 3/3, LEFT uses 2/4, and RIGHT uses 4/2. Propagation is breadth-first, never random, and missing/down pins do not receive or transmit energy.
+
+Pinfall animation lasts 0.750 seconds, waves begin every 0.120 seconds, and each pin fall lasts 0.300 seconds. Survivor racks persist into Throw 2; a first-throw rack clear completes the diagnostic round early while preserving the existing Throw 2 progression convention. This phase intentionally adds no scoring, multiplayer rotation, audio, physical calibration, physical `DartsnutInputPort` changes, or secondary-display work.
