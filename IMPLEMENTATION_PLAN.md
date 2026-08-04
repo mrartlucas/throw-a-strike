@@ -1097,7 +1097,7 @@ Power meter waits indefinitely for A while cycling through
 The input event timestamp selects the locked value, and THROW READY alone begins
 the 30-second attempt timer. Emulator early-dart removal now synchronizes the
 active baseline and resumes Curve or restarts Power at 40 without consuming a
-bowling throw. This is emulator-only recovery, not physical-board parity. No
+bowling throw. This is emulator-only recovery, not physical-board parity. Pending dart-hit and button batches accumulated behind the recovery screen are discarded at removal before rearming, so setup resumes only from fresh input. No
 trajectory, physics, pinfall, scoring integration, multiplayer rotation,
 coordinate transform, secondary-display, or audio work is included.
 

@@ -361,7 +361,7 @@ STRAIGHT / 70.
 The emulator recovery path observes only active darts while holding the cached
 TOO SOON / REMOVE DART frame. Removal of the exact offending index synchronizes
 the emulator adapter baseline and explicitly rearms the interrupted setup, so a
-later replacement is fresh. This makes no claim about physical-board removal.
+later replacement is fresh. This makes no claim about physical-board removal. Pending dart-hit and button batches accumulated behind the recovery screen are discarded at removal before rearming, so setup resumes only from fresh input.
 No trajectory, physics, pinfall, scoring integration, multiplayer rotation,
 coordinate transform, secondary display, or audio was added.
 

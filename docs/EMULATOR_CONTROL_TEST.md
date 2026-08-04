@@ -67,7 +67,7 @@ In the emulator diagnostic, an early active-player dart is tracked by its exact
 raw index. TOO SOON / REMOVE DART remains cached while that dart is active. Once
 it is removed, active-dart observation synchronizes the emulator baseline and an
 explicit semantic rearm returns to the interrupted setup phase; Power restarts
-at 40. Replacing that same dart is therefore fresh input. This emulator-only
+at 40. Replacing that same dart is therefore fresh input. Pending dart-hit and button batches accumulated behind the recovery screen are discarded at removal before rearming, so setup resumes only from fresh input. This emulator-only
 observation does **not** establish physical-board removal behavior.
 
 This phase adds no trajectory, physics, pinfall, scoring integration, multiplayer

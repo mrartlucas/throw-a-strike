@@ -47,6 +47,11 @@ class DartsnutEmulatorInputPort:
         }
         return active
 
+    def discard_pending_events(self) -> None:
+        """Discard input accumulated behind an emulator recovery screen."""
+        self.__facade.read_dart_hits()
+        self.__facade.read_button_events()
+
     def poll(self) -> tuple[InputEvent, ...]:
         if not self.__capabilities.available:
             raise PortUnavailableError("input is unavailable")

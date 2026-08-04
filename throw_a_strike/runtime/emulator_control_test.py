@@ -170,6 +170,7 @@ class EmulatorControlTestRuntime:
             if any(dart.dart_index == self._recovery_dart_index for dart in active):
                 accepted=self._facade.submit_framebuffer(self._cached)
                 return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+            self._raw_input.discard_pending_events()
             now=self._clock.monotonic_seconds()
             snapshot=self._coordinator.rearm(now)
             self._recovery_dart_index=None

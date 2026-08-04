@@ -2,7 +2,7 @@ import unittest
 
 from throw_a_strike.adapters import DartsnutEmulatorInputPort
 from throw_a_strike.application import InputEventKind, PortCapabilities
-from throw_a_strike.platform import DartsnutButtonId, DartsnutSdkFacade, FakeDartsnutSdk, RawDartHit
+from throw_a_strike.platform import DartsnutButtonId, DartsnutSdkFacade, DartsnutSdkOperation, FakeDartsnutSdk, RawDartHit
 
 
 class Clock:
@@ -72,6 +72,24 @@ class EmulatorInputTests(unittest.TestCase):
         self.sdk.set_active_darts((RawDartHit(0,11,12),))
         fresh,=self.port.poll()
         self.assertEqual((fresh.sequence,fresh.dart_index,fresh.x,fresh.y),(10,0,11,12))
+
+
+    def test_discard_pending_events_reads_only_normal_sources(self):
+        self.sdk.queue_dart_hits((RawDartHit(4,21,22),))
+        self.sdk.queue_button_events((DartsnutButtonId.A,))
+        before=len(self.sdk.calls)
+        self.assertIsNone(self.port.discard_pending_events())
+        self.assertEqual(self.sdk.calls[before:],(
+            DartsnutSdkOperation.DART_HITS,
+            DartsnutSdkOperation.BUTTON_EVENTS))
+        self.assertEqual((self.sdk.queued_dart_batch_count,
+                          self.sdk.queued_button_batch_count),(0,0))
+        self.assertEqual(self.clock.reads,0)
+        self.sdk.set_active_darts((RawDartHit(8,31,32),))
+        self.port.observe_active_darts()
+        self.sdk.set_active_darts((RawDartHit(8,33,34),))
+        event,=self.port.poll()
+        self.assertEqual(event.sequence,10)
 
 
 if __name__ == "__main__": unittest.main()
