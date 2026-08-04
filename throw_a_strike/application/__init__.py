@@ -88,6 +88,14 @@ from .throw_control_coordinator import (
     ThrowControlCoordinatorTerminalError,
     ThrowControlStepResult,
 )
+from .throw_control_presentation import (
+    InvalidThrowControlPresentationValueError,
+    ThrowControlCurveIcon,
+    ThrowControlPresentation,
+    ThrowControlPrompt,
+    build_throw_control_presentation,
+    build_throw_control_step_presentation,
+)
 
 __all__ = (
     "SessionPhase",
@@ -163,4 +171,10 @@ __all__ = (
     "ThrowControlCoordinatorStepError",
     "ThrowControlCoordinatorTerminalError",
     "ThrowControlCoordinator",
+    "InvalidThrowControlPresentationValueError",
+    "ThrowControlPrompt",
+    "ThrowControlCurveIcon",
+    "ThrowControlPresentation",
+    "build_throw_control_presentation",
+    "build_throw_control_step_presentation",
 )
