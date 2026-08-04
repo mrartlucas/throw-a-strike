@@ -52,3 +52,11 @@ Until physics exists, every legal expected dart is recorded as a temporary diagn
 The display keeps the static pin deck, curve, power, and style. There is no trajectory or ball animation, collision, pinfall calculation or animation, scoring or bonuses, strike/spare logic, frame progression, multiplayer rotation, coordinate transformation, secondary-display API, or physical-board claim.
 
 Early Advanced darts still enter restart-only TOO SOON / REMOVE DART recovery. No verified removal signal exists, so recovery and ROUND COMPLETE republish cached artwork without polling input. Run locally with `python main.py`; validate with `python -m unittest discover -s tests -v`.
+
+## Phase 0S.1 stale-safe emulator input
+
+**Status: IMPLEMENTED - STALE-SAFE EMULATOR INPUT RETEST READY**
+
+The SDK's `get_dart_hits` feed is transition/block based. For this emulator diagnostic only, the input adapter also observes `get_active_darts`: the initial active set is a non-scoring baseline, and a later absent-to-active transition or coordinate change is treated as a fresh emulator placement. Normal hit evidence wins and is deduplicated when both feeds describe the same dart. Thus a stale raw Dart 0 at launch is ignored, while moving that blocked dart after confirmation can complete Throw 1 with its updated coordinates. Throw 1 FOUL advances after 1.5 seconds to Throw 2 / Dart 5, where raw Dart 4 completes the round.
+
+The physical-board `DartsnutInputPort` remains event based and unchanged. No automatic `reset_blocking_state` call is used. Active-dart observation is an emulator compatibility policy, not a physical-board behavior claim. No physics, scoring, multiplayer rotation, coordinate transform, or secondary-display API is added.

@@ -1060,3 +1060,11 @@ The pure round contract now models two explicit throws, an unchanged or reduced 
 The final retest correction preserves all locked control prompts beneath a compact round header, gives FOUL precedence over a wrong dart at the 30-second deadline, and rejects impossible manually constructed public round snapshots.
 
 Final verification restores the locked THROW READY blink in that compact round HUD: blink-off hides only THROW READY, while THROW NOW and every non-ready prompt remain visible. The post-correction suite contains 502 passing tests.
+
+## Phase 0S.1 — stale-safe emulator active-dart input
+
+**Status: IMPLEMENTED - STALE-SAFE EMULATOR INPUT RETEST READY**
+
+The emulator diagnostic now combines transition/block-based `get_dart_hits` events with continuous `get_active_darts` observation. Startup active darts form a non-scoring baseline; an absent-to-active transition or changed coordinate is a fresh placement, with same-dart evidence deduplicated in favor of the normal hit. This makes a retained raw Dart 0 movable after Quick confirmation without resetting SDK blocking state. Throw 1 FOUL still advances after 1.5 seconds to Throw 2 / displayed Dart 5, and raw Dart 4 completes Throw 2.
+
+This policy belongs only to the emulator adapter. The physical event adapter is unchanged and no physical-board behavior is inferred. No physics, scoring, multiplayer rotation, coordinate transform, secondary-display API, or automatic `reset_blocking_state` operation is added.

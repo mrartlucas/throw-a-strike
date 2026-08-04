@@ -6,6 +6,7 @@ class FakeDartsnutSdk:
     def __init__(self, running: bool = True) -> None:
         self._running = self._bool(running, "running")
         self._dart_batches: list[tuple[RawDartHit, ...]] = []
+        self._active_darts: tuple[RawDartHit, ...] = ()
         self._button_batches: list[tuple[DartsnutButtonId, ...]] = []
         self._frame_results: list[bool] = []
         self._calls: list[DartsnutSdkOperation] = []
@@ -38,12 +39,23 @@ class FakeDartsnutSdk:
             raise InvalidDartsnutSdkValueError("button batch must not contain duplicates")
         self._button_batches.append(buttons)
 
+    def set_active_darts(self, darts: tuple[RawDartHit, ...]) -> None:
+        if type(darts) is not tuple or any(type(dart) is not RawDartHit for dart in darts):
+            raise InvalidDartsnutSdkValueError("darts must be an exact tuple of exact RawDartHit values")
+        if len({dart.dart_index for dart in darts}) != len(darts):
+            raise InvalidDartsnutSdkValueError("active darts must have unique dart indexes")
+        self._active_darts = darts
+
     def queue_framebuffer_result(self, accepted: bool) -> None: self._frame_results.append(self._bool(accepted, "accepted"))
 
     def get_dart_hits(self) -> list[tuple[int, int, int]]:
         self._calls.append(DartsnutSdkOperation.DART_HITS)
         batch = self._dart_batches.pop(0) if self._dart_batches else ()
         return [(hit.dart_index, hit.x, hit.y) for hit in batch]
+
+    def get_active_darts(self) -> list[tuple[int, int, int]]:
+        self._calls.append(DartsnutSdkOperation.ACTIVE_DARTS)
+        return [(dart.dart_index, dart.x, dart.y) for dart in self._active_darts]
 
     def get_button_events(self) -> dict[str, bool]:
         self._calls.append(DartsnutSdkOperation.BUTTON_EVENTS)
@@ -81,3 +93,5 @@ class FakeDartsnutSdk:
     def queued_button_batch_count(self) -> int: return len(self._button_batches)
     @property
     def queued_framebuffer_result_count(self) -> int: return len(self._frame_results)
+    @property
+    def active_darts(self) -> tuple[RawDartHit, ...]: return self._active_darts
