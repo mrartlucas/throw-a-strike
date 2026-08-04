@@ -270,7 +270,7 @@ This boundary adds no display dimensions, layout, coordinates, pixels, framebuff
 
 The observed emulator target is a 128×128, 49,152-byte main-only packed RGB888 frame with all ten pins above a compact prompt/curve/power/feedback/style HUD. This is an emulator observation and encoding assumption, not SDK dimension validation or physical-cabinet orientation/color/parity evidence. The observed 64×32 screen remains unresolved because no secondary API was found; none was invented.
 
-Each active iteration performs one finite selection poll or coordinator step and one main submission. Warning retains THROW NOW at 30 seconds; 60 seconds shows FOUL and 0 PINS. COMPLETE retains accepted raw dart coordinates in the coordinator outcome but shows no ball or pin result. Early recovery intentionally holds cached TOO SOON/REMOVE DART without polling, clock access, hardware reset, or REARMED until app restart. Terminal frames likewise hold.
+Each active iteration performs one finite selection poll or coordinator step and one main submission. Warning retains THROW NOW at 20 seconds; 30 seconds shows FOUL and 0 PINS. COMPLETE retains accepted raw dart coordinates in the coordinator outcome but shows no ball or pin result. Early recovery intentionally holds cached TOO SOON/REMOVE DART without polling, clock access, hardware reset, or REARMED until app restart. Terminal frames likewise hold.
 
 No trajectory, bowling-ball animation, collision, pin result, scoring, frame progression, multiplayer, player/color or dart-index mapping, coordinate transformation, audio, automatic reset, assets, or physical behavior claim is added.
 
@@ -301,3 +301,12 @@ An emulator log containing “event fired” proves only emitted emulator input;
 The emulator diagnostic runtime now makes zero automatic blocking resets anywhere in its lifecycle. A consumes and confirms style selection only; it creates a fresh coordinator and initial THROW READY or SET CURVE frame, never a synthetic throw or copied coordinate. Only a new emulator board event is accepted. DART ACCEPTED preserves exact raw index/x/y for 1.5 seconds, then a fresh same-style attempt remains stable without another click. Warning and FOUL are reachable again; FOUL plus 0 PINS retries after 1.5 seconds without reset. Early recovery remains restart-only without polling or REARMED.
 
 This is an emulator-only policy, not physical-board integration evidence. The facade reset operation remains intact. No physics, pinfall, scoring, multiplayer, coordinate transformation, dart-index player/color mapping, secondary-display operation, or physical-board behavior assumption was added; the second screen remains unused.
+
+
+### Phase 0R.4 30-second throw timer record
+
+**Status: IMPLEMENTED - 30-SECOND TIMER RETEST READY.** THROW READY now owns an exact 30-second attempt timer: THROW NOW begins at exactly 20 seconds and FOUL wins at exactly 30 seconds, producing a 10-second warning window. Time advancement still precedes same-timestamp commands, so a dart at the 30-second deadline loses to FOUL. Advanced SET CURVE and SET POWER time is excluded; its timer begins only on entry to THROW READY. Quick and Advanced retries receive clean timers and warning state. Accepted-dart and FOUL holds remain exactly 1.5 seconds, and emulator automatic blocking resets remain disabled.
+
+**Final verification:** the complete suite passes **484 tests**.
+
+Dartsnut Agent emulator evidence records displayed Blue 1/5/9, Red 2/6/10, Green 3/7/11, and Yellow 4/8/12, corresponding to raw zero-based indices Blue 0/4/8, Red 1/5/9, Green 2/6/10, and Yellow 3/7/11. This patch documents but does not implement that mapping. Standard game flow will later use the first two same-color darts per round; each third dart is reserved for later rules. This is not a physical-board parity claim. No scoring, round progression, player assignment, throw-slot enforcement, coordinate transformation, secondary-display API, or physical-board assumption was added.

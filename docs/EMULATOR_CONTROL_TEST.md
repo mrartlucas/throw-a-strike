@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Phase 0R.3 is an interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
+Phase 0R.4 is an interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
 
 ## Current supported emulator behavior
 
@@ -39,7 +39,7 @@ In Advanced Play, throw before THROW READY. Verify **TOO SOON** and **REMOVE DAR
 
 ## Warning and FOUL procedure
 
-Reach THROW READY, wait 30 seconds, and verify **THROW NOW** remains visible. At 60 seconds verify **FOUL** and **0 PINS**. The cached FOUL frame holds for 1.5 seconds without polling input; the harness then begins a clean attempt without resetting blocking state or returning to style selection.
+Reach THROW READY and verify **THROW NOW** appears at exactly 20 seconds. At exactly 30 seconds total, after a 10-second warning window, verify **FOUL** and **0 PINS**. The cached FOUL frame holds for exactly 1.5 seconds without polling input; the harness then begins a clean attempt with a fresh 30-second timer, without resetting blocking state or returning to style selection. Advanced SET CURVE and SET POWER time does not count: its timer starts only upon entry to THROW READY.
 
 ## Expected 128×128 screen
 
@@ -78,3 +78,17 @@ Record the selected style, exact control sequence, elapsed time, displayed curve
 A log containing “event fired” confirms that the emulator emitted a dart event. Direct emulator testing recorded `Dart 0 BLOCKED (event fired at [77, 84])` followed by `active at coordinate (77, 84)`. The emulator may retain that dart as active at its last coordinate; calling `reset_blocking_state` while it remains active can emit the same dart again. Phase 0R.1 and 0R.2 automatic-reset assumptions were therefore disproven. This diagnostic runtime never resets automatically. A confirms style only, and acceptance requires a new board event. After DART ACCEPTED holds for 1.5 seconds, a fresh attempt remains active without a new click and can reach THROW NOW and FOUL.
 
 The Deploy panel must say **Connected** before testing a physical board. Local screen clicks are emulator evidence only. The second screen remains unused, and no physical-board parity is claimed.
+
+
+## Emulator dart-layout evidence
+
+The following layout was confirmed through the **Dartsnut Agent emulator** and is emulator evidence only; it is not yet a physical-board parity claim.
+
+| Color | Displayed dart buttons | Raw zero-based SDK indices |
+| --- | --- | --- |
+| Blue | 1 / 5 / 9 | 0 / 4 / 8 |
+| Red | 2 / 6 / 10 | 1 / 5 / 9 |
+| Green | 3 / 7 / 11 | 2 / 6 / 10 |
+| Yellow | 4 / 8 / 12 | 3 / 7 / 11 |
+
+No mapping behavior is implemented in this timing patch. Standard game flow will later use two darts per round: the first two same-color darts shown above. The third same-color dart remains reserved for later rules that need it. This evidence does not assign players, enforce throw slots, advance rounds, transform coordinates, or assert physical-board behavior. Emulator automatic resets remain disabled.

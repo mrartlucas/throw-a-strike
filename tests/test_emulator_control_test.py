@@ -219,7 +219,7 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertEqual(sdk.calls.count(DartsnutSdkOperation.DART_HITS),1)
 
     def test_warning_then_foul_has_no_setup(self):
-        sdk=FakeDartsnutSdk(); clock=Clock(1,31,61); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
+        sdk=FakeDartsnutSdk(); clock=Clock(1,21,31); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
         warning=runtime.step()
         self.assertTrue(warning.presentation.warning_active)
@@ -265,7 +265,7 @@ class RuntimeFlowTests(unittest.TestCase):
 
     def test_foul_hold_republishes_then_retries_quick_without_consuming_input(self):
         self.assertEqual(FOUL_HOLD_SECONDS,1.5)
-        sdk=FakeDartsnutSdk(); clock=Clock(1,31,61,62.49,62.5)
+        sdk=FakeDartsnutSdk(); clock=Clock(1,21,31,32.49,32.5)
         runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step(); runtime.step()
         foul=runtime.step()
@@ -288,7 +288,7 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertEqual(len(sdk.submitted_framebuffers),frame_count+1)
 
     def test_foul_retry_preserves_advanced_style_and_starts_clean(self):
-        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,4.15,4.15,5,35,65,66.5)
+        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,4.15,4.15,5,25,35,36.5)
         runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
@@ -319,7 +319,7 @@ class StepConsistencyTests(unittest.TestCase):
             ThrowControlCommand(ThrowControlCommandKind.DART_HIT,1,dart_index=0,x=0,y=0)))
         foul_machine=ThrowControlMachine(ControlStyle.QUICK)
         foul=build_throw_control_presentation(foul_machine.apply(
-            ThrowControlCommand(ThrowControlCommandKind.TICK,60)))
+            ThrowControlCommand(ThrowControlCommandKind.TICK,30)))
         frame=bytes(49152)
         invalid=((EmulatorControlTestPhase.SELECT_STYLE,confirmed,None),
                  (EmulatorControlTestPhase.SELECT_STYLE,selecting,ready),

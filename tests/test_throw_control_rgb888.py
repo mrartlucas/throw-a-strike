@@ -6,7 +6,7 @@ from throw_a_strike.application import ThrowControlStyleSelector, build_throw_co
 from throw_a_strike.domain import (
     ControlStyle, CurveLevel, PowerFeedback, ThrowControlCommand,
     ThrowControlCommandKind, ThrowControlMachine, ThrowControlPhase,
-    ThrowControlSnapshot,
+    ThrowControlSnapshot, THROW_FOUL_SECONDS, THROW_WARNING_SECONDS,
 )
 from throw_a_strike.rendering import (
     EMULATOR_MAIN_HEIGHT, EMULATOR_MAIN_WIDTH, EMULATOR_RGB888_BYTE_LENGTH,
@@ -73,7 +73,10 @@ class RendererTests(unittest.TestCase):
 
     def test_warning_keeps_throw_now_during_ready_blink_off(self):
         machine = ThrowControlMachine(ControlStyle.QUICK)
-        warning = machine.apply(ThrowControlCommand(ThrowControlCommandKind.TICK, 30))
+        warning = machine.apply(ThrowControlCommand(
+            ThrowControlCommandKind.TICK,
+            THROW_WARNING_SECONDS,
+        ))
         presentation = build_throw_control_presentation(warning)
         captured = []
         original = renderer._text
@@ -90,7 +93,7 @@ class RendererTests(unittest.TestCase):
         ready = build_throw_control_presentation(ThrowControlMachine(ControlStyle.QUICK).snapshot)
         foul_machine = ThrowControlMachine(ControlStyle.QUICK)
         foul = build_throw_control_presentation(foul_machine.apply(
-            ThrowControlCommand(ThrowControlCommandKind.TICK, 60)))
+            ThrowControlCommand(ThrowControlCommandKind.TICK, THROW_FOUL_SECONDS)))
         self.assertIsNone(complete.primary_prompt)
         self.assertNotEqual(render_throw_control_rgb888(foul), render_throw_control_rgb888(ready))
 

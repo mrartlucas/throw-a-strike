@@ -8,6 +8,10 @@ from numbers import Real
 from .config import ControlStyle
 
 
+THROW_WARNING_SECONDS = 20.0
+THROW_FOUL_SECONDS = 30.0
+
+
 class InvalidThrowControlError(ValueError):
     """Raised when a throw-control value or transition is invalid."""
 
@@ -283,6 +287,7 @@ class ThrowControlMachine:
                                    self._curve, self._locked)  # type: ignore[arg-type]
                 self._outcome = ThrowControlOutcome(ThrowControlOutcomeKind.THROW, setup)
                 self._phase = ThrowControlPhase.COMPLETE
+                self._warning = False
             elif kind is ThrowControlCommandKind.BACK and self._style is ControlStyle.ADVANCED:
                 self._enter_power(command.timestamp)
         return self.snapshot
@@ -321,10 +326,10 @@ class ThrowControlMachine:
                 self._displayed = _METER[steps % len(_METER)]
             if self._phase is ThrowControlPhase.THROW_READY:
                 elapsed = timestamp - self._phase_started
-                if elapsed >= 60.0:
+                if elapsed >= THROW_FOUL_SECONDS:
                     self._phase = ThrowControlPhase.FOUL
                     self._outcome = ThrowControlOutcome(ThrowControlOutcomeKind.FOUL)
                     self._warning = False
                     continue
-                self._warning = elapsed >= 30.0
+                self._warning = elapsed >= THROW_WARNING_SECONDS
             return

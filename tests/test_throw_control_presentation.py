@@ -24,6 +24,8 @@ from throw_a_strike.domain import (
     ThrowControlOutcomeKind,
     ThrowControlPhase,
     ThrowControlSnapshot,
+    THROW_FOUL_SECONDS,
+    THROW_WARNING_SECONDS,
 )
 
 
@@ -53,13 +55,19 @@ def advanced_snapshot(
     lock_time = {70: 0.0, 80: .15, 90: .3, 100: .45, 60: 1.05, 50: 1.2, 40: 1.35}[power]
     machine.apply(ThrowControlCommand(ThrowControlCommandKind.CONFIRM, lock_time))
     if warning:
-        machine.apply(ThrowControlCommand(ThrowControlCommandKind.TICK, lock_time + 30))
+        machine.apply(ThrowControlCommand(
+            ThrowControlCommandKind.TICK,
+            lock_time + THROW_WARNING_SECONDS,
+        ))
     if phase is ThrowControlPhase.THROW_READY:
         return machine.snapshot
     if phase is ThrowControlPhase.COMPLETE:
         machine.apply(ThrowControlCommand(ThrowControlCommandKind.DART_HIT, lock_time + 1, 0, 1, 2))
     elif phase is ThrowControlPhase.FOUL:
-        machine.apply(ThrowControlCommand(ThrowControlCommandKind.TICK, lock_time + 60))
+        machine.apply(ThrowControlCommand(
+            ThrowControlCommandKind.TICK,
+            lock_time + THROW_FOUL_SECONDS,
+        ))
     return machine.snapshot
 
 
@@ -184,7 +192,10 @@ class StyleFlowTests(unittest.TestCase):
                          (ThrowControlPrompt.THROW_READY, "STR", ThrowControlCurveIcon.STRAIGHT))
         self.assertEqual((initial.power_percent, initial.power_locked, initial.power_feedback),
                          (70, True, PowerFeedback.GOOD))
-        machine.apply(ThrowControlCommand(ThrowControlCommandKind.TICK, 30))
+        machine.apply(ThrowControlCommand(
+            ThrowControlCommandKind.TICK,
+            THROW_WARNING_SECONDS,
+        ))
         self.assertIs(build_throw_control_presentation(machine.snapshot).secondary_prompt, ThrowControlPrompt.THROW_NOW)
         complete_machine = ThrowControlMachine(ControlStyle.QUICK)
         complete_machine.apply(ThrowControlCommand(ThrowControlCommandKind.DART_HIT, 1, 0, 1, 2))
@@ -192,7 +203,10 @@ class StyleFlowTests(unittest.TestCase):
         self.assertEqual((complete.primary_prompt, complete.secondary_prompt), (None, None))
 
         foul_machine = ThrowControlMachine(ControlStyle.QUICK)
-        foul_machine.apply(ThrowControlCommand(ThrowControlCommandKind.TICK, 60))
+        foul_machine.apply(ThrowControlCommand(
+            ThrowControlCommandKind.TICK,
+            THROW_FOUL_SECONDS,
+        ))
         foul = build_throw_control_presentation(foul_machine.snapshot)
         self.assertEqual((foul.primary_prompt_label, foul.secondary_prompt_label), ("FOUL", "0 PINS"))
 

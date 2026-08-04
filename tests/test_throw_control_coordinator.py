@@ -200,12 +200,12 @@ class CoordinatorTests(unittest.TestCase):
         self.assertIs(error.__cause__, error.cause)
 
     def test_warning_and_foul_timing(self):
-        coordinator, _, _ = self.make(batches=((), ()), clocks=(30, 60))
+        coordinator, _, _ = self.make(batches=((), ()), clocks=(20, 30))
         warning = coordinator.step()
         self.assertTrue(warning.snapshot.warning_active)
         foul = coordinator.step()
         self.assertIs(foul.snapshot.phase, ThrowControlPhase.FOUL)
-        self.assertEqual(foul.tick_timestamp, 60.0)
+        self.assertEqual(foul.tick_timestamp, 30.0)
         self.assertIsNone(foul.snapshot.outcome.setup)
 
     def test_terminal_guard_precedes_ports(self):
@@ -314,9 +314,9 @@ class CoordinatorTests(unittest.TestCase):
         self.assertIsNone(advanced_completion.tick_timestamp)
         self.assertTrue(advanced_completion.terminal)
 
-        foul, _, _ = self.make(batches=((),), clocks=(60,))
+        foul, _, _ = self.make(batches=((),), clocks=(30,))
         foul_result = foul.step()
-        self.assertEqual(foul_result.tick_timestamp, 60.0)
+        self.assertEqual(foul_result.tick_timestamp, 30.0)
         self.assertTrue(foul_result.terminal)
 
     def test_apply_input_error_requires_an_actual_failing_command(self):
