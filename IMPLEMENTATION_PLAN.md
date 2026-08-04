@@ -967,7 +967,7 @@ explicit fallback composition remain future work.
 
 **Status: IMPLEMENTED - LOCALLY VERIFIED**
 
-- **Baseline/final verification:** the Phase 0O baseline was 394 tests; the final suite is **409 tests**, including **15 focused Phase 0P tests**.
+- **Baseline/final verification:** the Phase 0O baseline was 394 tests; the final suite is **411 tests**, including **17 focused Phase 0P tests**.
 - **Exact files changed:** created `throw_a_strike/application/throw_control_coordinator.py` and `tests/test_throw_control_coordinator.py`; updated `throw_a_strike/application/__init__.py`, this plan, and `PROJECT_AUDIT.md`.
 - **Constructor contract:** an exact `ControlStyle`, structurally valid injected `InputPort` and `ClockPort` with exact `PortCapabilities`, and a domain-valid `started_at` are required. Unavailable capabilities remain constructible. Construction reads capabilities and creates one machine, but does not poll, read time, interpret or apply commands. Invalid start values retain the chained domain error.
 - **One-attempt ownership:** each coordinator privately constructs and permanently owns exactly one `ThrowControlMachine`; it accepts no machine, exposes no machine, and provides no reset or replacement operation. Later orchestration must create a new coordinator for each bowling attempt.

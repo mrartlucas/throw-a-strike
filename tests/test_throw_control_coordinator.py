@@ -285,6 +285,72 @@ class CoordinatorTests(unittest.TestCase):
             with self.assertRaises(InvalidThrowControlCoordinatorValueError):
                 ThrowControlStepResult(*arguments)
 
+    def test_no_tick_result_requires_actual_input_progress(self):
+        event = dart()
+        coordinator, _, _ = self.make(batches=((event,),))
+        completed = coordinator.step()
+        self.assertIsNone(completed.tick_timestamp)
+        self.assertTrue(completed.terminal)
+
+        for events, commands in (((), ()), ((event,), ())):
+            with self.subTest(events=events, commands=commands):
+                with self.assertRaises(InvalidThrowControlCoordinatorValueError):
+                    ThrowControlStepResult(
+                        events, commands, len(commands), None, completed.snapshot
+                    )
+
+        advanced, _, _ = self.make(
+            ControlStyle.ADVANCED,
+            (
+                (control("btn_right"), control("btn_a")),
+                (control("btn_a", 0.150),),
+                (dart(2),),
+            ),
+            (0, 0.150),
+        )
+        advanced.step()
+        advanced.step()
+        advanced_completion = advanced.step()
+        self.assertIsNone(advanced_completion.tick_timestamp)
+        self.assertTrue(advanced_completion.terminal)
+
+        foul, _, _ = self.make(batches=((),), clocks=(60,))
+        foul_result = foul.step()
+        self.assertEqual(foul_result.tick_timestamp, 60.0)
+        self.assertTrue(foul_result.terminal)
+
+    def test_apply_input_error_requires_an_actual_failing_command(self):
+        coordinator, _, _ = self.make(ControlStyle.ADVANCED)
+        snapshot = coordinator.snapshot
+        event = control("btn_right")
+        commands = (
+            ThrowControlCommand(ThrowControlCommandKind.RIGHT, 0),
+            ThrowControlCommand(ThrowControlCommandKind.RIGHT, 0),
+            ThrowControlCommand(ThrowControlCommandKind.CONFIRM, 0),
+        )
+        cause = ValueError("apply")
+        valid = ThrowControlCoordinatorStepError(
+            ThrowControlCoordinatorStage.APPLY_INPUT,
+            (event,), commands, 2, None, snapshot, cause,
+        )
+        self.assertEqual(valid.applied_command_count, 2)
+
+        invalid_progress = (
+            ((), (), 0),
+            ((), commands, 0),
+            ((event,), commands, len(commands)),
+            ((event,), commands, len(commands) + 1),
+            ((event,), commands, -1),
+            ((event,), commands, True),
+        )
+        for events, attempted_commands, count in invalid_progress:
+            with self.subTest(events=events, commands=attempted_commands, count=count):
+                with self.assertRaises(InvalidThrowControlCoordinatorValueError):
+                    ThrowControlCoordinatorStepError(
+                        ThrowControlCoordinatorStage.APPLY_INPUT,
+                        events, attempted_commands, count, None, snapshot, cause,
+                    )
+
     def test_error_value_contracts_and_read_only_properties(self):
         coordinator, _, _ = self.make()
         snapshot = coordinator.snapshot

@@ -115,10 +115,15 @@ class ThrowControlStepResult:
             )
         normalized = _tick_timestamp(self.tick_timestamp)
         _snapshot(self.snapshot)
-        if normalized is None and not _terminal(self.snapshot):
-            raise InvalidThrowControlCoordinatorValueError(
-                "a result without a tick must have a terminal snapshot"
-            )
+        if normalized is None:
+            if (
+                not _terminal(self.snapshot)
+                or not self.events
+                or not self.commands
+            ):
+                raise InvalidThrowControlCoordinatorValueError(
+                    "a result without a tick requires terminal input progress"
+                )
         object.__setattr__(self, "tick_timestamp", normalized)
 
     @property
@@ -164,7 +169,12 @@ class ThrowControlCoordinatorStepError(RuntimeError):
             ThrowControlCoordinatorStage.INTERPRET_INPUT: (
                 not commands and applied_command_count == 0 and normalized is None
             ),
-            ThrowControlCoordinatorStage.APPLY_INPUT: normalized is None,
+            ThrowControlCoordinatorStage.APPLY_INPUT: (
+                bool(events)
+                and bool(commands)
+                and applied_command_count < len(commands)
+                and normalized is None
+            ),
             ThrowControlCoordinatorStage.READ_CLOCK: (
                 applied_command_count == len(commands) and normalized is None
             ),
