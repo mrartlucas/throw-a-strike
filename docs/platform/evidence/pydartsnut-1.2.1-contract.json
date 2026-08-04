@@ -1,0 +1,1011 @@
+{
+  "brightness": {
+    "accepted_range": [
+      10,
+      100
+    ],
+    "evidence_ids": [
+      "E019"
+    ],
+    "hardware_effect": "UNKNOWN_HARDWARE",
+    "method": "set_brightness",
+    "out_of_range": "ignored",
+    "return": null,
+    "signature": "(self, brightness)"
+  },
+  "button_input": {
+    "debounce_seconds": 0.03,
+    "default_values": false,
+    "event_semantics": "rising-edge booleans for keys returned by polling",
+    "evidence_ids": [
+      "E018",
+      "E025",
+      "E009"
+    ],
+    "keys": [
+      "btn_a",
+      "btn_b",
+      "btn_down",
+      "btn_home",
+      "btn_left",
+      "btn_reserved",
+      "btn_right",
+      "btn_up"
+    ],
+    "methods": {
+      "get_button_events": "(self)",
+      "get_buttons": "(self)"
+    },
+    "ordering_guarantee": null,
+    "polling_semantics": "debounced current booleans",
+    "unknown_keys_possible": "Event handler follows polling mapping; package polling defines exactly eight keys"
+  },
+  "constructor": {
+    "arguments": {
+      "--data-store": null,
+      "--idle-unblock-duration": null,
+      "--min-active-duration": null,
+      "--params": "{}",
+      "--shm": "pdishm"
+    },
+    "behavior": "Parses process arguments, JSON-decodes widget parameters, installs SIGINT handling, connects display/input shared memory, and initializes data storage and InputHandler.",
+    "evidence_ids": [
+      "E012"
+    ],
+    "public_class_import_path": "pydartsnut.Dartsnut",
+    "signature": "(self)"
+  },
+  "contradictions": [
+    {
+      "contradiction_id": "C001",
+      "impact": "Native render size and safe framebuffer length cannot be selected.",
+      "required_next_evidence": "Official platform contract plus emulator and cabinet native-size patterns.",
+      "resolution_status": "UNRESOLVED",
+      "source_a": "main.py uses 128×160",
+      "source_b": "wheel implementation encodes no width or height; package descriptions refer to 0–127 coordinates",
+      "topic": "main.py display dimensions versus package implementation"
+    },
+    {
+      "contradiction_id": "C002",
+      "impact": "Manifest size cannot be treated as verified hardware size.",
+      "required_next_evidence": "Launcher schema and physical display verification.",
+      "resolution_status": "UNRESOLVED",
+      "source_a": "conf.json declares [128,160]",
+      "source_b": "wheel implementation encodes no width or height; package descriptions refer to 0–127 coordinates",
+      "topic": "conf.json dimensions versus package implementation"
+    },
+    {
+      "contradiction_id": "C003",
+      "impact": "Consumers must not adopt the stale prose as final hardware input policy.",
+      "required_next_evidence": "Cabinet timing trace and maintained SDK clarification.",
+      "resolution_status": "UNRESOLVED",
+      "source_a": "Dartsnut.get_dart_hits docstring says 0.5 seconds",
+      "source_b": "InputHandler implementation default is 0.2 seconds",
+      "topic": "dart re-arm documentation versus implementation"
+    }
+  ],
+  "dart_input": {
+    "active_shape": "list of (dart_index, x, y) tuples",
+    "coordinate_max": 127,
+    "coordinate_min": 0,
+    "dart_index_max": 11,
+    "dart_index_min": 0,
+    "dart_slot_count": 12,
+    "default_rearm_seconds": 0.2,
+    "duplicate_blocking": "An emitted index is blocked until invalid continuously for the configured interval",
+    "event_shape": "list of (dart_index, x, y) tuples",
+    "evidence_ids": [
+      "E017",
+      "E022",
+      "E023",
+      "E024",
+      "E007"
+    ],
+    "hardware_guarantee": "UNKNOWN_HARDWARE",
+    "invalid_sentinels": [
+      [
+        -1,
+        -1
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "methods": {
+      "get_active_darts": "(self)",
+      "get_dart_hits": "(self)",
+      "get_darts": "(self)",
+      "reset_blocking_state": "(self)"
+    },
+    "polling_shape": "12 entries of [x, y]",
+    "simultaneous_hits": "Source iterates all 12 slots in index order"
+  },
+  "evidence": [
+    {
+      "archive_path": "pydartsnut-1.2.1.dist-info/METADATA",
+      "evidence_id": "E001",
+      "evidence_level": "VERIFIED_PACKAGE_METADATA",
+      "extraction_method": "email.parser",
+      "line_end": 244,
+      "line_start": 1,
+      "source_sha256": "4f99c282da854dccf69e39c8aa8135baaeaf75383d92b6fa0c46f7bf8a31315f",
+      "symbol": "METADATA"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E002",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.ClassDef",
+      "line_end": 41,
+      "line_start": 24,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "EngineProtocol"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E003",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 33,
+      "line_start": 27,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "EngineProtocol.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E004",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 41,
+      "line_start": 35,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "EngineProtocol.get_buttons"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E005",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.ClassDef",
+      "line_end": 342,
+      "line_start": 59,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E006",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 105,
+      "line_start": 79,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E007",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 242,
+      "line_start": 159,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_dart_hits"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E008",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 308,
+      "line_start": 244,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_active_darts"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E009",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 331,
+      "line_start": 310,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_buttons"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E010",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 342,
+      "line_start": 333,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.reset_blocking_state"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E011",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.ClassDef",
+      "line_end": 467,
+      "line_start": 30,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E012",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 145,
+      "line_start": 52,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E013",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 190,
+      "line_start": 168,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.remove_shm_from_resource_tracker"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E014",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 202,
+      "line_start": 192,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.sigint_handler"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E015",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 237,
+      "line_start": 204,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E016",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 247,
+      "line_start": 239,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.close"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E017",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 287,
+      "line_start": 252,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E018",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 331,
+      "line_start": 289,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_buttons"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E019",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 341,
+      "line_start": 333,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_brightness"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E020",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 385,
+      "line_start": 343,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E021",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 408,
+      "line_start": 387,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E022",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 425,
+      "line_start": 410,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_dart_hits"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E023",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 443,
+      "line_start": 427,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_active_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E024",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 451,
+      "line_start": 445,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.reset_blocking_state"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E025",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 467,
+      "line_start": 453,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_button_events"
+    }
+  ],
+  "inspection": {
+    "ast_only": true,
+    "contradiction_count": 3,
+    "deterministic_generation": true,
+    "generated_claim_count": 52,
+    "hardware_access": false,
+    "inspector_schema_version": 1,
+    "package_execution": false,
+    "public_classes": [
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E002"
+        ],
+        "line_end": 41,
+        "line_start": 24,
+        "name": "EngineProtocol"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E005"
+        ],
+        "line_end": 342,
+        "line_start": 59,
+        "name": "InputHandler"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E011"
+        ],
+        "line_end": 467,
+        "line_start": 30,
+        "name": "Dartsnut"
+      }
+    ],
+    "public_methods": [
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E003"
+        ],
+        "line_end": 33,
+        "line_start": 27,
+        "signature": "(self)",
+        "symbol": "EngineProtocol.get_darts"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E004"
+        ],
+        "line_end": 41,
+        "line_start": 35,
+        "signature": "(self)",
+        "symbol": "EngineProtocol.get_buttons"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E006"
+        ],
+        "line_end": 105,
+        "line_start": 79,
+        "signature": "(self, engine, min_active_duration=None, idle_unblock_duration=None)",
+        "symbol": "InputHandler.__init__"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E007"
+        ],
+        "line_end": 242,
+        "line_start": 159,
+        "signature": "(self)",
+        "symbol": "InputHandler.get_dart_hits"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E008"
+        ],
+        "line_end": 308,
+        "line_start": 244,
+        "signature": "(self)",
+        "symbol": "InputHandler.get_active_darts"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E009"
+        ],
+        "line_end": 331,
+        "line_start": 310,
+        "signature": "(self)",
+        "symbol": "InputHandler.get_buttons"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E010"
+        ],
+        "line_end": 342,
+        "line_start": 333,
+        "signature": "(self)",
+        "symbol": "InputHandler.reset_blocking_state"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E012"
+        ],
+        "line_end": 145,
+        "line_start": 52,
+        "signature": "(self)",
+        "symbol": "Dartsnut.__init__"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E013"
+        ],
+        "line_end": 190,
+        "line_start": 168,
+        "signature": "(self)",
+        "symbol": "Dartsnut.remove_shm_from_resource_tracker"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E014"
+        ],
+        "line_end": 202,
+        "line_start": 192,
+        "signature": "(self, signum, frame)",
+        "symbol": "Dartsnut.sigint_handler"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E015"
+        ],
+        "line_end": 237,
+        "line_start": 204,
+        "signature": "(self, frame)",
+        "symbol": "Dartsnut.update_frame_buffer"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E016"
+        ],
+        "line_end": 247,
+        "line_start": 239,
+        "signature": "(self)",
+        "symbol": "Dartsnut.close"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E017"
+        ],
+        "line_end": 287,
+        "line_start": 252,
+        "signature": "(self)",
+        "symbol": "Dartsnut.get_darts"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E018"
+        ],
+        "line_end": 331,
+        "line_start": 289,
+        "signature": "(self)",
+        "symbol": "Dartsnut.get_buttons"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E019"
+        ],
+        "line_end": 341,
+        "line_start": 333,
+        "signature": "(self, brightness)",
+        "symbol": "Dartsnut.set_brightness"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E020"
+        ],
+        "line_end": 385,
+        "line_start": 343,
+        "signature": "(self, key, value)",
+        "symbol": "Dartsnut.set_value"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E021"
+        ],
+        "line_end": 408,
+        "line_start": 387,
+        "signature": "(self, key, default=None)",
+        "symbol": "Dartsnut.get_value"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E022"
+        ],
+        "line_end": 425,
+        "line_start": 410,
+        "signature": "(self)",
+        "symbol": "Dartsnut.get_dart_hits"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E023"
+        ],
+        "line_end": 443,
+        "line_start": 427,
+        "signature": "(self)",
+        "symbol": "Dartsnut.get_active_darts"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E024"
+        ],
+        "line_end": 451,
+        "line_start": 445,
+        "signature": "(self)",
+        "symbol": "Dartsnut.reset_blocking_state"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E025"
+        ],
+        "line_end": 467,
+        "line_start": 453,
+        "signature": "(self)",
+        "symbol": "Dartsnut.get_button_events"
+      }
+    ],
+    "record_entries": [
+      "pydartsnut-1.2.1.dist-info/METADATA,sha256=T5nCgtqFTcz2njnIqoE1uq6vdTg9krb6DEb3v4oxMV8,6851",
+      "pydartsnut-1.2.1.dist-info/RECORD,,",
+      "pydartsnut-1.2.1.dist-info/WHEEL,sha256=aeYiig01lYGDzBgS8HxWXOg3uV61G9ijOsup-k9o1sk,91",
+      "pydartsnut-1.2.1.dist-info/top_level.txt,sha256=ajsTc8bJwlfF6dlF3UEm50smiSlcnS9zSK59SsHO9wQ,11",
+      "pydartsnut/__init__.py,sha256=iyPYwSlf-rGlCh_E1WvLZEQSI5-WkeGDYyeWiaYbXT4,31",
+      "pydartsnut/_input_handler.py,sha256=dtY9npw4Q4Ew9w-dQVdgZP1jRfwE1Jj5mjWs2OtopWU,15602",
+      "pydartsnut/dartsnut.py,sha256=w152DzZSvYk8RcP2UfgVK3MRTAmF2f4rTOnukCDaUjQ,18308",
+      "pydartsnut/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0"
+    ],
+    "unknown_claim_count": 24,
+    "verified_claim_count": 25
+  },
+  "lifecycle": {
+    "application_loop": null,
+    "cleanup": "close closes render semaphore; destructor calls close",
+    "evidence_ids": [
+      "E014",
+      "E016",
+      "E012"
+    ],
+    "missing_shared_memory": "prints message and exits with status 1",
+    "running_initial": true,
+    "sigint_behavior": "sets running False"
+  },
+  "main_display": {
+    "accepted_input_categories": [
+      "bytearray",
+      "object with tobytes attribute"
+    ],
+    "brightness_interaction": "none in this method",
+    "busy_state": "status byte 2 returns False",
+    "channel_count": 3,
+    "encoded_height": null,
+    "encoded_width": null,
+    "evidence_ids": [
+      "E015"
+    ],
+    "expected_byte_length": null,
+    "image_mode_handling": "No conversion or mode validation",
+    "invalid_state": "other status values return False",
+    "method": "update_frame_buffer",
+    "pixel_format": "RGB888 (documented by package source)",
+    "ready_state": "status byte 1 copies bytes, sets status 0, posts semaphore, returns True",
+    "return_type": "bool",
+    "signature": "(self, frame)"
+  },
+  "package": {
+    "evidence_ids": [
+      "E001"
+    ],
+    "license": null,
+    "metadata_name": "pydartsnut",
+    "metadata_version": "1.2.1",
+    "name": "pydartsnut",
+    "python_requirement": ">=3.1",
+    "sdist_sha256": "f3618dc311e77773f6e655b11cb448e94940c59af32ad060e77a9ed616583d8e",
+    "source_files_inspected": [
+      {
+        "archive_path": "pydartsnut/__init__.py",
+        "sha256": "8b23d8c1295ffab1a50a1fc4d56bcb644412239f9691e18363279689a61b5d3e"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234"
+      }
+    ],
+    "version": "1.2.1",
+    "wheel_filename": "pydartsnut-1.2.1-py3-none-any.whl",
+    "wheel_sha256": "a207168cf36ba04352d3710933e159a1311948363be18c4bbd81ce4ae5916f4f",
+    "wheel_size": 12897
+  },
+  "persistence": {
+    "corruption": "set starts empty; get returns default",
+    "default_path": "package source directory, with cwd fallback if __file__ unavailable",
+    "evidence_ids": [
+      "E020",
+      "E021",
+      "E012"
+    ],
+    "file": "data.json",
+    "key_restriction": "string documented",
+    "methods": {
+      "get_value": "(self, key, default=None)",
+      "set_value": "(self, key, value)"
+    },
+    "serialization": "JSON",
+    "value_restriction": "JSON-serializable",
+    "write_strategy": "temporary .tmp file followed by os.replace"
+  },
+  "repository_usage": {
+    "conf_json_size": [
+      128,
+      160
+    ],
+    "evidence_level": "VERIFIED_REPOSITORY_USAGE",
+    "main_py": [
+      "imports Dartsnut",
+      "creates a 128×160 Pygame surface",
+      "calls get_button_events",
+      "calls get_dart_hits",
+      "treats hits as dart_index, x, y",
+      "uses btn_a, btn_b, btn_up, btn_down, btn_left, and btn_right",
+      "relies on engine.running",
+      "calls update_frame_buffer"
+    ],
+    "pyproject_before_phase": "pydartsnut unconstrained",
+    "uv_lock": "pydartsnut 1.2.1 with exact wheel and sdist hashes"
+  },
+  "schema_version": 1,
+  "secondary_display": {
+    "caveat": "This does not prove that the Dartsnut launcher, cabinet platform, another package, or a private API lacks secondary-display support.",
+    "finding": "No secondary-display API was found in the inspected pydartsnut 1.2.1 wheel.",
+    "matching_source_locations": [],
+    "matching_symbols": [],
+    "public_api_candidates": [],
+    "searched_symbols": [
+      "aux_display",
+      "auxiliary",
+      "control_screen",
+      "dual_display",
+      "lcd",
+      "scoreboard",
+      "second_display",
+      "secondary",
+      "touch_screen",
+      "widget_display"
+    ],
+    "status": "NOT_FOUND_IN_INSPECTED_PACKAGE"
+  },
+  "unknowns": [
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": false,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Physical display width and height on every supported cabinet",
+      "unknown_id": "U001",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": false,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "RGB channel order on actual hardware",
+      "unknown_id": "U002",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": false,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Framebuffer stride",
+      "unknown_id": "U003",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": false,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Display refresh limit",
+      "unknown_id": "U004",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": false,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Safe update rate",
+      "unknown_id": "U005",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": false,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Dropped-frame behavior",
+      "unknown_id": "U006",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": true,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Physical x/y orientation",
+      "unknown_id": "U007",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": true,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Coordinate calibration",
+      "unknown_id": "U008",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": true,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Coordinate dead zones",
+      "unknown_id": "U009",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": true,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Coordinate jitter",
+      "unknown_id": "U010",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": true,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Simultaneous-hit behavior under real hardware load",
+      "unknown_id": "U011",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": true,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Dart-index to Blue/Red/Green/Yellow mapping",
+      "unknown_id": "U012",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": true,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Dart-index stability across boots and replacements",
+      "unknown_id": "U013",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": true,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Multiplayer wrong-dart behavior",
+      "unknown_id": "U014",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": true,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Secondary-display API outside this package",
+      "unknown_id": "U015",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": false,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Touch-screen behavior",
+      "unknown_id": "U016",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": false,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Physical button placement",
+      "unknown_id": "U017",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": false,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Cabinet audio routing",
+      "unknown_id": "U018",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": true,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Emulator behavior",
+      "unknown_id": "U019",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": false,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Packaging and installation format",
+      "unknown_id": "U020",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": false,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Launcher lifecycle",
+      "unknown_id": "U021",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": false,
+      "blocks_rendering": false,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Data-store quota and retention",
+      "unknown_id": "U022",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": true,
+      "blocks_multiplayer": true,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Cabinet and firmware compatibility",
+      "unknown_id": "U023",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    },
+    {
+      "blocks_adapter": false,
+      "blocks_multiplayer": false,
+      "blocks_rendering": true,
+      "current_status": "UNKNOWN_HARDWARE",
+      "question": "Performance budgets",
+      "unknown_id": "U024",
+      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
+      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+    }
+  ],
+  "widget_parameters": {
+    "attribute": "widget_params",
+    "default": "{}",
+    "evidence_ids": [
+      "E012"
+    ],
+    "invalid": "prints error and exits 1",
+    "parse": "json.loads",
+    "source": "--params JSON string"
+  }
+}

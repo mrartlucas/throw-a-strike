@@ -141,3 +141,37 @@ The dependency is not bounded in `pyproject.toml`, even though `uv.lock` current
 ### Blockers for real PixelDarts hardware
 
 The following must not be guessed: actual main-display dimensions; secondary-display/control-screen contract; Blue/Red/Green/Yellow dart mapping; supported multiplayer launch/turn flow; physical coordinate orientation; audio routing; packaging/preview rules; and emulator/cabinet deployment. Until the first three are resolved, Phase 0 can build pure domain logic and abstract interfaces, but it cannot truthfully complete production display/input integration.
+
+## Phase 0K exact-wheel evidence update
+
+Static AST inspection records the exact `pydartsnut` 1.2.1 wheel
+`pydartsnut-1.2.1-py3-none-any.whl` (SHA-256
+`a207168cf36ba04352d3710933e159a1311948363be18c4bbd81ce4ae5916f4f`)
+and its locked sdist (SHA-256
+`f3618dc311e77773f6e655b11cb448e94940c59af32ad060e77a9ed616583d8e`).
+`pyproject.toml` is pinned to `pydartsnut==1.2.1`; package, Pygame, NumPy,
+wheel, and sdist resolutions remain unchanged in `uv.lock`.
+
+The package main-frame method accepts a `bytearray` or an object exposing
+`tobytes()`, describes RGB888, and returns boolean acceptance based on shared
+status, but encodes no width, height, or byte-length validation. The repository
+and manifest's 128×160 assumption therefore conflicts with the package's
+0–127 coordinate descriptions and historical examples; neither size is
+selected. Dart events are confirmed as lists of `(dart_index, x, y)` tuples
+over 12 slots. Exact button keys are `btn_a`, `btn_b`, `btn_up`, `btn_right`,
+`btn_left`, `btn_down`, `btn_home`, and `btn_reserved`. Physical player-color
+meaning and coordinate orientation remain unresolved.
+
+No secondary-display API was found in the inspected wheel. This is a scoped
+package search result, not evidence that the launcher, cabinet, another package,
+or a private API lacks secondary output. Evidence is committed at
+`docs/platform/evidence/pydartsnut-1.2.1-contract.json`, interpretation at
+`docs/platform/DARTSNUT_PLATFORM_CONTRACT.md`, reproduction tooling at
+`tools/inspect_pydartsnut_wheel.py`, and cabinet follow-up at
+`docs/platform/DARTSNUT_CABINET_VERIFICATION_CHECKLIST.md`.
+
+The safe next boundary is a narrow dependency-injected SDK facade around only
+verified raw methods and deterministic fakes. Native rendering dimensions,
+physical transforms, player/color mapping, wrong-dart policy, secondary output,
+audio, performance targets, and packaging remain blocked pending recorded
+platform/cabinet evidence.

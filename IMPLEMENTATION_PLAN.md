@@ -805,3 +805,62 @@ explicit fallback composition remain future work.
 - Deterministic fairness tests, unit/property/integration suites, golden visual tests, complete emulator matrix, physical cabinet matrix, worst-case profiling, and multi-hour soak all pass against recorded targets.
 - Assets are licensed, packaged within official limits, readable/accessible, and audio/visual effects meet approved safety and volume/flash criteria.
 - Installation, configuration, operator controls, test evidence, known limitations, data migration, diagnostics, and rollback are documented; product/operator acceptance is signed off with no critical unresolved hardware capability.
+
+## Phase 0K: Verified pydartsnut 1.2.1 platform-contract evidence spike
+
+**Status: EVIDENCE COMPLETE - EXACT WHEEL VERIFIED**
+
+- Exact files changed: created `docs/platform/DARTSNUT_PLATFORM_CONTRACT.md`,
+  `docs/platform/DARTSNUT_CABINET_VERIFICATION_CHECKLIST.md`,
+  `docs/platform/evidence/pydartsnut-1.2.1-contract.json`,
+  `tools/inspect_pydartsnut_wheel.py`, and
+  `tests/test_dartsnut_platform_contract.py`; updated only `pyproject.toml`,
+  `uv.lock`, `PROJECT_AUDIT.md`, and `IMPLEMENTATION_PLAN.md`.
+- Inspected package: `pydartsnut` 1.2.1, wheel
+  `pydartsnut-1.2.1-py3-none-any.whl`, SHA-256
+  `a207168cf36ba04352d3710933e159a1311948363be18c4bbd81ce4ae5916f4f`.
+  Static inspection verified the hash before opening the ZIP, exact METADATA
+  identity/version, RECORD, source hashes, AST symbols, and line ranges.
+- Evidence generation: `python tools/inspect_pydartsnut_wheel.py
+  .contract_tmp/pydartsnut-1.2.1-py3-none-any.whl --expected-sha256
+  a207168cf36ba04352d3710933e159a1311948363be18c4bbd81ce4ae5916f4f
+  --output docs/platform/evidence/pydartsnut-1.2.1-contract.json`; the equivalent
+  `--check` command reproduces the committed bytes.
+- Dependency: `pyproject.toml` now requires exactly `pydartsnut==1.2.1`.
+  `uv.lock` changes only project requirement metadata; pydartsnut version,
+  wheel/sdist hashes (sdist
+  `f3618dc311e77773f6e655b11cb448e94940c59af32ad060e77a9ed616583d8e`),
+  Pygame/NumPy versions, and unrelated resolutions remain unchanged.
+- Verified findings: the main-frame method accepts bytearray/tobytes inputs,
+  describes RGB888, uses boolean ready/busy/invalid outcomes, and encodes no
+  width/height/length. Dart polling has 12 slots; event/active values are
+  `(dart_index, x, y)`, indices 0–11 and coordinates 0–127. The implementation
+  blocks duplicates and defaults to 0.2 seconds invalid before re-arm. Buttons
+  expose the exact eight documented keys with 30 ms polling debounce and rising
+  events. Running/SIGINT, brightness range 10–100, JSON widget parsing, shared
+  memory initialization/cleanup, and atomic-replace JSON persistence are
+  recorded with exact evidence pointers.
+- Repository assumptions remain unchanged: `main.py` and `conf.json` use
+  128×160; runtime polls event APIs, treats hits as index/x/y, observes
+  `engine.running`, and submits through the SDK main-frame method.
+- Contradictions: 128×160 in runtime/manifest versus no package-encoded display
+  dimensions and 0–127 package coordinate prose; method prose says 0.5-second
+  re-arm while implementation defaults to 0.2. None is resolved by preference.
+- Secondary search: no API was found for any required term. This does not prove
+  the launcher, cabinet, another package, or a private API lacks such support.
+- Unknowns include physical size/channel order/stride/orientation/calibration,
+  refresh and drop policy, dart color mapping/stability, real simultaneous
+  input, wrong-dart policy, secondary/touch/audio, emulator/launcher/package,
+  storage retention, compatibility, and performance budgets. Operator follow-up
+  is specified in `docs/platform/DARTSNUT_CABINET_VERIFICATION_CHECKLIST.md`.
+- Safe boundaries: a narrow injected package facade, neutral raw event capture,
+  verified submission validation, running observation, and deterministic fakes.
+  Blocked work: choosing final native size, physical transform/color/policy,
+  secondary output, audio, deployment, and performance targets.
+- Validation commands: full `python -m unittest discover -s tests -v`; focused
+  `python -m unittest tests.test_dartsnut_platform_contract -v`; plus evidence
+  `--check`, `py_compile`, protected-file, archive, scope, diff, and status
+  checks. Final suite: **259 tests** (248 unchanged baseline plus 11 new tests).
+- Remaining limitation: this evidence spike adds no adapter, rendering, input
+  polling loop, physics, audio, storage adapter, Pygame integration, application
+  loop, or hardware integration.

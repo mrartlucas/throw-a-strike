@@ -6,7 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "pygame>=2.0.0",
     "numpy>=1.20.0",
-    "pydartsnut",
+    "pydartsnut==1.2.1",
 ]
 
 [tool.uv]
