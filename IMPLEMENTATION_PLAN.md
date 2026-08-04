@@ -912,3 +912,20 @@ explicit fallback composition remain future work.
 - **Boundary retained:** `DartsnutSdkFacade` continues to forward opaque bytes without width, height, stride, channel, or payload-length validation. No renderer or secondary-display implementation is added in Phase 0L.
 - **Still unresolved:** the supported secondary-screen SDK submission API, physical-cabinet parity, formats/orientation, lifecycle, and delivery behavior.
 - **Evidence integrity:** this observation supplements but does not modify or reclassify the Phase 0K package-source evidence JSON.
+
+## Phase 0M: Neutral Dartsnut InputPort adapter
+
+**Status: IMPLEMENTED - LOCALLY VERIFIED**
+
+- **Baseline/final verification:** the unchanged baseline was 315 tests; the final suite is 337 tests, including 22 focused adapter tests.
+- **Exact files changed:** created `throw_a_strike/adapters/__init__.py`, `throw_a_strike/adapters/dartsnut_input.py`, and `tests/test_dartsnut_input.py`; updated only this plan and `PROJECT_AUDIT.md`.
+- **Constructor boundary:** `DartsnutInputPort` requires an exact injected `DartsnutSdkFacade`, a structurally valid injected `ClockPort`, and an optional exact nonnegative integer initial sequence. Construction invokes no facade or clock-time operation and captures clock capabilities exactly once.
+- **Capabilities:** the adapter returns detached exact `PortCapabilities` values based on the construction-time clock-availability snapshot; later reads neither revisit the clock nor invoke the facade.
+- **Poll operation order:** each available explicit poll reads dart hits once, reads button events once, reads the injected monotonic clock once only for a nonempty combined batch, constructs the complete immutable result locally, commits sequence state, and returns an exact tuple.
+- **Batch composition and timestamps:** all darts retain facade order and precede all buttons in facade order. This deterministic composition is not verified physical cross-source ordering. Every event in a nonempty batch receives the same single timestamp; coordinates and raw button values retain their numeric/string meaning under existing `InputEvent` normalization.
+- **Sequences:** consecutive values begin at the injected initial sequence and continue across successful polls. Empty polls and all failures leave sequence state unchanged; no reset or wraparound API exists.
+- **Empty and unavailable behavior:** empty polls perform both finite SDK reads but no clock read and return `()`. An unavailable snapshot rejects polling before any facade or clock operation.
+- **Failures and source consumption:** facade, clock, and `InputEvent` errors propagate unchanged without retry. Reads are explicitly nontransactional: a button failure may follow consumption of darts, and a clock failure may follow consumption of both raw batches; there is no rollback, replay, or reconstruction even though sequence state remains unchanged.
+- **Explicit exclusions:** no automatic blocking reset, player/color mapping, coordinate transformation/calibration, gameplay interpretation or command dispatch, continuous loop, timer, global clock, hardware access, rendering, physics, or secondary-display behavior was added.
+- **Remaining limitations:** cross-source physical order is unknowable through the separate SDK methods, source consumption is nontransactional, and runtime input-window/reset policy remains intentionally outside this adapter.
+- **Recommended next task:** Phase 0N should add a pure emulator-targeted immutable 128×128 framebuffer model and deterministic RGB888 encoder, without Pygame, facade submission, physical-cabinet parity claims, secondary-output guesses, or game rendering/assets.
