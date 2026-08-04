@@ -102,14 +102,12 @@ class EmulatorControlTestRuntime:
     @property
     def accepted_setup(self): return self._accepted_setup
     def _begin_attempt(self, style, started_at):
-        # Rearm before creating any state that could poll or render an attempt.
-        self._facade.reset_blocking_state()
         self._coordinator=ThrowControlCoordinator(style,self._input,self._clock,started_at)
+        self._foul_timestamp=None
+        self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
         self._presentation=build_throw_control_presentation(self._coordinator.snapshot)
         self._cached=render_throw_control_rgb888(self._presentation)
         self._phase=EmulatorControlTestPhase.ATTEMPT
-        self._foul_timestamp=None
-        self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
         accepted=self._facade.submit_framebuffer(self._cached)
         return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
     def step(self):

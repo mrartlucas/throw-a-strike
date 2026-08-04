@@ -293,3 +293,11 @@ The verified suite contains 477 tests, including 23 focused runtime tests and 10
 For exactly 1.5 seconds the accepted hold reads the clock once per step, polls no input, performs no reset, and republishes its cached frame. At or after the deadline it resets blocking state once, constructs one clean coordinator at the current timestamp, preserves Quick or Advanced style, clears the old outcome, and submits one fresh initial attempt frame. FOUL retry and restart-only early recovery remain unchanged.
 
 An emulator log containing “event fired” proves only emitted emulator input; “BLOCKED” may describe duplicate suppression pending reset. Physical testing requires the Deploy panel to say Connected. Local clicks, the unused second screen, and this runtime establish no physical-board parity. No physics, pinfall, scoring, player/color mapping, coordinate transformation, secondary-display API, or cabinet-parity claim was added.
+
+### Phase 0R.3 emulator stale-dart replay-loop record
+
+**Status: IMPLEMENTED - EMULATOR LOOP RETEST READY.** Direct continuous-emulator evidence recorded `Dart 0 BLOCKED (event fired at [77, 84])` followed by `active at coordinate (77, 84)`. The emulator can retain an active dart at its last coordinate, and `reset_blocking_state()` can make that same dart fire again. This disproves the automatic-reset assumptions made in Phase 0R.1 and Phase 0R.2.
+
+The emulator diagnostic runtime now makes zero automatic blocking resets anywhere in its lifecycle. A consumes and confirms style selection only; it creates a fresh coordinator and initial THROW READY or SET CURVE frame, never a synthetic throw or copied coordinate. Only a new emulator board event is accepted. DART ACCEPTED preserves exact raw index/x/y for 1.5 seconds, then a fresh same-style attempt remains stable without another click. Warning and FOUL are reachable again; FOUL plus 0 PINS retries after 1.5 seconds without reset. Early recovery remains restart-only without polling or REARMED.
+
+This is an emulator-only policy, not physical-board integration evidence. The facade reset operation remains intact. No physics, pinfall, scoring, multiplayer, coordinate transformation, dart-index player/color mapping, secondary-display operation, or physical-board behavior assumption was added; the second screen remains unused.

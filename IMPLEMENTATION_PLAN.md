@@ -1030,3 +1030,14 @@ explicit fallback composition remain future work.
 - **Continuous retry:** the completed snapshot and `ThrowSetup` remain preserved. Before the exact 1.5-second deadline, each step reads the clock once, polls no input, performs no reset, and resubmits the cached diagnostic once. At the deadline, one reset and one new coordinator begin a clean attempt in the selected style and submit one fresh frame.
 - **Unchanged paths:** FOUL retains its 1.5-second automatic retry. Early recovery retains its restart-only cached TOO SOON/REMOVE DART behavior without clock polling, reset, or `REARMED`.
 - **Evidence boundary:** the second screen remains unused. Local click evidence does not establish a connected physical board or cabinet parity. No physics, pinfall, scoring, secondary-display API, or parity claim is added.
+
+## Phase 0R.3: Emulator stale-dart replay-loop hotfix
+
+**Status: IMPLEMENTED - EMULATOR LOOP RETEST READY**
+
+- **Verification:** the final suite contains **480 tests**, including **26 focused emulator-control runtime tests**.
+
+- **Direct evidence:** continuous emulator testing reported `Dart 0 BLOCKED (event fired at [77, 84])` and then `active at coordinate (77, 84)`. The emulator retained the active dart, and each automatic reset made the same coordinate available again. This disproves the Phase 0R.1 and 0R.2 automatic-reset assumptions.
+- **Emulator reset policy:** this diagnostic runtime performs zero automatic `reset_blocking_state` operations during construction, selection, confirmation, timeout, attempt creation, accepted/FOUL retry, recovery, terminal handling, or cleanup. The verified facade operation remains unchanged for later physical-board work.
+- **Stable retries:** A confirms style only. A new board event alone can produce DART ACCEPTED; its exact raw index/x/y holds for 1.5 seconds, then one fresh coordinator starts in the preserved style without reset. With no new click it stays active, so THROW NOW and FOUL remain reachable. FOUL likewise retries after 1.5 seconds without reset. Early recovery remains restart-only.
+- **Evidence boundary:** the second screen remains unused. No physics, pinfall, scoring, multiplayer, coordinate transform, player mapping, secondary-display API, or physical-board assumption is added.
