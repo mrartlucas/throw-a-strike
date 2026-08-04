@@ -307,7 +307,7 @@ Finish coherent regular/blacklight themes and deliver the required secondary sco
 
 ### Dependencies and unresolved questions
 
-- This phase is gated on secondary dimensions, API, ownership, pixel/data format, lifecycle, and emulator support.
+- This phase is gated on the secondary API, ownership, pixel/data format, lifecycle, physical-cabinet parity, and emulator delivery behavior; 64×32 is only the recorded emulator renderer candidate.
 - Confirm accessibility targets, approved fonts/assets, theme persistence behavior, and whether the control display accepts touch input.
 
 ### Rollback point
@@ -761,7 +761,7 @@ explicit fallback composition remain future work.
 
 | Risk | Likelihood / impact | Mitigation and trigger |
 |---|---|---|
-| Main display is 128×128 while project submits 128×160 | High / Critical | Resolve from official spec and framebuffer length before UI implementation; native hardware pattern test. |
+| Emulator main canvas is observed at 128×128 while the project submits 128×160 | High / Critical | Use 128×128 as the renderer candidate, but verify physical-cabinet parity, framebuffer length, format, and orientation before production UI integration. |
 | No game-accessible secondary screen/API | High / Critical | Obtain official sample/API; design snapshot publisher and capability handling; escalate product layout if platform owns it. |
 | Dart index is not a stable color identity | High / High | Official mapping plus repeated cabinet trace; keep turn identity separate; never hard-code guesses. |
 | Remix/Party shared schedules or setups diverge between players | Medium / High | Persist one authoritative per-frame sequence/setup and seed; assert identical maximum opportunity and reset state for every player. |
@@ -778,8 +778,8 @@ explicit fallback composition remain future work.
 
 ## Hardware questions that must be answered before development
 
-1. What are the exact native width, height, RGB byte order, stride, maximum payload, refresh rate, and safe producer protocol of the main display? Is `conf.json`’s 128×160 valid despite the SDK’s 128×128 examples?
-2. What official API or platform data contract addresses the secondary/control screen? What are its dimensions, format, lifecycle, refresh limit, launch arguments, and emulator support?
+1. Does the physical cabinet match the observed 128×128 emulator main canvas, and what are its RGB byte order, stride, maximum payload, refresh rate, orientation, and safe producer protocol? `conf.json` still declares 128×160 and must not be treated as validated.
+2. What official API or platform data contract addresses the emulator-observed 64×32 secondary/control screen? What are its format, ownership, lifecycle, refresh limit, launch arguments, and physical-cabinet parity?
 3. Which dart indices map to Blue, Red, Green, and Yellow? Are there multiple darts per color, and are indices stable across boot, cabinet, replacement darts, and simultaneous hits?
 4. Which physical direction corresponds to x=0/x=127 and y=0/y=127? What calibration, dead zones, jitter, sampling rate, simultaneous-hit behavior, and invalid-state timing should games expect?
 5. What multiplayer flow and wrong-dart behavior do current Dartsnut games use? Provide source/sample and an installable reference game.
@@ -887,3 +887,28 @@ explicit fallback composition remain future work.
   strings, duplicate constructor options, conflicting button dictionaries, and
   three-way secondary-search status classification are source-derived or
   conservatively unknown.
+
+## Phase 0L: Narrow dependency-injected Dartsnut SDK facade
+
+**Status: IMPLEMENTED - LOCALLY VERIFIED**
+
+- **Baseline/final verification:** The unchanged baseline was 276 tests; the final suite is 315 tests, including 39 focused facade tests.
+- **Exact files changed:** created `throw_a_strike/platform/__init__.py`, `throw_a_strike/platform/dartsnut_sdk.py`, `throw_a_strike/platform/dartsnut_sdk_fakes.py`, and `tests/test_dartsnut_sdk.py`; updated only this plan and `PROJECT_AUDIT.md`.
+- **Public types:** `DartsnutButtonId`, `RawDartHit`, `DartsnutSdkOperation`, `DartsnutSdkProtocol`, `DartsnutSdkFacade`, `FakeDartsnutSdk`, `InvalidDartsnutSdkValueError`, `InvalidDartsnutSdkResponseError`, and `DartsnutSdkOperationError`.
+- **Wrapped SDK surface:** the facade reads `running` and calls only `get_dart_hits()`, `get_button_events()`, `reset_blocking_state()`, `update_frame_buffer(frame)`, `set_brightness(brightness)`, and `close()`.
+- **Validation and errors:** exact raw list/tuple/dict/bool/integer shapes and ranges are enforced. Malformed completed responses use an operation-tagged response error; operational exceptions use an operation-tagged error, retain and chain the exact cause, and are never retried.
+- **Fake:** the dependency-injected deterministic SDK-shaped fake provides FIFO dart, button, and framebuffer-result queues plus immutable call, framebuffer, brightness, reset, close, and queue inspection values.
+- **Framebuffer and brightness:** opaque exact `bytes`/`bytearray` values are copied into a fresh `bytearray` and forwarded without dimension, stride, channel, or length validation. Brightness accepts only exact integers from 10 through 100, with no clamping.
+- **Explicit exclusions:** no retry/wait policy, framebuffer dimension validation, player/color mapping, coordinate transformation, concrete `pydartsnut` import/construction, hardware/shared-memory access, renderer, loop, or secondary-display behavior was introduced.
+- **Remaining limitations:** physical-cabinet display parity, pixel orientation/order, backpressure policy, physical axis orientation, dart ownership/color, and the supported secondary-output API remain unresolved. Phase 0K remains the unchanged package-source evidence baseline.
+- **Recommended next task:** Phase 0M should add a neutral `InputPort` adapter that consumes facade values, uses an injected clock, adds monotonic sequence values, and preserves raw identifiers and coordinates without gameplay interpretation.
+
+
+### Phase 0L follow-up: recorded emulator display evidence
+
+**Evidence classification: VERIFIED_EMULATOR_OBSERVATION.** A recorded emulator run visibly confirms the intended emulator canvases as **128×128 for the main gameplay display** and **64×32 for the second/control display**. The screenshot also shows that the deployment panel was **not connected to the bound physical device**, so this observation must not be represented as verified physical-cabinet behavior.
+
+- **Future renderer candidate targets:** main renderer `128×128`; secondary renderer `64×32`.
+- **Boundary retained:** `DartsnutSdkFacade` continues to forward opaque bytes without width, height, stride, channel, or payload-length validation. No renderer or secondary-display implementation is added in Phase 0L.
+- **Still unresolved:** the supported secondary-screen SDK submission API, physical-cabinet parity, formats/orientation, lifecycle, and delivery behavior.
+- **Evidence integrity:** this observation supplements but does not modify or reclassify the Phase 0K package-source evidence JSON.
