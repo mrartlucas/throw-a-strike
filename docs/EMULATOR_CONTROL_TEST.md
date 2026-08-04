@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Phase 0R.2 is an interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
+Phase 0R.3 is an interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
 
 ## Current supported emulator behavior
 
-The harness selects Quick or Advanced control style, calls the verified `reset_blocking_state` operation before each fresh attempt, displays curve and power state, and accepts an unchanged dart index/x/y. An accepted dart displays DART ACCEPTED with its unchanged raw D-index/X/Y, holds for exactly 1.5 seconds, and then starts a fresh attempt in the already selected style. Early recovery remains restart-only. FOUL retains its 1.5-second automatic retry. It submits one packed, row-major RGB888 main framebuffer per iteration.
+The harness selects Quick or Advanced control style without automatically calling `reset_blocking_state`, displays curve and power state, and accepts an unchanged dart index/x/y only after a new emulator board event. An accepted dart displays DART ACCEPTED with its unchanged raw D-index/X/Y, holds for exactly 1.5 seconds, and then starts a fresh attempt in the already selected style. Early recovery remains restart-only. FOUL retains its 1.5-second automatic retry. It submits one packed, row-major RGB888 main framebuffer per iteration.
 
 ## Exact controls
 
@@ -39,7 +39,7 @@ In Advanced Play, throw before THROW READY. Verify **TOO SOON** and **REMOVE DAR
 
 ## Warning and FOUL procedure
 
-Reach THROW READY, wait 30 seconds, and verify **THROW NOW** remains visible. At 60 seconds verify **FOUL** and **0 PINS**. The cached FOUL frame holds for 1.5 seconds without polling input; the harness then rearms and begins a clean attempt without returning to style selection.
+Reach THROW READY, wait 30 seconds, and verify **THROW NOW** remains visible. At 60 seconds verify **FOUL** and **0 PINS**. The cached FOUL frame holds for 1.5 seconds without polling input; the harness then begins a clean attempt without resetting blocking state or returning to style selection.
 
 ## Expected 128×128 screen
 
@@ -55,7 +55,7 @@ The emulator visibly has a 64×32 control canvas, but no verified submission API
 
 No verified dart-removal signal exists and the coordinator intentionally has no rearm operation. Recovery hold therefore republishes cached artwork without polling, reading time, resetting hardware, or consuming future input. Restart the app to repeat the test.
 
-Accepted COMPLETE enters `ACCEPTED_HOLD`: the cached diagnostic is resubmitted without input polling or reset before its deadline, then the harness resets once and begins a fresh attempt after exactly 1.5 seconds. FOUL follows the same duration and fresh-attempt boundary. These retries are emulator retest preparation, not proof of physical-cabinet parity.
+Accepted COMPLETE enters `ACCEPTED_HOLD`: the cached diagnostic is resubmitted without input polling or reset before its deadline, then the harness begins a fresh attempt without resetting blocking state after exactly 1.5 seconds. FOUL follows the same duration and fresh-attempt boundary. These retries are emulator retest preparation, not proof of physical-cabinet parity.
 
 ## Accepted-dart behavior
 
@@ -75,6 +75,6 @@ Record the selected style, exact control sequence, elapsed time, displayed curve
 
 ## Evidence interpretation
 
-A log containing “event fired” confirms that the emulator emitted a dart event. “BLOCKED” may indicate that the active dart slot is suppressed from immediate duplicate firing until reset. An accepted dart now displays DART ACCEPTED and raw D-index/X/Y, and a fresh attempt begins after 1.5 seconds.
+A log containing “event fired” confirms that the emulator emitted a dart event. Direct emulator testing recorded `Dart 0 BLOCKED (event fired at [77, 84])` followed by `active at coordinate (77, 84)`. The emulator may retain that dart as active at its last coordinate; calling `reset_blocking_state` while it remains active can emit the same dart again. Phase 0R.1 and 0R.2 automatic-reset assumptions were therefore disproven. This diagnostic runtime never resets automatically. A confirms style only, and acceptance requires a new board event. After DART ACCEPTED holds for 1.5 seconds, a fresh attempt remains active without a new click and can reach THROW NOW and FOUL.
 
 The Deploy panel must say **Connected** before testing a physical board. Local screen clicks are emulator evidence only. The second screen remains unused, and no physical-board parity is claimed.

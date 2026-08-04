@@ -43,6 +43,19 @@ def confirmed_selection(style=ControlStyle.QUICK):
     return selector.apply(tuple(controls), 1)
 
 
+class RetainedDartSdk(FakeDartsnutSdk):
+    """Models an emulator dart retained as active after its event was blocked."""
+    def __init__(self, retained=RawDartHit(0,77,84)):
+        super().__init__(); self.retained=retained; self._replay=False
+    def reset_blocking_state(self):
+        super().reset_blocking_state(); self._replay=True
+    def get_dart_hits(self):
+        if self._replay:
+            self._replay=False
+            self._dart_batches.insert(0,(self.retained,))
+        return super().get_dart_hits()
+
+
 class RuntimeFlowTests(unittest.TestCase):
     def test_constructor_and_active_selection_do_not_rearm(self):
         sdk=FakeDartsnutSdk(); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(1),0)
@@ -50,7 +63,7 @@ class RuntimeFlowTests(unittest.TestCase):
         runtime.step()
         self.assertEqual(sdk.reset_blocking_count,0)
 
-    def test_manual_styles_and_timeout_rearm_once_before_frame(self):
+    def test_manual_styles_and_timeout_never_reset_before_frame(self):
         for buttons, clock, style in (((DartsnutButtonId.A,),Clock(1),ControlStyle.QUICK),
                                      ((DartsnutButtonId.RIGHT,DartsnutButtonId.A),Clock(1,2),ControlStyle.ADVANCED),
                                      (None,Clock(15),ControlStyle.QUICK)):
@@ -61,11 +74,36 @@ class RuntimeFlowTests(unittest.TestCase):
                         sdk.queue_button_events((button,)); result=runtime.step()
                 else: result=runtime.step()
                 self.assertEqual(result.selection.selected_style,style)
-                self.assertEqual(sdk.reset_blocking_count,1)
-                self.assertLess(sdk.calls.index(DartsnutSdkOperation.BUTTON_EVENTS),
-                                sdk.calls.index(DartsnutSdkOperation.RESET_BLOCKING_STATE))
-                reset_index=sdk.calls.index(DartsnutSdkOperation.RESET_BLOCKING_STATE)
-                self.assertEqual(sdk.calls[reset_index+1],DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION)
+                self.assertEqual(sdk.reset_blocking_count,0)
+                self.assertNotIn(DartsnutSdkOperation.RESET_BLOCKING_STATE,sdk.calls)
+                self.assertEqual(sdk.calls[-1],DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION)
+
+    def test_confirmation_only_consumes_batch_and_retained_dart_does_not_replay(self):
+        for buttons, expected in (((DartsnutButtonId.A,),ThrowControlPhase.THROW_READY),
+                                  ((DartsnutButtonId.RIGHT,DartsnutButtonId.A),ThrowControlPhase.SET_CURVE)):
+            with self.subTest(expected=expected):
+                sdk=RetainedDartSdk()
+                for button in buttons: sdk.queue_button_events((button,))
+                runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(1,2,3,3),0)
+                initial=None
+                for _ in buttons: initial=runtime.step()
+                self.assertEqual((initial.phase,initial.presentation.phase),
+                                 (EmulatorControlTestPhase.ATTEMPT,expected))
+                self.assertIsNone(initial.accepted_setup)
+                self.assertIsNone(runtime.coordinator.snapshot.outcome)
+                self.assertIsNone(runtime.accepted_timestamp)
+                self.assertEqual(sdk.reset_blocking_count,0)
+                active=runtime.step()
+                self.assertEqual(active.phase,EmulatorControlTestPhase.ATTEMPT)
+                self.assertIsNone(active.accepted_setup)
+
+    def test_style_selection_batch_dart_is_consumed_not_replayed(self):
+        sdk=RetainedDartSdk(); sdk.queue_dart_hits((RawDartHit(5,12,34),))
+        sdk.queue_button_events((DartsnutButtonId.A,))
+        runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(1,2),0)
+        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.ATTEMPT)
+        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.ATTEMPT)
+        self.assertIsNone(runtime.coordinator.snapshot.outcome)
 
     def test_confirmation_constructs_one_coordinator_and_does_not_replay(self):
         sdk=FakeDartsnutSdk(); sdk.queue_button_events((DartsnutButtonId.A,))
@@ -154,8 +192,23 @@ class RuntimeFlowTests(unittest.TestCase):
                                  (EmulatorControlTestPhase.ATTEMPT,style,expected,"STR",70))
                 self.assertNotEqual(id(runtime.coordinator),old)
                 self.assertIsNone(runtime.coordinator.snapshot.outcome)
-                self.assertEqual(sdk.reset_blocking_count,2)
+                self.assertEqual(sdk.reset_blocking_count,0)
                 self.assertEqual(len(sdk.submitted_framebuffers),frames+1)
+
+    def test_accepted_retained_coordinate_does_not_replay_after_exact_hold(self):
+        sdk=RetainedDartSdk(); clock=Clock(1,2,3.5,4)
+        runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        sdk.queue_dart_hits((sdk.retained,)); accepted=runtime.step()
+        self.assertEqual(accepted.phase,EmulatorControlTestPhase.ACCEPTED_HOLD)
+        self.assertEqual((accepted.accepted_setup.dart_index,accepted.accepted_setup.aim_x,
+                          accepted.accepted_setup.aim_y),(0,77,84))
+        fresh=runtime.step()
+        self.assertEqual(fresh.phase,EmulatorControlTestPhase.ATTEMPT)
+        self.assertEqual(sdk.reset_blocking_count,0)
+        stable=runtime.step()
+        self.assertEqual(stable.phase,EmulatorControlTestPhase.ATTEMPT)
+        self.assertIsNone(runtime.coordinator.snapshot.outcome)
 
     def test_exact_timeout_selects_quick_and_does_not_replay_selection(self):
         sdk=FakeDartsnutSdk(); clock=Clock(15,16); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
@@ -187,7 +240,7 @@ class RuntimeFlowTests(unittest.TestCase):
         sdk.queue_button_events((DartsnutButtonId.A,)); reads=clock.reads; input_calls=len(sdk.calls)
         runtime.step()
         self.assertEqual(clock.reads,reads); self.assertEqual(sdk.queued_button_batch_count,1)
-        self.assertEqual(sdk.reset_blocking_count,1)
+        self.assertEqual(sdk.reset_blocking_count,0)
         self.assertEqual(sdk.calls[input_calls:],(DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION,))
         self.assertNotIn(ThrowControlCommandKind.REARMED,
                          tuple(command.kind for command in []))
@@ -223,7 +276,7 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertEqual(held.framebuffer,foul.framebuffer)
         self.assertEqual(sdk.calls[calls:],(DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION,))
         self.assertEqual(sdk.queued_dart_batch_count,1)
-        self.assertEqual(sdk.reset_blocking_count,1)
+        self.assertEqual(sdk.reset_blocking_count,0)
         old=id(runtime.coordinator); frame_count=len(sdk.submitted_framebuffers); fresh=runtime.step()
         self.assertEqual(fresh.phase,EmulatorControlTestPhase.ATTEMPT)
         self.assertNotEqual(id(runtime.coordinator),old)
@@ -231,7 +284,7 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertEqual((fresh.presentation.phase,fresh.presentation.curve_label,fresh.presentation.power_percent),
                          (ThrowControlPhase.THROW_READY,"STR",70))
         self.assertFalse(fresh.presentation.warning_active)
-        self.assertEqual(sdk.reset_blocking_count,2)
+        self.assertEqual(sdk.reset_blocking_count,0)
         self.assertEqual(len(sdk.submitted_framebuffers),frame_count+1)
 
     def test_foul_retry_preserves_advanced_style_and_starts_clean(self):
@@ -291,12 +344,6 @@ class RaisingSdk(FakeDartsnutSdk):
     def running(self):
         raise RuntimeError("running failed")
 
-class ResetRaisingSdk(FakeDartsnutSdk):
-    def reset_blocking_state(self):
-        self._calls.append(DartsnutSdkOperation.RESET_BLOCKING_STATE)
-        raise RuntimeError("reset failed")
-
-
 class CleanupTests(unittest.TestCase):
     def assert_closed_after(self, sdk, call, error=None):
         if error:
@@ -326,14 +373,11 @@ class CleanupTests(unittest.TestCase):
         self.assert_closed_after(sdk,
             lambda: run_emulator_control_test(DartsnutSdkFacade(sdk),Clock(0),0,max_iterations=1,sleeper=stop),KeyboardInterrupt)
 
-    def test_reset_failure_propagates_prevents_coordinator_and_runner_closes(self):
-        sdk=ResetRaisingSdk(); sdk.queue_button_events((DartsnutButtonId.A,))
-        runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(1),0)
-        with self.assertRaises(RuntimeError): runtime.step()
-        self.assertIsNone(runtime.coordinator)
-        sdk=ResetRaisingSdk(); sdk.queue_button_events((DartsnutButtonId.A,))
-        with self.assertRaises(RuntimeError):
-            run_emulator_control_test(DartsnutSdkFacade(sdk),Clock(1),0,max_iterations=1,sleeper=lambda _:None)
+    def test_runner_never_resets_and_closes_once(self):
+        sdk=RetainedDartSdk(); sdk.queue_button_events((DartsnutButtonId.A,))
+        run_emulator_control_test(DartsnutSdkFacade(sdk),Clock(1),0,max_iterations=1,sleeper=lambda _:None)
+        self.assertEqual(sdk.reset_blocking_count,0)
+        self.assertNotIn(DartsnutSdkOperation.RESET_BLOCKING_STATE,sdk.calls)
         self.assertEqual(sdk.close_count,1)
 
 
