@@ -6,7 +6,7 @@ from numbers import Real
 import time
 from typing import Callable
 
-from throw_a_strike.adapters import DartsnutInputPort
+from throw_a_strike.adapters import DartsnutEmulatorInputPort
 from throw_a_strike.application import (ClockPort, InputEventKind, InvalidPortValueError, PortCapabilities,
     ThrowControlCoordinator, ThrowControlPresentation, ThrowControlStyleSelectionSnapshot,
     ThrowControlStyleSelector, build_throw_control_presentation, build_throw_control_step_presentation)
@@ -112,7 +112,7 @@ class EmulatorControlTestRuntime:
         capabilities=clock.capabilities
         if type(capabilities) is not PortCapabilities: raise InvalidPortValueError("clock capabilities must be exact PortCapabilities")
         start=_nonnegative(started_at,"started_at")
-        self._facade=facade; self._clock=clock; self._raw_input=DartsnutInputPort(facade,clock)
+        self._facade=facade; self._clock=clock; self._raw_input=DartsnutEmulatorInputPort(facade,clock)
         self._input=_ExpectedDartInputPort(self._raw_input)
         self._selector=ThrowControlStyleSelector(start); self._coordinator=None
         self._round=BowlingRoundMachine(); self._wrong_timestamp=None

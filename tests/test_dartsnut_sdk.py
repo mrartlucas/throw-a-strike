@@ -12,10 +12,11 @@ from throw_a_strike.platform import (
 
 class RawSdk:
     def __init__(self):
-        self.running = True; self.hits = []; self.buttons = {b.value: False for b in DartsnutButtonId}
+        self.running = True; self.hits = []; self.active = []; self.buttons = {b.value: False for b in DartsnutButtonId}
         self.frame_result = True; self.none_result = None; self.received = []; self.counts = {}
     def _call(self, name): self.counts[name] = self.counts.get(name, 0) + 1
     def get_dart_hits(self): self._call("hits"); return self.hits
+    def get_active_darts(self): self._call("active"); return self.active
     def get_button_events(self): self._call("buttons"); return self.buttons
     def reset_blocking_state(self): self._call("reset"); return self.none_result
     def update_frame_buffer(self, frame): self._call("frame"); self.received.append(frame); return self.frame_result
@@ -27,7 +28,7 @@ class PublicTypeTests(unittest.TestCase):
     def test_button_enum_exact_and_ordered(self):
         self.assertEqual([(x.name, x.value) for x in DartsnutButtonId], [("A","btn_a"),("B","btn_b"),("UP","btn_up"),("RIGHT","btn_right"),("LEFT","btn_left"),("DOWN","btn_down"),("HOME","btn_home"),("RESERVED","btn_reserved")])
     def test_operation_enum_exact(self):
-        self.assertEqual([x.value for x in DartsnutSdkOperation], ["running_state","dart_hits","button_events","reset_blocking_state","framebuffer_submission","brightness","close"])
+        self.assertEqual([x.value for x in DartsnutSdkOperation], ["running_state","dart_hits","active_darts","button_events","reset_blocking_state","framebuffer_submission","brightness","close"])
     def test_hit_frozen_and_boundaries(self):
         for hit in (RawDartHit(0,0,0), RawDartHit(11,127,127)): self.assertIs(type(hit), RawDartHit)
         with self.assertRaises(dataclasses.FrozenInstanceError): RawDartHit(0,0,0).x = 1
@@ -54,7 +55,7 @@ class ConstructionTests(unittest.TestCase):
         for value in (None, RawSdk):
             with self.assertRaises(InvalidDartsnutSdkValueError): DartsnutSdkFacade(value)
     def test_rejects_each_missing_or_noncallable_method(self):
-        for name in ("get_dart_hits", "get_button_events", "reset_blocking_state", "update_frame_buffer", "set_brightness", "close"):
+        for name in ("get_dart_hits", "get_active_darts", "get_button_events", "reset_blocking_state", "update_frame_buffer", "set_brightness", "close"):
             sdk=RawSdk(); setattr(sdk,name,None)
             with self.subTest(name=name), self.assertRaises(InvalidDartsnutSdkValueError): DartsnutSdkFacade(sdk)
     def test_no_public_sdk_property_or_import(self):
@@ -95,6 +96,22 @@ class FacadeTests(unittest.TestCase):
         self.sdk.get_dart_hits=fail; facade=DartsnutSdkFacade(self.sdk)
         with self.assertRaises(DartsnutSdkOperationError) as caught: facade.read_dart_hits()
         self.assertIs(caught.exception.operation,DartsnutSdkOperation.DART_HITS); self.assertIs(caught.exception.__cause__,cause); self.assertEqual(self.sdk.counts["hits"],1)
+    def test_active_darts_valid_malformed_and_operational_error(self):
+        self.assertEqual(self.facade.read_active_darts(), ())
+        self.sdk.active = [(0, 62, 43), (11, 127, 0)]
+        self.assertEqual(self.facade.read_active_darts(), (RawDartHit(0,62,43), RawDartHit(11,127,0)))
+        for value in ((), [{}], [(0, 0)], [(False, 0, 0)], [(12, 0, 0)], [(0, 128, 0)], [(0, 0, 128)]):
+            self.sdk.active = value
+            with self.subTest(value=value), self.assertRaises(InvalidDartsnutSdkResponseError) as caught:
+                self.facade.read_active_darts()
+            self.assertIs(caught.exception.operation, DartsnutSdkOperation.ACTIVE_DARTS)
+        cause = OSError("active failed")
+        def fail(): raise cause
+        self.sdk.get_active_darts = fail
+        with self.assertRaises(DartsnutSdkOperationError) as caught:
+            DartsnutSdkFacade(self.sdk).read_active_darts()
+        self.assertIs(caught.exception.operation, DartsnutSdkOperation.ACTIVE_DARTS)
+        self.assertIs(caught.exception.__cause__, cause)
     def test_buttons_order_and_all_values(self):
         self.assertEqual(self.facade.read_button_events(),())
         self.sdk.buttons={b.value: b in (DartsnutButtonId.RESERVED,DartsnutButtonId.A,DartsnutButtonId.HOME) for b in reversed(tuple(DartsnutButtonId))}

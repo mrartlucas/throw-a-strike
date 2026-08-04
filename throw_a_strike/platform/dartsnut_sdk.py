@@ -22,6 +22,7 @@ class DartsnutButtonId(str, Enum):
 class DartsnutSdkOperation(str, Enum):
     RUNNING_STATE = "running_state"
     DART_HITS = "dart_hits"
+    ACTIVE_DARTS = "active_darts"
     BUTTON_EVENTS = "button_events"
     RESET_BLOCKING_STATE = "reset_blocking_state"
     FRAMEBUFFER_SUBMISSION = "framebuffer_submission"
@@ -87,6 +88,7 @@ class DartsnutSdkProtocol(Protocol):
     @property
     def running(self) -> bool: ...
     def get_dart_hits(self) -> list[tuple[int, int, int]]: ...
+    def get_active_darts(self) -> list[tuple[int, int, int]]: ...
     def get_button_events(self) -> dict[str, bool]: ...
     def reset_blocking_state(self) -> None: ...
     def update_frame_buffer(self, frame: bytearray) -> bool: ...
@@ -95,7 +97,7 @@ class DartsnutSdkProtocol(Protocol):
 
 
 class DartsnutSdkFacade:
-    _METHODS = ("get_dart_hits", "get_button_events", "reset_blocking_state", "update_frame_buffer", "set_brightness", "close")
+    _METHODS = ("get_dart_hits", "get_active_darts", "get_button_events", "reset_blocking_state", "update_frame_buffer", "set_brightness", "close")
 
     def __init__(self, sdk: DartsnutSdkProtocol) -> None:
         if sdk is None or isinstance(sdk, type):
@@ -135,6 +137,25 @@ class DartsnutSdkFacade:
         for entry in response:
             if type(entry) is not tuple or len(entry) != 3:
                 raise self._malformed(operation, "each hit must be an exact three-item tuple")
+            try:
+                hit = RawDartHit(*entry)
+            except InvalidDartsnutSdkValueError as error:
+                raise self._malformed(operation, str(error)) from error
+            hits.append(hit)
+        return tuple(hits)
+
+    def read_active_darts(self) -> tuple[RawDartHit, ...]:
+        operation = DartsnutSdkOperation.ACTIVE_DARTS
+        try:
+            response = self.__sdk.get_active_darts()
+        except Exception as error:
+            raise DartsnutSdkOperationError(operation, error) from error
+        if type(response) is not list:
+            raise self._malformed(operation, "response must be an exact list")
+        hits = []
+        for entry in response:
+            if type(entry) is not tuple or len(entry) != 3:
+                raise self._malformed(operation, "each active dart must be an exact three-item tuple")
             try:
                 hit = RawDartHit(*entry)
             except InvalidDartsnutSdkValueError as error:

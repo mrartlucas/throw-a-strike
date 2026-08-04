@@ -69,7 +69,7 @@ def setup_port(clock=None, initial_sequence=0):
 
 class PublicStructureTests(unittest.TestCase):
     def test_exact_export_and_protocol_compliance(self):
-        self.assertEqual(adapters.__all__, ("DartsnutInputPort",))
+        self.assertEqual(adapters.__all__, ("DartsnutInputPort", "DartsnutEmulatorInputPort"))
         _, _, port = setup_port()
         self.assertIsInstance(port, InputPort)
         self.assertEqual(

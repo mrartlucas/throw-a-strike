@@ -57,6 +57,46 @@ class RetainedDartSdk(FakeDartsnutSdk):
 
 
 class RuntimeFlowTests(unittest.TestCase):
+    def test_stale_active_dart_moves_complete_exact_two_throw_round(self):
+        sdk=FakeDartsnutSdk(); sdk.set_active_darts((RawDartHit(0,62,43),))
+        runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(0,1,2,3.5,4,5.5),0)
+        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.SELECT_STYLE)
+        self.assertIsNone(runtime.round_snapshot.first_result)
+        sdk.queue_button_events((DartsnutButtonId.A,)); ready=runtime.step()
+        self.assertEqual((ready.phase,ready.presentation.phase,runtime.expected_dart_index,
+                          runtime.expected_displayed_dart_number),
+                         (EmulatorControlTestPhase.ATTEMPT,ThrowControlPhase.THROW_READY,0,1))
+        self.assertIsNone(ready.accepted_setup)
+        sdk.set_active_darts((RawDartHit(0,90,70),)); accepted=runtime.step()
+        self.assertEqual(accepted.phase,EmulatorControlTestPhase.ACCEPTED_HOLD)
+        self.assertEqual((accepted.accepted_setup.dart_index,accepted.accepted_setup.aim_x,
+                          accepted.accepted_setup.aim_y),(0,90,70))
+        self.assertEqual(runtime.round_snapshot.first_result.kind,BowlingThrowResultKind.MISS)
+        second=runtime.step()
+        self.assertEqual((second.phase,runtime.expected_dart_index,runtime.expected_displayed_dart_number,
+                          second.presentation.phase),(EmulatorControlTestPhase.ATTEMPT,4,5,ThrowControlPhase.THROW_READY))
+        sdk.set_active_darts((RawDartHit(0,90,70),RawDartHit(4,35,81))); runtime.step()
+        self.assertEqual((runtime.round_snapshot.second_result.dart_index,
+                          runtime.round_snapshot.second_result.aim_x,
+                          runtime.round_snapshot.second_result.aim_y),(4,35,81))
+        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.ROUND_COMPLETE)
+        self.assertEqual(sdk.reset_blocking_count,0)
+
+    def test_stale_active_dart_foul_advances_then_raw_four_completes(self):
+        sdk=FakeDartsnutSdk(); sdk.set_active_darts((RawDartHit(0,62,43),))
+        runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(0,1,31,32.5,33,34.5),0)
+        runtime.step(); sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.FOUL_HOLD)
+        self.assertEqual(runtime.round_snapshot.first_result.kind,BowlingThrowResultKind.FOUL)
+        self.assertIsNone(runtime.coordinator.snapshot.outcome.setup)
+        second=runtime.step()
+        self.assertEqual((second.phase,runtime.expected_dart_index,runtime.expected_displayed_dart_number,
+                          second.presentation.phase),(EmulatorControlTestPhase.ATTEMPT,4,5,ThrowControlPhase.THROW_READY))
+        sdk.set_active_darts((RawDartHit(0,62,43),RawDartHit(4,35,81)))
+        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.ACCEPTED_HOLD)
+        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.ROUND_COMPLETE)
+        self.assertEqual(sdk.reset_blocking_count,0)
+
     def test_blue_two_throw_round_uses_raw_zero_then_four_and_diagnostic_miss(self):
         sdk=FakeDartsnutSdk(); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(1,2,3.5,4,5.5),0)
         sdk.queue_button_events((DartsnutButtonId.A,)); first=runtime.step()

@@ -320,3 +320,11 @@ Phase 0S adds a frozen, validated pure two-throw round snapshot/result vocabular
 Final review corrections retain every locked primary/secondary prompt in the active HUD, enforce FOUL over wrong-dart feedback at and after the exact deadline, and validate continuous rack history for every publicly constructible round snapshot.
 
 Final verification restores THROW READY flashing in the round renderer without blinking its secondary THROW NOW warning or any setup, recovery, or FOUL prompt. The post-correction suite contains 502 passing tests.
+
+## Phase 0S.1 audit — stale-safe emulator input
+
+**Status: IMPLEMENTED - STALE-SAFE EMULATOR INPUT RETEST READY**
+
+The verified SDK boundary now includes `get_active_darts`. Only the emulator diagnostic adapter uses it, after `get_dart_hits` and before buttons, to baseline startup active darts and recognize later coordinate/state changes. Duplicate same-index normal/active evidence emits once with normal-hit coordinates. A stale raw Dart 0 therefore cannot score during selection but can score with updated coordinates after it moves. FOUL progression remains Throw 1 to Throw 2 / Dart 5, and fresh raw Dart 4 completes the round.
+
+The physical `DartsnutInputPort` remains transition-event based and unchanged; zero automatic blocking resets are made. This is emulator compatibility policy, not a physical-board claim, and it adds no physics, scoring, multiplayer rotation, coordinate transform, secondary-display API, or other physical assumption.
