@@ -57,6 +57,12 @@ from .throw_controls import (
     ThrowControlOutcomeKind, ThrowControlPhase, ThrowControlSnapshot, ThrowSetup,
     THROW_FOUL_SECONDS, THROW_WARNING_SECONDS,
 )
+from .ball_trajectory import (
+    BALL_RADIUS_PIXELS, BALL_START_X, BALL_START_Y, BALL_MIN_X, BALL_MAX_X,
+    BALL_MIN_Y, BALL_MAX_Y, MAX_CURVE_OFFSET_PIXELS,
+    InvalidBallTrajectoryValueError, BallTrajectory, BallTrajectorySample,
+    build_ball_trajectory, sample_ball_trajectory,
+)
 from .schedule import (
     InvalidScheduleConfigurationError,
     PartyFrameSchedule,
@@ -117,6 +123,10 @@ __all__ = [
     "ThrowControlMachine",
     "THROW_WARNING_SECONDS",
     "THROW_FOUL_SECONDS",
+    "BALL_RADIUS_PIXELS", "BALL_START_X", "BALL_START_Y", "BALL_MIN_X",
+    "BALL_MAX_X", "BALL_MIN_Y", "BALL_MAX_Y", "MAX_CURVE_OFFSET_PIXELS",
+    "InvalidBallTrajectoryValueError", "BallTrajectory", "BallTrajectorySample",
+    "build_ball_trajectory", "sample_ball_trajectory",
     "InvalidMatchConfigError",
     "LOCKED_BRANDING",
     "MatchConfig",
