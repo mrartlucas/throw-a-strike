@@ -81,8 +81,10 @@ wrong-dart behavior, and physical transforms remain unknown.
 
 An exact `ast.Dict` contains `btn_a`, `btn_b`, `btn_up`, `btn_right`, `btn_left`,
 `btn_down`, `btn_home`, and `btn_reserved` (CLM-086). The debounce assignment is
-0.03 seconds (CLM-087). The event result comprehension initializes values to
-`False`, and its loop processes `(btn_name, button_pressed)` (CLM-088, CLM-089).
+0.03 seconds (CLM-087). Exact literal evaluation of the event dictionary
+comprehension's value node produces `False` (CLM-088); a nonliteral or
+conflicting set of comprehension values would instead be unknown. Its loop
+processes `(btn_name, button_pressed)` (CLM-089).
 These names do not establish physical placement or intended game controls.
 
 ## 9. Lifecycle contract
@@ -118,8 +120,9 @@ branches recorded in CLM-096–CLM-100.
 
 `set_value`/`get_value` signatures are CLM-023 and CLM-024. Exact calls establish
 `json.load`, `json.dump`, `os.replace`, existence checks, and cleanup removal
-(CLM-101–CLM-112). The temporary suffix `.tmp` comes from its assignment
-(CLM-113). These package operations do not establish cabinet quota, retention,
+(CLM-101–CLM-112). The temporary suffix `.tmp` is extracted from the precise
+string-constant node used by its assignment (CLM-113); a missing or conflicting
+suffix literal would instead be unknown. These package operations do not establish cabinet quota, retention,
 isolation, or filesystem guarantees.
 
 ## 13. Secondary-display search
@@ -131,6 +134,10 @@ description body; RECORD paths; and all safely decodable small UTF-8 text files.
 The JSON separately populates `matching_symbols`, `matching_source_locations`,
 `public_api_candidates`, `metadata_matches`, `record_matches`, and
 `text_file_matches` from actual results.
+
+An empty complete search is `NOT_FOUND_IN_INSPECTED_PACKAGE`; a public source
+candidate is `VERIFIED_PACKAGE_SOURCE`; prose/text matches without a public
+source candidate are `UNKNOWN_HARDWARE`.
 
 All result collections are empty for this wheel, so:
 

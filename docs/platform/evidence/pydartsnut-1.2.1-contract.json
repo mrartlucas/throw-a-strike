@@ -34,6 +34,13 @@
       "CLM-088",
       "CLM-089"
     ],
+    "event_default": {
+      "claim_ids": [
+        "CLM-088"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": false
+    },
     "keys": {
       "claim_ids": [
         "CLM-086"
@@ -316,20 +323,20 @@
     {
       "claim_id": "CLM-030",
       "evidence_ids": [
-        "E032"
+        "E037"
       ],
       "status": "VERIFIED_PACKAGE_SOURCE",
-      "topic": "constructor.option.--params.default",
-      "value": "{}"
+      "topic": "widget_parameters.parse",
+      "value": "json.loads"
     },
     {
       "claim_id": "CLM-031",
       "evidence_ids": [
-        "E033"
+        "E038"
       ],
       "status": "VERIFIED_PACKAGE_SOURCE",
-      "topic": "constructor.option.--shm.default",
-      "value": "pdishm"
+      "topic": "persistence.directory_creation",
+      "value": "os.makedirs"
     },
     {
       "claim_id": "CLM-032",
@@ -343,15 +350,6 @@
     {
       "claim_id": "CLM-033",
       "evidence_ids": [
-        "E035"
-      ],
-      "status": "VERIFIED_PACKAGE_SOURCE",
-      "topic": "constructor.option.--min-active-duration.default",
-      "value": null
-    },
-    {
-      "claim_id": "CLM-034",
-      "evidence_ids": [
         "E036"
       ],
       "status": "VERIFIED_PACKAGE_SOURCE",
@@ -359,22 +357,31 @@
       "value": null
     },
     {
-      "claim_id": "CLM-035",
+      "claim_id": "CLM-034",
       "evidence_ids": [
-        "E037"
+        "E035"
       ],
       "status": "VERIFIED_PACKAGE_SOURCE",
-      "topic": "widget_parameters.parse",
-      "value": "json.loads"
+      "topic": "constructor.option.--min-active-duration.default",
+      "value": null
+    },
+    {
+      "claim_id": "CLM-035",
+      "evidence_ids": [
+        "E032"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "constructor.option.--params.default",
+      "value": "{}"
     },
     {
       "claim_id": "CLM-036",
       "evidence_ids": [
-        "E038"
+        "E033"
       ],
       "status": "VERIFIED_PACKAGE_SOURCE",
-      "topic": "persistence.directory_creation",
-      "value": "os.makedirs"
+      "topic": "constructor.option.--shm.default",
+      "value": "pdishm"
     },
     {
       "claim_id": "CLM-037",
@@ -1133,28 +1140,28 @@
       },
       "--idle-unblock-duration": {
         "claim_ids": [
-          "CLM-034"
+          "CLM-033"
         ],
         "default": null,
         "status": "VERIFIED_PACKAGE_SOURCE"
       },
       "--min-active-duration": {
         "claim_ids": [
-          "CLM-033"
+          "CLM-034"
         ],
         "default": null,
         "status": "VERIFIED_PACKAGE_SOURCE"
       },
       "--params": {
         "claim_ids": [
-          "CLM-030"
+          "CLM-035"
         ],
         "default": "{}",
         "status": "VERIFIED_PACKAGE_SOURCE"
       },
       "--shm": {
         "claim_ids": [
-          "CLM-031"
+          "CLM-036"
         ],
         "default": "pdishm",
         "status": "VERIFIED_PACKAGE_SOURCE"
@@ -1162,11 +1169,11 @@
     },
     "setup_claim_ids": [
       "CLM-029",
-      "CLM-030",
-      "CLM-031",
       "CLM-032",
       "CLM-033",
-      "CLM-034"
+      "CLM-034",
+      "CLM-035",
+      "CLM-036"
     ],
     "signature": {
       "claim_ids": [
@@ -1640,9 +1647,9 @@
       "archive_path": "pydartsnut/dartsnut.py",
       "evidence_id": "E032",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
-      "extraction_method": "ast.Call(add_argument)",
-      "line_end": 69,
-      "line_start": 64,
+      "extraction_method": "ast.literal_eval(default keyword)",
+      "line_end": 67,
+      "line_start": 67,
       "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
       "symbol": "Dartsnut.__init__"
     },
@@ -1650,9 +1657,9 @@
       "archive_path": "pydartsnut/dartsnut.py",
       "evidence_id": "E033",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
-      "extraction_method": "ast.Call(add_argument)",
-      "line_end": 75,
-      "line_start": 70,
+      "extraction_method": "ast.literal_eval(default keyword)",
+      "line_end": 73,
+      "line_start": 73,
       "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
       "symbol": "Dartsnut.__init__"
     },
@@ -1660,9 +1667,9 @@
       "archive_path": "pydartsnut/dartsnut.py",
       "evidence_id": "E034",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
-      "extraction_method": "ast.Call(add_argument)",
-      "line_end": 81,
-      "line_start": 76,
+      "extraction_method": "ast.literal_eval(default keyword)",
+      "line_end": 79,
+      "line_start": 79,
       "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
       "symbol": "Dartsnut.__init__"
     },
@@ -1670,9 +1677,9 @@
       "archive_path": "pydartsnut/dartsnut.py",
       "evidence_id": "E035",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
-      "extraction_method": "ast.Call(add_argument)",
-      "line_end": 87,
-      "line_start": 82,
+      "extraction_method": "ast.literal_eval(default keyword)",
+      "line_end": 85,
+      "line_start": 85,
       "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
       "symbol": "Dartsnut.__init__"
     },
@@ -1680,9 +1687,9 @@
       "archive_path": "pydartsnut/dartsnut.py",
       "evidence_id": "E036",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
-      "extraction_method": "ast.Call(add_argument)",
-      "line_end": 93,
-      "line_start": 88,
+      "extraction_method": "ast.literal_eval(default keyword)",
+      "line_end": 91,
+      "line_start": 91,
       "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
       "symbol": "Dartsnut.__init__"
     },
@@ -2100,7 +2107,7 @@
       "archive_path": "pydartsnut/_input_handler.py",
       "evidence_id": "E078",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
-      "extraction_method": "ast.DictComp",
+      "extraction_method": "ast.literal_eval(DictComp.value)",
       "line_end": 323,
       "line_start": 323,
       "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
@@ -2350,7 +2357,7 @@
       "archive_path": "pydartsnut/dartsnut.py",
       "evidence_id": "E103",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
-      "extraction_method": "ast.Assign/BinOp",
+      "extraction_method": "ast.Constant temporary-path suffix",
       "line_end": 372,
       "line_start": 372,
       "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
@@ -2829,7 +2836,7 @@
   },
   "persistence": {
     "directory_claim_ids": [
-      "CLM-036"
+      "CLM-031"
     ],
     "error_claim_ids": [
       "CLM-096",
@@ -2882,6 +2889,7 @@
       "claim_ids": [
         "CLM-113"
       ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
       "value": ".tmp"
     }
   },
@@ -3176,14 +3184,14 @@
   "widget_parameters": {
     "params_option": {
       "claim_ids": [
-        "CLM-030"
+        "CLM-035"
       ],
       "default": "{}",
       "status": "VERIFIED_PACKAGE_SOURCE"
     },
     "parse": {
       "claim_ids": [
-        "CLM-035"
+        "CLM-030"
       ],
       "status": "VERIFIED_PACKAGE_SOURCE",
       "value": "json.loads"

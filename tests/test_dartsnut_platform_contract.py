@@ -176,6 +176,29 @@ class LiteralExtractionTests(unittest.TestCase):
         self.assertIn("btn_extra",changed["button_input"]["keys"]["value"])
         self.assertNotIn("btn_reserved",changed["button_input"]["keys"]["value"])
 
+    def test_button_event_default_is_literal_derived_and_ambiguity_is_unknown(self):
+        false_data=self.inspect()
+        self.assertIs(false_data["button_input"]["event_default"]["value"],False)
+        event_claim=next(c for c in false_data["claims"] if c["topic"]=="button_input.event_default")
+        event_evidence=next(e for e in false_data["evidence"] if e["evidence_id"] in event_claim["evidence_ids"])
+        self.assertEqual(event_evidence["extraction_method"],"ast.literal_eval(DictComp.value)")
+        self.assertEqual(event_evidence["line_start"],event_evidence["line_end"])
+        true_data=self.inspect(BASE_SOURCE.replace("{btn:False for btn", "{btn:True for btn"))
+        self.assertIs(true_data["button_input"]["event_default"]["value"],True)
+        nonliteral=self.inspect(BASE_SOURCE.replace("{btn:False for btn", "{btn:self.default for btn"))
+        self.assertEqual(nonliteral["button_input"]["event_default"]["status"],"UNKNOWN_HARDWARE")
+        conflicting=self.inspect(BASE_SOURCE.replace(
+            "result={btn:False for btn in self.engine.get_buttons()}",
+            "result={btn:False for btn in self.engine.get_buttons()}\n  other={btn:True for btn in self.engine.get_buttons()}"))
+        self.assertEqual(conflicting["button_input"]["event_default"]["status"],"UNKNOWN_HARDWARE")
+
+    def test_conflicting_button_dictionaries_are_unknown(self):
+        marker='  buttons={"btn_a":False,"btn_b":False,"btn_up":False,"btn_right":False,"btn_left":False,"btn_down":False,"btn_home":False,"btn_reserved":False}'
+        identical=self.inspect(BASE_SOURCE.replace(marker,marker+'\n  same={"btn_a":True,"btn_b":True,"btn_up":True,"btn_right":True,"btn_left":True,"btn_down":True,"btn_home":True,"btn_reserved":True}'))
+        self.assertEqual(identical["button_input"]["keys"]["status"],"VERIFIED_PACKAGE_SOURCE")
+        conflicting=self.inspect(BASE_SOURCE.replace(marker,marker+'\n  other={"btn_x":False}'))
+        self.assertEqual(conflicting["button_input"]["keys"]["status"],"UNKNOWN_HARDWARE")
+
     def test_brightness_bounds_and_persistence_operations_are_extracted(self):
         data=self.inspect()
         self.assertEqual(data["brightness"]["bounds"]["value"],[10,100])
@@ -187,10 +210,37 @@ class LiteralExtractionTests(unittest.TestCase):
         removed=self.inspect(BASE_SOURCE.replace("; os.replace(temp_file,self.data_store_file)",""))
         self.assertNotIn("os.replace",removed["persistence"]["operations"])
 
+    def test_temporary_suffix_is_literal_derived_and_ambiguity_is_unknown(self):
+        data=self.inspect(); self.assertEqual(data["persistence"]["temporary_suffix"]["value"],".tmp")
+        suffix_claim=next(c for c in data["claims"] if c["topic"]=="persistence.temporary_suffix")
+        suffix_evidence=next(e for e in data["evidence"] if e["evidence_id"] in suffix_claim["evidence_ids"])
+        self.assertEqual(suffix_evidence["extraction_method"],"ast.Constant temporary-path suffix")
+        self.assertEqual(suffix_evidence["line_start"],suffix_evidence["line_end"])
+        backup=self.inspect(BASE_SOURCE.replace('self.data_store_file+".tmp"','self.data_store_file+".tmp-backup"'))
+        self.assertEqual(backup["persistence"]["temporary_suffix"]["value"],".tmp-backup")
+        nonliteral=self.inspect(BASE_SOURCE.replace('self.data_store_file+".tmp"','self.data_store_file+suffix'))
+        self.assertEqual(nonliteral["persistence"]["temporary_suffix"]["status"],"UNKNOWN_HARDWARE")
+        conflicting=self.inspect(BASE_SOURCE.replace(
+            'temp_file=self.data_store_file+".tmp"',
+            'temp_file=self.data_store_file+".tmp"\n  temp_backup=self.data_store_file+".bak"'))
+        self.assertEqual(conflicting["persistence"]["temporary_suffix"]["status"],"UNKNOWN_HARDWARE")
+
     def test_constructor_options_are_extracted_and_change(self):
         data=self.inspect(); self.assertEqual(data["constructor"]["options"]["--shm"]["default"],"pdishm")
         changed=self.inspect(BASE_SOURCE.replace('default="pdishm"','default="other"'))
         self.assertEqual(changed["constructor"]["options"]["--shm"]["default"],"other")
+
+    def test_duplicate_constructor_options_identical_or_unknown(self):
+        anchor='  p.add_argument("--shm", default="pdishm")'
+        identical=self.inspect(BASE_SOURCE.replace(anchor,anchor+'\n'+anchor))
+        option=identical["constructor"]["options"]["--shm"]
+        self.assertEqual(option["status"],"VERIFIED_PACKAGE_SOURCE")
+        claim=next(c for c in identical["claims"] if c["claim_id"]==option["claim_ids"][0])
+        self.assertEqual(len(claim["evidence_ids"]),2)
+        conflicting=self.inspect(BASE_SOURCE.replace(anchor,anchor+'\n  p.add_argument("--shm", default="other")'))
+        self.assertEqual(conflicting["constructor"]["options"]["--shm"]["status"],"UNKNOWN_HARDWARE")
+        implicit=self.inspect(BASE_SOURCE.replace(anchor,anchor+'\n  p.add_argument("--shm")'))
+        self.assertEqual(implicit["constructor"]["options"]["--shm"]["status"],"UNKNOWN_HARDWARE")
 
     def test_claim_and_evidence_integrity_and_precise_lines(self):
         data=self.inspect(); evidence={e["evidence_id"]:e for e in data["evidence"]}
@@ -226,11 +276,11 @@ class SecondarySearchTests(unittest.TestCase):
             self.assertEqual(section[key],[])
         self.assertIn("No secondary-display API",section["finding"])
 
-    def test_metadata_description_and_text_files_are_searched(self):
+    def test_metadata_only_match_is_unknown_hardware(self):
         data=self.inspect(description="A scoreboard description",extra={"notes.txt":"auxiliary output"})
         section=data["secondary_display"]
         self.assertTrue(section["metadata_matches"]); self.assertTrue(section["text_file_matches"])
-        self.assertNotEqual(section["status"],"NOT_FOUND_IN_INSPECTED_PACKAGE")
+        self.assertEqual(section["status"],"UNKNOWN_HARDWARE")
 
     def test_module_function_string_symbol_and_candidates_are_generated(self):
         source=BASE_SOURCE+'\ndef secondary_screen():\n text="widget_display mode"\n return text\n'
@@ -238,6 +288,7 @@ class SecondarySearchTests(unittest.TestCase):
         names={x["name"] for x in section["matching_symbols"]}
         candidates={x["name"] for x in section["public_api_candidates"]}
         self.assertIn("secondary_screen",names); self.assertIn("secondary_screen",candidates)
+        self.assertEqual(section["status"],"VERIFIED_PACKAGE_SOURCE")
         self.assertTrue(any(x["kind"]=="string_constant" for x in section["matching_source_locations"]))
         self.assertNotIn("No secondary-display API",section["finding"])
 

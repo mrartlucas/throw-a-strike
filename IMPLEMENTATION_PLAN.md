@@ -881,5 +881,9 @@ explicit fallback composition remain future work.
   public assignments, imports/exports, string constants, METADATA headers and
   description, RECORD paths, and safely decoded small UTF-8 files; result arrays
   are populated from matches rather than constants.
-- Focused coverage is now 24 tests. The complete suite is **272 tests**: the
-  existing unchanged 248 tests plus 24 Phase 0K integrity tests.
+- Focused coverage is now 28 tests. The complete suite is **276 tests**: the
+  existing unchanged 248 tests plus 28 Phase 0K integrity tests. Final literal
+  integrity coverage proves dictionary-comprehension values, temporary suffix
+  strings, duplicate constructor options, conflicting button dictionaries, and
+  three-way secondary-search status classification are source-derived or
+  conservatively unknown.

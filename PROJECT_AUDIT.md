@@ -190,3 +190,10 @@ and 3 unresolved contradictions. Absent or ambiguous synthetic syntax produces
 unknown fields. Secondary-display discovery now searches Python text and AST
 symbols/functions/assignments/imports/string constants, METADATA headers and
 description, RECORD paths, and every safely decoded small UTF-8 wheel file.
+
+### Phase 0K final literal-integrity correction
+
+Button dictionary-comprehension value nodes and temporary-path string constants
+are now literal-evaluated directly. Duplicate constructor options and button
+dictionaries are combined conservatively, and metadata/text-only secondary
+matches are `UNKNOWN_HARDWARE` rather than package-source verification.

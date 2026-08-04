@@ -200,22 +200,39 @@ def inspect_wheel(path: Path, expected_sha256: str, *, allow_synthetic: bool = F
                                                       "VERIFIED_PACKAGE_SOURCE", item["evidence_ids"])
 
     # Constructor options/defaults and setup calls/assignments.
-    constructor_options = {}
+    constructor_option_candidates = {}
     for archive, call in nodes("Dartsnut.__init__", ast.Call):
         name = _call_name(call)
         if name.endswith("add_argument") and call.args:
             option = _literal(call.args[0])
-            default_nodes = [kw.value for kw in call.keywords if kw.arg == "default"]
-            default = _literal(default_nodes[0]) if len(default_nodes) == 1 else None
             if isinstance(option, str):
-                cid = precise(f"constructor.option.{option}.default", default, archive, "Dartsnut.__init__", call, "ast.Call(add_argument)")
-                constructor_options[option] = {"default": default, "status": "VERIFIED_PACKAGE_SOURCE", "claim_ids": [cid]}
+                default_nodes = [kw.value for kw in call.keywords if kw.arg == "default"]
+                explicit = len(default_nodes) == 1
+                value = _literal(default_nodes[0]) if explicit else None
+                node = default_nodes[0] if explicit else call
+                eid = evidence_for("VERIFIED_PACKAGE_SOURCE", archive, "Dartsnut.__init__", node,
+                                   "ast.literal_eval(default keyword)" if explicit else "ast.Call(no explicit default keyword)")
+                constructor_option_candidates.setdefault(option, []).append(
+                    {"value": value, "explicit": explicit, "evidence_id": eid})
         if name == "signal.signal":
             precise("constructor.signal_handler_registration", ast.unparse(call), archive, "Dartsnut.__init__", call, "ast.Call(signal.signal)")
         if name == "json.loads":
             precise("widget_parameters.parse", "json.loads", archive, "Dartsnut.__init__", call, "ast.Call(json.loads)")
         if name == "os.makedirs":
             precise("persistence.directory_creation", "os.makedirs", archive, "Dartsnut.__init__", call, "ast.Call(os.makedirs)")
+    constructor_options = {}
+    for option, candidates_for_option in sorted(constructor_option_candidates.items()):
+        eids = [candidate["evidence_id"] for candidate in candidates_for_option]
+        values = {json.dumps(candidate["value"], sort_keys=True) for candidate in candidates_for_option if candidate["explicit"]}
+        if all(candidate["explicit"] for candidate in candidates_for_option) and len(values) == 1:
+            value = candidates_for_option[0]["value"]
+            cid = add_claim(f"constructor.option.{option}.default", value,
+                            "VERIFIED_PACKAGE_SOURCE", eids)
+            constructor_options[option] = {"default": value, "status": "VERIFIED_PACKAGE_SOURCE", "claim_ids": [cid]}
+        else:
+            cid = add_claim(f"constructor.option.{option}.default", "UNKNOWN",
+                            "UNKNOWN_HARDWARE", eids)
+            constructor_options[option] = {"default": "UNKNOWN", "status": "UNKNOWN_HARDWARE", "claim_ids": [cid]}
     for archive, assign in nodes("Dartsnut.__init__", (ast.Assign, ast.AnnAssign)):
         targets = assign.targets if isinstance(assign, ast.Assign) else [assign.target]
         value_node = assign.value
@@ -338,13 +355,28 @@ def inspect_wheel(path: Path, expected_sha256: str, *, allow_synthetic: bool = F
                 precise(topic, operation, archive, symbol, call, "ast.Call")
 
     # Buttons are extracted from the actual dict syntax and event iteration.
-    button_keys, button_key_claims = [], []
+    button_key_candidates = []
     for archive, dictionary in nodes("Dartsnut.get_buttons", ast.Dict):
         literals = [_literal(k) for k in dictionary.keys]
         keys = [k for k in literals if isinstance(k, str)]
         if keys:
-            button_keys = keys
-            button_key_claims.append(precise("button_input.keys", keys, archive, "Dartsnut.get_buttons", dictionary, "ast.Dict"))
+            eid = evidence_for("VERIFIED_PACKAGE_SOURCE", archive, "Dartsnut.get_buttons",
+                               dictionary, "ast.Dict")
+            button_key_candidates.append({"value": keys, "evidence_id": eid})
+    button_key_values = {json.dumps(x["value"]) for x in button_key_candidates}
+    if button_key_candidates and len(button_key_values) == 1:
+        button_keys = button_key_candidates[0]["value"]
+        button_key_claims = [add_claim("button_input.keys", button_keys,
+                                      "VERIFIED_PACKAGE_SOURCE",
+                                      [x["evidence_id"] for x in button_key_candidates])]
+        button_keys_field = {"value": button_keys, "status": "VERIFIED_PACKAGE_SOURCE",
+                             "claim_ids": button_key_claims}
+    else:
+        button_keys = "UNKNOWN"
+        button_key_claims = [add_claim("button_input.keys", "UNKNOWN", "UNKNOWN_HARDWARE",
+                                      [x["evidence_id"] for x in button_key_candidates])] if button_key_candidates else []
+        button_keys_field = {"value": "UNKNOWN", "status": "UNKNOWN_HARDWARE",
+                             "claim_ids": button_key_claims}
     debounce_candidates = []
     for archive, assign in nodes("Dartsnut.get_buttons", (ast.Assign, ast.AnnAssign)):
         targets = assign.targets if isinstance(assign, ast.Assign) else [assign.target]
@@ -354,8 +386,26 @@ def inspect_wheel(path: Path, expected_sha256: str, *, allow_synthetic: bool = F
                 cid = precise("button_input.debounce_seconds", value, archive, "Dartsnut.get_buttons", assign, "ast.Assign")
                 debounce_candidates.append({"value": value, "claim_ids": [cid]})
     debounce = debounce_candidates[0] if len({x["value"] for x in debounce_candidates}) == 1 else None
+    event_default_candidates = []
     for archive, dictionary in nodes("InputHandler.get_buttons", ast.DictComp):
-        precise("button_input.event_default", False, archive, "InputHandler.get_buttons", dictionary, "ast.DictComp")
+        value = _literal(dictionary.value)
+        literal = isinstance(dictionary.value, ast.Constant) or value is not None
+        eid = evidence_for("VERIFIED_PACKAGE_SOURCE", archive, "InputHandler.get_buttons",
+                           dictionary.value, "ast.literal_eval(DictComp.value)")
+        event_default_candidates.append({"value": value, "literal": literal, "evidence_id": eid})
+    event_values = {json.dumps(x["value"], sort_keys=True) for x in event_default_candidates if x["literal"]}
+    if event_default_candidates and all(x["literal"] for x in event_default_candidates) and len(event_values) == 1:
+        event_default_value = event_default_candidates[0]["value"]
+        event_default_claim = add_claim("button_input.event_default", event_default_value,
+                                        "VERIFIED_PACKAGE_SOURCE",
+                                        [x["evidence_id"] for x in event_default_candidates])
+        event_default = {"value": event_default_value, "status": "VERIFIED_PACKAGE_SOURCE", "claim_ids": [event_default_claim]}
+    elif event_default_candidates:
+        event_default_claim = add_claim("button_input.event_default", "UNKNOWN", "UNKNOWN_HARDWARE",
+                                        [x["evidence_id"] for x in event_default_candidates])
+        event_default = {"value": "UNKNOWN", "status": "UNKNOWN_HARDWARE", "claim_ids": [event_default_claim]}
+    else:
+        event_default = {"value": "UNKNOWN", "status": "UNKNOWN_HARDWARE", "claim_ids": []}
     for archive, loop in nodes("InputHandler.get_buttons", ast.For):
         precise("button_input.edge_iteration", ast.unparse(loop.target), archive, "InputHandler.get_buttons", loop, "ast.For")
 
@@ -388,11 +438,33 @@ def inspect_wheel(path: Path, expected_sha256: str, *, allow_synthetic: bool = F
             handled = sorted({ast.unparse(t) for h in trynode.handlers for t in ([h.type] if h.type else [])})
             if handled:
                 precise(f"persistence.error_handlers.{symbol}", handled, archive, symbol, trynode, "ast.Try/ExceptHandler")
-    temp_suffix = None
+    temp_candidates = []
     for archive, assign in nodes("Dartsnut.set_value", (ast.Assign, ast.AnnAssign)):
-        if ".tmp" in ast.unparse(assign.value):
-            cid = precise("persistence.temporary_suffix", ".tmp", archive, "Dartsnut.set_value", assign, "ast.Assign/BinOp")
-            temp_suffix = {"value": ".tmp", "claim_ids": [cid]}
+        targets = assign.targets if isinstance(assign, ast.Assign) else [assign.target]
+        if any("temp" in _target_name(target).lower() for target in targets):
+            constants = [node for node in ast.walk(assign.value)
+                         if isinstance(node, ast.Constant) and isinstance(node.value, str)]
+            if len(constants) == 1:
+                node = constants[0]
+                eid = evidence_for("VERIFIED_PACKAGE_SOURCE", archive, "Dartsnut.set_value",
+                                   node, "ast.Constant temporary-path suffix")
+                temp_candidates.append({"value": node.value, "literal": True, "evidence_id": eid})
+            else:
+                eid = evidence_for("VERIFIED_PACKAGE_SOURCE", archive, "Dartsnut.set_value",
+                                   assign.value, "AST expression without one unambiguous string literal")
+                temp_candidates.append({"value": None, "literal": False, "evidence_id": eid})
+    temp_values = {x["value"] for x in temp_candidates if x["literal"]}
+    if temp_candidates and all(x["literal"] for x in temp_candidates) and len(temp_values) == 1:
+        temp_value = temp_candidates[0]["value"]
+        temp_claim = add_claim("persistence.temporary_suffix", temp_value,
+                               "VERIFIED_PACKAGE_SOURCE", [x["evidence_id"] for x in temp_candidates])
+        temp_suffix = {"value": temp_value, "status": "VERIFIED_PACKAGE_SOURCE", "claim_ids": [temp_claim]}
+    elif temp_candidates:
+        temp_claim = add_claim("persistence.temporary_suffix", "UNKNOWN", "UNKNOWN_HARDWARE",
+                               [x["evidence_id"] for x in temp_candidates])
+        temp_suffix = {"value": "UNKNOWN", "status": "UNKNOWN_HARDWARE", "claim_ids": [temp_claim]}
+    else:
+        temp_suffix = {"value": "UNKNOWN", "status": "UNKNOWN_HARDWARE", "claim_ids": []}
 
     # Complete secondary search across metadata, RECORD, every source/identifier/string,
     # and all safely decoded small text files.
@@ -432,8 +504,11 @@ def inspect_wheel(path: Path, expected_sha256: str, *, allow_synthetic: bool = F
         if hits:
             text_file_matches.append({"archive_path": archive, "terms": hits})
     search_empty = not any((matching_symbols, locations, candidates, metadata_matches, record_matches, text_file_matches))
-    secondary_status = "NOT_FOUND_IN_INSPECTED_PACKAGE" if search_empty else "VERIFIED_PACKAGE_SOURCE"
-    secondary_finding = "No secondary-display API was found in the inspected pydartsnut 1.2.1 wheel." if search_empty else "Search matches require API review."
+    secondary_status = ("NOT_FOUND_IN_INSPECTED_PACKAGE" if search_empty else
+                        "VERIFIED_PACKAGE_SOURCE" if candidates else "UNKNOWN_HARDWARE")
+    secondary_finding = ("No secondary-display API was found in the inspected pydartsnut 1.2.1 wheel." if search_empty else
+                         "A public source API candidate matched the secondary-display search." if candidates else
+                         "Secondary-display wording was found, but no public source API candidate was found.")
     secondary_claim = add_claim("secondary_display.search_result", secondary_finding,
                                 secondary_status, [] if search_empty else sorted({eid for x in methods + classes + functions for eid in x["evidence_ids"] if any(t in json.dumps(x).lower() for t in SEARCH_TERMS)}))
 
@@ -473,11 +548,11 @@ def inspect_wheel(path: Path, expected_sha256: str, *, allow_synthetic: bool = F
       "constructor": {"signature":field(next((x["signature"] for x in methods if x["symbol"]=="Dartsnut.__init__"),None),"signature.Dartsnut.__init__"),"options":constructor_options,"setup_claim_ids":refs("constructor.")},
       "main_display": {"signature":field(next((x["signature"] for x in methods if x["symbol"]=="Dartsnut.update_frame_buffer"),None),"signature.Dartsnut.update_frame_buffer"),"accepted_bytearray":unique_field("main_display.accepts_bytearray"),"accepted_tobytes":unique_field("main_display.accepts_tobytes"),"status_comparisons":status_comparisons,"status_mutation":unique_field("main_display.status_mutation"),"return_values":return_values,"semaphore_call":unique_field("main_display.posts_render_semaphore"),"pixel_format_wording":unique_field("main_display.pixel_format_wording"),"encoded_width":unique_field("main_display.encoded_width"),"encoded_height":unique_field("main_display.encoded_height"),"channel_count":unique_field("main_display.channel_count"),"byte_length_validation":unique_field("main_display.byte_length_validation")},
       "dart_input": {"slot_count":unique_field("dart_input.slot_count"),"tuple_arity":unique_field("dart_input.event_tuple_arity"),"mapping_constants":mapping_constants,"invalid_sentinels":invalid_values,"timing":timing,"blocking_claim_ids":refs("dart_input.block"),"reset_claim_ids":refs("dart_input.block_reset")},
-      "button_input": {"keys":field(button_keys,"button_input.keys"),"debounce_seconds":debounce or {"value":"UNKNOWN","status":"UNKNOWN_HARDWARE","claim_ids":[]},"event_claim_ids":refs("button_input.event")+refs("button_input.edge")},
+      "button_input": {"keys":button_keys_field,"debounce_seconds":debounce or {"value":"UNKNOWN","status":"UNKNOWN_HARDWARE","claim_ids":[]},"event_default":event_default,"event_claim_ids":refs("button_input.event")+refs("button_input.edge")},
       "lifecycle": {"running_initial":unique_field("lifecycle.running_initial"),"signal_claim_ids":refs("constructor.signal_handler_registration"),"claim_ids":refs("lifecycle.")+refs("signature.Dartsnut.close")+refs("signature.Dartsnut.sigint_handler")},
       "brightness": {"signature":field(next((x["signature"] for x in methods if x["symbol"]=="Dartsnut.set_brightness"),None),"signature.Dartsnut.set_brightness"),"bounds":brightness_bounds or {"value":"UNKNOWN","status":"UNKNOWN_HARDWARE","claim_ids":[]},"write_claim_ids":refs("brightness.write"),"return_claim_ids":refs("brightness.implicit_return")},
       "widget_parameters": {"parse":unique_field("widget_parameters.parse"),"params_option":constructor_options.get("--params",{"value":"UNKNOWN","status":"UNKNOWN_HARDWARE","claim_ids":[]})},
-      "persistence": {"filename":field(next((c["value"] for c in claims if c["topic"]=="persistence.filename"),None),"persistence.filename"),"temporary_suffix":temp_suffix or {"value":"UNKNOWN","status":"UNKNOWN_HARDWARE","claim_ids":[]},"operations":persistence_ops,"directory_claim_ids":refs("persistence.directory"),"error_claim_ids":refs("persistence.error_handlers")},
+      "persistence": {"filename":field(next((c["value"] for c in claims if c["topic"]=="persistence.filename"),None),"persistence.filename"),"temporary_suffix":temp_suffix,"operations":persistence_ops,"directory_claim_ids":refs("persistence.directory"),"error_claim_ids":refs("persistence.error_handlers")},
       "secondary_display": {"status":secondary_status,"searched_symbols":list(SEARCH_TERMS),"matching_symbols":sorted(matching_symbols,key=lambda x:(x["name"],x["archive_path"],x["line_start"])),"matching_source_locations":sorted(locations,key=lambda x:(x["archive_path"],x["line"])),"public_api_candidates":sorted(candidates,key=lambda x:(x["name"],x["archive_path"],x["line_start"])),"metadata_matches":metadata_matches,"record_matches":record_matches,"text_file_matches":text_file_matches,"finding":secondary_finding,"caveat":"This does not prove that the Dartsnut launcher, cabinet platform, another package, or a private API lacks secondary-display support.","claim_ids":[secondary_claim]},
       "repository_usage": {"status":"VERIFIED_REPOSITORY_USAGE","main_py":["imports Dartsnut","creates a 128×160 Pygame surface","calls get_button_events","calls get_dart_hits","treats hits as dart_index, x, y","uses btn_a, btn_b, btn_up, btn_down, btn_left, and btn_right","relies on engine.running","calls update_frame_buffer"],"conf_json_size":[128,160],"pyproject_before_phase":"pydartsnut unconstrained","uv_lock":"pydartsnut 1.2.1 with exact hashes"},
       "contradictions": contradictions,"unknowns":unknowns,"claims":claims,"evidence":evidence,
