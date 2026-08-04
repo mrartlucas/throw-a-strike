@@ -948,3 +948,17 @@ explicit fallback composition remain future work.
 - **Future prompt vocabulary:** SET CURVE, SET POWER, THROW READY, TOO SOON, REMOVE DART, THROW NOW, FOUL, and 0 PINS.
 - **Explicit exclusions:** no `InputEvent` consumption or raw-button mapping; randomness, scoring, pinfall, probability, physics, player/color ownership, coordinate transformation/calibration, renderer, framebuffer, secondary display, platform/adapter imports, hardware, global clock, sleep, runtime loop, or automatic blocking reset.
 - **Recommended next task:** Phase 0O should add only a pure input-to-control interpreter implementing the documented mappings while preserving timestamps and raw dart fields. It must not add player/color mapping, transforms, blocking reset, physics, scoring, rendering, or a continuous loop.
+
+## Phase 0O: Pure InputEvent-to-throw-control interpreter
+
+**Status: IMPLEMENTED - LOCALLY VERIFIED**
+
+- **Baseline/final verification:** the Phase 0N baseline was 364 tests; the final suite is **394 tests**, including **30 focused Phase 0O tests**.
+- **Exact files changed:** created `throw_a_strike/application/throw_control_input.py` and `tests/test_throw_control_input.py`; updated `throw_a_strike/application/__init__.py`, this plan, and `PROJECT_AUDIT.md`.
+- **Exact mappings:** raw `btn_left`, `btn_right`, `btn_a`, and `btn_b` map to `LEFT`, `RIGHT`, `CONFIRM`, and `BACK`, respectively. A `DART_HIT` `InputEvent` maps to a `DART_HIT` command. The exact raw controls `btn_up`, `btn_down`, `btn_home`, and `btn_reserved`, as well as every other unmapped valid control ID, are ignored.
+- **Dart recovery only:** mathematically integral application-boundary floats are recovered as exact integers (`-0.0` becomes numeric zero), then the domain enforces dart indices 0–11 and coordinates 0–127. Raw x/y order and numeric aim are preserved. There is no rounding, clamping, scaling, swapping, inversion, offset, rotation, or calibration.
+- **Order, time, and sequence:** exact event timestamps are copied unchanged; mapped and duplicate events retain caller-supplied order, including equal or descending timestamps. Transport sequence values are consumed only through stream order and are intentionally neither copied into commands nor used to sort, deduplicate, or validate the batch.
+- **Atomic pure batch:** an exact tuple is validated and interpreted from first to last, ignored controls are omitted, and failures raise without a returned partial tuple or external side effects. No mutable history is retained.
+- **Architectural layer:** this application module translates the neutral application boundary value into an existing domain command without depending on adapters or platform code.
+- **Explicit exclusions:** no polling, clock access or timestamp generation, machine construction/mutation, automatic `TICK` or `REARMED`, blocking reset, player/color mapping, curve/power calculation, physics, pinfall, scoring, rendering, framebuffer submission, hardware access, or runtime loop was added.
+- **Recommended next task:** Phase 0P should add a pure runtime throw-control coordinator with injected `InputPort` and `ClockPort`, exactly one owned `ThrowControlMachine`, one finite batch and one clock-derived `TICK` per explicit step, preserved command order, and immutable results/snapshots. It must not add a loop, sleep, direct hardware/reset access, physics, pinfall, scoring, rendering/framebuffers, player/color mapping, or coordinate transformation.

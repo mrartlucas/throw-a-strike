@@ -75,6 +75,11 @@ from .controller import (
     StartCommand,
     SubmitThrowCommand,
 )
+from .throw_control_input import (
+    InvalidThrowControlInputError,
+    interpret_throw_control_event,
+    interpret_throw_control_events,
+)
 
 __all__ = (
     "SessionPhase",
@@ -141,4 +146,7 @@ __all__ = (
     "InvalidApplicationCommandError",
     "InvalidApplicationControllerValueError",
     "ApplicationControllerPublishError",
+    "InvalidThrowControlInputError",
+    "interpret_throw_control_event",
+    "interpret_throw_control_events",
 )

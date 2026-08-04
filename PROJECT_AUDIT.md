@@ -241,3 +241,9 @@ Phase 0N adds match-level Quick Play and Advanced Play control styles. `MatchCon
 A pure one-attempt machine now models curve selection, a deterministic 0.150-second-step power meter, THROW READY, early-dart recovery, COMPLETE, and FOUL. The meter contains no randomness and 80 percent is only labelled PERFECT. Completed setups preserve raw dart index and x/y numbers without player/color mapping or coordinate transformation.
 
 The boundary adds no scoring, pinfall, physics, rendering, framebuffer submission, hardware or platform access, global clock, runtime loop, or automatic blocking reset. The safe next boundary is a pure Phase 0O `InputEvent`-to-semantic-command interpreter that preserves event time and raw dart values; runtime integration remains later.
+
+### Phase 0O pure throw-control input interpretation record
+
+Phase 0O adds a pure application-layer interpreter. Exact raw `btn_left`, `btn_right`, `btn_a`, and `btn_b` controls map to `LEFT`, `RIGHT`, `CONFIRM`, and `BACK`; neutral dart hits map to semantic `DART_HIT`. Up, Down, Home, and Reserved controls are ignored, and neither `TICK` nor `REARMED` is generated. Exact timestamps, supplied stream order, repeated events, raw dart index, and x/y axis order are preserved. Sequence remains transport metadata: it is not copied, sorted, deduplicated, or validated by the semantic interpreter.
+
+Coordinate handling recovers mathematically integral floats to integers only. It adds no rounding, clamping, scaling, swapping, inversion, calibration, or player/color mapping. The boundary performs no polling, clock access, machine mutation, automatic blocking reset, physics, pinfall, scoring, rendering, framebuffer submission, hardware access, or loop. The safe next boundary is a Phase 0P explicit-step coordinator with injected input and clock ports and one owned throw-control machine; direct hardware and continuous runtime behavior remain outside that phase.
