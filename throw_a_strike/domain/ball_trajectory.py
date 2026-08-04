@@ -107,6 +107,36 @@ def _pixel(value: float) -> int:
     return floor(value + 0.5)
 
 
+def ball_trajectory_point_at_progress(trajectory: BallTrajectory, progress: Real) -> tuple[float, float]:
+    """Evaluate the exact floating-point quadratic Bézier at normalized progress."""
+    if type(trajectory) is not BallTrajectory:
+        raise InvalidBallTrajectoryValueError("trajectory must be exact")
+    if isinstance(progress, bool) or not isinstance(progress, Real):
+        raise InvalidBallTrajectoryValueError("progress must be a finite real")
+    progress = min(1.0, max(0.0, float(progress)))
+    if not isfinite(progress):
+        raise InvalidBallTrajectoryValueError("progress must be a finite real")
+    inverse = 1.0 - progress
+    x = inverse * inverse * trajectory.start_x + 2 * inverse * progress * trajectory.control_x + progress * progress * trajectory.target_x
+    y = inverse * inverse * trajectory.start_y + 2 * inverse * progress * trajectory.control_y + progress * progress * trajectory.target_y
+    return x, y
+
+
+def ball_trajectory_derivative_at_progress(trajectory: BallTrajectory, progress: Real) -> tuple[float, float]:
+    """Evaluate the exact floating-point local Bézier derivative."""
+    if type(trajectory) is not BallTrajectory:
+        raise InvalidBallTrajectoryValueError("trajectory must be exact")
+    if isinstance(progress, bool) or not isinstance(progress, Real):
+        raise InvalidBallTrajectoryValueError("progress must be a finite real")
+    progress = min(1.0, max(0.0, float(progress)))
+    if not isfinite(progress):
+        raise InvalidBallTrajectoryValueError("progress must be a finite real")
+    inverse = 1.0 - progress
+    dx = 2 * inverse * (trajectory.control_x - trajectory.start_x) + 2 * progress * (trajectory.target_x - trajectory.control_x)
+    dy = 2 * inverse * (trajectory.control_y - trajectory.start_y) + 2 * progress * (trajectory.target_y - trajectory.control_y)
+    return dx, dy
+
+
 def sample_ball_trajectory_progress(trajectory: BallTrajectory, progress: Real) -> BallTrajectorySample:
     """Sample by normalized trajectory progress, using half-up nonnegative rounding."""
     if type(trajectory) is not BallTrajectory:
@@ -120,9 +150,7 @@ def sample_ball_trajectory_progress(trajectory: BallTrajectory, progress: Real) 
         return BallTrajectorySample(0.0, trajectory.start_x, trajectory.start_y)
     if progress == 1.0:
         return BallTrajectorySample(1.0, trajectory.target_x, trajectory.target_y)
-    inverse = 1.0 - progress
-    x = inverse * inverse * trajectory.start_x + 2 * inverse * progress * trajectory.control_x + progress * progress * trajectory.target_x
-    y = inverse * inverse * trajectory.start_y + 2 * inverse * progress * trajectory.control_y + progress * progress * trajectory.target_y
+    x, y = ball_trajectory_point_at_progress(trajectory, progress)
     return BallTrajectorySample(progress, _pixel(x), _pixel(y))
 
 

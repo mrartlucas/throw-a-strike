@@ -155,9 +155,10 @@ def render_round_throw_rgb888(presentation: ThrowControlPresentation, throw_numb
     return bytes(buf)
 
 def render_wrong_color_rgb888(presentation: ThrowControlPresentation, throw_number: int,
-                              player_number: int, player_color: PlayerColor) -> bytes:
+                              player_number: int, player_color: PlayerColor,
+                              *, standing_pins=FULL_RACK) -> bytes:
     buf=bytearray(render_round_throw_rgb888(
-        presentation,throw_number,player_number,player_color))
+        presentation,throw_number,player_number,player_color, standing_pins=standing_pins))
     _rect(buf,0,89,128,19,_HUD); _center(buf,"WRONG COLOR",91,_YELLOW)
     _center(buf,f"USE {player_color.value.upper()} DART",99,_RED)
     return bytes(buf)

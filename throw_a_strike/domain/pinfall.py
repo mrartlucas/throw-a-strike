@@ -1,10 +1,12 @@
 """Pure deterministic swept ball-to-pin collision and authored pinfall."""
 from dataclasses import dataclass
 from enum import Enum
+from types import MappingProxyType
 from math import isfinite, sqrt
 from numbers import Real
 
-from .ball_trajectory import BallTrajectory, BallTrajectorySample, sample_ball_trajectory_progress
+from .ball_trajectory import (BallTrajectory, BallTrajectorySample, ball_trajectory_derivative_at_progress,
+    ball_trajectory_point_at_progress, sample_ball_trajectory_progress)
 from .bowling_round import BowlingThrowResultKind, FULL_RACK
 
 PIN_RADIUS_PIXELS = 3
@@ -13,12 +15,14 @@ COLLISION_SUBDIVISIONS = 256
 PINFALL_DURATION_SECONDS = 0.750
 PINFALL_WAVE_DELAY_SECONDS = 0.120
 PINFALL_PIN_DURATION_SECONDS = 0.300
-PIN_CENTERS = {
+_PIN_CENTERS = {
     1: (64, 72), 2: (54, 56), 3: (74, 56), 4: (44, 40), 5: (64, 40),
     6: (84, 40), 7: (34, 23), 8: (54, 23), 9: (74, 23), 10: (94, 23),
 }
-PIN_CHILDREN = {1: (2, 3), 2: (4, 5), 3: (5, 6), 4: (7, 8), 5: (8, 9),
-                6: (9, 10), 7: (), 8: (), 9: (), 10: ()}
+_PIN_CHILDREN = {1: (2, 3), 2: (4, 5), 3: (5, 6), 4: (7, 8), 5: (8, 9),
+                 6: (9, 10), 7: (), 8: (), 9: (), 10: ()}
+PIN_CENTERS = MappingProxyType(_PIN_CENTERS)
+PIN_CHILDREN = MappingProxyType(_PIN_CHILDREN)
 
 class InvalidPinfallValueError(ValueError):
     """Raised when pinfall values violate the exact contract."""
@@ -74,8 +78,7 @@ class PinfallResolution:
         else: raise InvalidPinfallValueError("unsupported pinfall result kind")
 
 def _point(trajectory, t):
-    s = sample_ball_trajectory_progress(trajectory, t)
-    return float(s.x), float(s.y)
+    return ball_trajectory_point_at_progress(trajectory, t)
 
 def _segment_circle_t(x1,y1,x2,y2,cx,cy,r):
     dx=x2-x1; dy=y2-y1; fx=x1-cx; fy=y1-cy
@@ -124,7 +127,8 @@ def resolve_ball_pinfall(trajectory: BallTrajectory, standing_before: tuple[int,
             local=_segment_circle_t(x1,y1,x2,y2,cx,cy,BALL_PIN_CONTACT_RADIUS_PIXELS)
             if local is None: continue
             progress=p0+(p1-p0)*local
-            candidate=(progress,pin,x1+(x2-x1)*local,y1+(y2-y1)*local,x2-x1,y2-y1)
+            dx, dy = ball_trajectory_derivative_at_progress(trajectory, progress)
+            candidate=(progress,pin,x1+(x2-x1)*local,y1+(y2-y1)*local,dx,dy)
             if best is None or (candidate[0], candidate[1]) < (best[0], best[1]): best=candidate
     if best is None:
         kind = BowlingThrowResultKind.GUTTER if trajectory.target_x <= 19 or trajectory.target_x >= 108 else BowlingThrowResultKind.MISS

@@ -157,6 +157,10 @@ class EmulatorControlTestRuntime:
     @property
     def ball_started_at(self): return self._ball_started_at
     @property
+    def pinfall_resolution(self): return self._pinfall_resolution
+    @property
+    def pinfall_started_at(self): return self._pinfall_started_at
+    @property
     def round_snapshot(self): return self._round.snapshot
     @property
     def active_player_number(self): return self._active_player_number
@@ -172,7 +176,8 @@ class EmulatorControlTestRuntime:
         self._pinfall_resolution=None; self._pinfall_started_at=None
         self._presentation=build_throw_control_presentation(self._coordinator.snapshot)
         self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
-                                                self.active_player_number,self.active_player_color)
+                                                self.active_player_number,self.active_player_color,
+                                                standing_pins=self._round.snapshot.standing_pins)
         self._phase=EmulatorControlTestPhase.ATTEMPT
         accepted=self._facade.submit_framebuffer(self._cached)
         return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
@@ -237,7 +242,7 @@ class EmulatorControlTestRuntime:
             now=self._clock.monotonic_seconds()
             if now >= self._wrong_timestamp + WRONG_COLOR_HOLD_SECONDS:
                 self._phase=EmulatorControlTestPhase.ATTEMPT
-                self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),self.active_player_number,self.active_player_color)
+                self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),self.active_player_number,self.active_player_color, standing_pins=self._round.snapshot.standing_pins)
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         if self._phase is EmulatorControlTestPhase.FOUL_HOLD:
@@ -245,7 +250,7 @@ class EmulatorControlTestRuntime:
             if now >= self._foul_timestamp + FOUL_HOLD_SECONDS:
                 if self._round.snapshot.complete:
                     self._phase=EmulatorControlTestPhase.ROUND_COMPLETE
-                    self._cached=render_round_complete_rgb888(self._presentation)
+                    self._cached=render_round_complete_rgb888(self._presentation, standing_pins=self._round.snapshot.standing_pins)
                     accepted=self._facade.submit_framebuffer(self._cached)
                     return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
                 return self._begin_attempt(self._selector.snapshot.selected_style,now)
@@ -257,7 +262,7 @@ class EmulatorControlTestRuntime:
             if now >= self._accepted_timestamp + ACCEPTED_HOLD_SECONDS:
                 if self._round.snapshot.complete:
                     self._phase=EmulatorControlTestPhase.ROUND_COMPLETE
-                    self._cached=render_round_complete_rgb888(self._presentation)
+                    self._cached=render_round_complete_rgb888(self._presentation, standing_pins=self._round.snapshot.standing_pins)
                     accepted=self._facade.submit_framebuffer(self._cached)
                     return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
                 return self._begin_attempt(self._selector.snapshot.selected_style,now)
@@ -280,13 +285,15 @@ class EmulatorControlTestRuntime:
         if self._input.wrong_event is not None and not self._presentation.terminal:
             self._wrong_timestamp=self._input.wrong_event.timestamp
             self._cached=render_wrong_color_rgb888(self._presentation,int(self._round.snapshot.throw_number),
-                                                   self.active_player_number,self.active_player_color)
+                                                   self.active_player_number,self.active_player_color,
+                                                   standing_pins=self._round.snapshot.standing_pins)
             self._phase=EmulatorControlTestPhase.WRONG_COLOR_HOLD
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         blink=True if result.tick_timestamp is None else int(result.tick_timestamp*2)%2==0
         self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
-                                                self.active_player_number,self.active_player_color,blink)
+                                                self.active_player_number,self.active_player_color,blink,
+                                                standing_pins=self._round.snapshot.standing_pins)
         if self._presentation.phase is ThrowControlPhase.EARLY_DART_RECOVERY:
             dart_commands=tuple(command for command in result.commands
                                 if command.dart_index is not None)
