@@ -79,32 +79,32 @@ class MachineTests(unittest.TestCase):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.LEFT, 1)); machine.apply(command(Kind.BACK, 7.9))
         self.assertIs(machine.snapshot.curve_level, CurveLevel.STRAIGHT)
-        machine.apply(command(Kind.TICK, 8))
-        self.assertIs(machine.snapshot.phase, Phase.SET_POWER)
+        machine.apply(command(Kind.TICK, 600))
+        self.assertIs(machine.snapshot.phase, Phase.SET_CURVE)
 
     def test_curve_confirm_preserves_selection(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.RIGHT, 1)); machine.apply(command(Kind.CONFIRM, 2))
         self.assertEqual((machine.snapshot.phase, machine.snapshot.curve_level), (Phase.SET_POWER, CurveLevel.RIGHT_1))
 
-    def test_curve_timeout_defaults_straight(self):
+    def test_curve_has_no_timeout(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
-        machine.apply(command(Kind.LEFT, 1)); machine.apply(command(Kind.TICK, 8))
-        self.assertEqual((machine.snapshot.phase, machine.snapshot.curve_level), (Phase.SET_POWER, CurveLevel.STRAIGHT))
+        machine.apply(command(Kind.LEFT, 1)); machine.apply(command(Kind.TICK, 600))
+        self.assertEqual((machine.snapshot.phase, machine.snapshot.curve_level), (Phase.SET_CURVE, CurveLevel.LEFT_1))
 
     def test_exact_meter_sequence_and_cycle(self):
-        values = (70, 80, 90, 100, 90, 80, 70, 60, 50, 40, 50, 60, 70)
+        values = (40, 50, 60, 70, 80, 90, 100, 90, 80, 70, 60, 50, 40)
         for step, expected in enumerate(values):
             machine = ThrowControlMachine(ControlStyle.ADVANCED)
             machine.apply(command(Kind.CONFIRM, 0))
-            machine.apply(command(Kind.TICK, step * .15))
+            machine.apply(command(Kind.TICK, step * .2))
             self.assertEqual(machine.snapshot.displayed_power_percent, expected)
 
     def test_every_meter_transition_uses_strict_half_open_intervals(self):
-        sequence = (70, 80, 90, 100, 90, 80, 70, 60, 50, 40, 50, 60, 70)
+        sequence = (40, 50, 60, 70, 80, 90, 100, 90, 80, 70, 60, 50, 40)
         nanosecond = 0.000000001
         for step in range(1, len(sequence)):
-            boundary = step * 0.150
+            boundary = step * 0.200
             with self.subTest(step=step, position="before"):
                 machine = ThrowControlMachine(ControlStyle.ADVANCED)
                 machine.apply(command(Kind.CONFIRM, 0))
@@ -123,13 +123,13 @@ class MachineTests(unittest.TestCase):
 
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.CONFIRM, 0))
-        machine.apply(command(Kind.TICK, 1.799999999))
-        self.assertEqual(machine.snapshot.displayed_power_percent, 60)
-        machine.apply(command(Kind.TICK, 1.800))
-        self.assertEqual(machine.snapshot.displayed_power_percent, 70)
+        machine.apply(command(Kind.TICK, 2.399999999))
+        self.assertEqual(machine.snapshot.displayed_power_percent, 50)
+        machine.apply(command(Kind.TICK, 2.400))
+        self.assertEqual(machine.snapshot.displayed_power_percent, 40)
 
         # The same strict boundary behavior repeats in a later cycle.
-        for timestamp, expected in ((3.749999999, 70), (3.750, 80), (3.750000001, 80)):
+        for timestamp, expected in ((3.199999999, 70), (3.200, 80), (3.200000001, 80)):
             with self.subTest(timestamp=timestamp):
                 later = ThrowControlMachine(ControlStyle.ADVANCED)
                 later.apply(command(Kind.CONFIRM, 0))
@@ -139,30 +139,30 @@ class MachineTests(unittest.TestCase):
     def test_confirm_observes_strict_first_meter_boundary(self):
         before = ThrowControlMachine(ControlStyle.ADVANCED)
         before.apply(command(Kind.CONFIRM, 0))
-        before.apply(command(Kind.CONFIRM, 0.149999999))
+        before.apply(command(Kind.CONFIRM, 0.799999999))
         self.assertEqual(before.snapshot.locked_power_percent, 70)
 
         exact = ThrowControlMachine(ControlStyle.ADVANCED)
         exact.apply(command(Kind.CONFIRM, 0))
-        exact.apply(command(Kind.CONFIRM, 0.150))
+        exact.apply(command(Kind.CONFIRM, 0.800))
         self.assertEqual(exact.snapshot.locked_power_percent, 80)
         self.assertIs(exact.snapshot.power_feedback, PowerFeedback.PERFECT)
 
     def test_meter_uses_elapsed_time_and_confirm_locks(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.CONFIRM, 0))
-        machine.apply(command(Kind.TICK, 0.01)); machine.apply(command(Kind.CONFIRM, 0.15))
+        machine.apply(command(Kind.TICK, 0.01)); machine.apply(command(Kind.CONFIRM, 0.80))
         self.assertEqual(machine.snapshot.locked_power_percent, 80)
         self.assertIs(machine.snapshot.power_feedback, PowerFeedback.PERFECT)
 
-    def test_power_back_and_timeout(self):
+    def test_power_back_and_no_timeout(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.RIGHT, 0)); machine.apply(command(Kind.CONFIRM, 0)); machine.apply(command(Kind.TICK, .45))
         machine.apply(command(Kind.BACK, 1))
         self.assertEqual((machine.snapshot.phase, machine.snapshot.curve_level, machine.snapshot.locked_power_percent), (Phase.SET_CURVE, CurveLevel.RIGHT_1, None))
-        machine.apply(command(Kind.CONFIRM, 2)); self.assertEqual(machine.snapshot.displayed_power_percent, 70)
-        machine.apply(command(Kind.TICK, 10))
-        self.assertEqual((machine.snapshot.phase, machine.snapshot.locked_power_percent), (Phase.THROW_READY, 70))
+        machine.apply(command(Kind.CONFIRM, 2)); self.assertEqual(machine.snapshot.displayed_power_percent, 40)
+        machine.apply(command(Kind.TICK, 602))
+        self.assertEqual((machine.snapshot.phase, machine.snapshot.locked_power_percent), (Phase.SET_POWER, None))
 
     def test_quick_throw_preserves_raw_values_and_is_terminal(self):
         machine = ThrowControlMachine(ControlStyle.QUICK)
@@ -179,7 +179,7 @@ class MachineTests(unittest.TestCase):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.LEFT, 0))
         machine.apply(command(Kind.CONFIRM, 0))
-        machine.apply(command(Kind.CONFIRM, 0.150))
+        machine.apply(command(Kind.CONFIRM, 0.800))
         result = machine.apply(
             command(Kind.DART_HIT, 1, dart_index=9, x=17, y=113)
         )
@@ -197,18 +197,18 @@ class MachineTests(unittest.TestCase):
 
     def test_advanced_ready_back_warning_and_foul(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
-        machine.apply(command(Kind.RIGHT, 0)); machine.apply(command(Kind.CONFIRM, 0)); machine.apply(command(Kind.CONFIRM, .15))
+        machine.apply(command(Kind.RIGHT, 0)); machine.apply(command(Kind.CONFIRM, 0)); machine.apply(command(Kind.CONFIRM, .80))
         self.assertEqual((machine.snapshot.curve_level, machine.snapshot.locked_power_percent), (CurveLevel.RIGHT_1, 80))
         machine.apply(command(Kind.TICK, 20.149)); self.assertFalse(machine.snapshot.warning_active)
-        machine.apply(command(Kind.TICK, 20.15)); self.assertTrue(machine.snapshot.warning_active)
-        machine.apply(command(Kind.TICK, 30.15)); self.assertIs(machine.snapshot.phase, Phase.FOUL)
+        machine.apply(command(Kind.TICK, 20.80)); self.assertTrue(machine.snapshot.warning_active)
+        machine.apply(command(Kind.TICK, 30.80)); self.assertIs(machine.snapshot.phase, Phase.FOUL)
         self.assertIs(machine.snapshot.outcome.kind, ThrowControlOutcomeKind.FOUL)
         self.assertIsNone(machine.snapshot.outcome.setup)
 
     def test_ready_back_restarts_power(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.CONFIRM, 0)); machine.apply(command(Kind.CONFIRM, .45)); machine.apply(command(Kind.BACK, 1))
-        self.assertEqual((machine.snapshot.phase, machine.snapshot.displayed_power_percent, machine.snapshot.locked_power_percent), (Phase.SET_POWER, 70, None))
+        self.assertEqual((machine.snapshot.phase, machine.snapshot.displayed_power_percent, machine.snapshot.locked_power_percent), (Phase.SET_POWER, 40, None))
 
     def test_early_curve_recovery_preserves_and_restarts(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
@@ -217,13 +217,13 @@ class MachineTests(unittest.TestCase):
         machine.apply(command(Kind.TICK, 100)); self.assertIs(machine.snapshot.phase, Phase.EARLY_DART_RECOVERY)
         machine.apply(command(Kind.REARMED, 101)); machine.apply(command(Kind.TICK, 108.9))
         self.assertIs(machine.snapshot.phase, Phase.SET_CURVE)
-        machine.apply(command(Kind.TICK, 109)); self.assertIs(machine.snapshot.phase, Phase.SET_POWER)
+        machine.apply(command(Kind.TICK, 600)); self.assertIs(machine.snapshot.phase, Phase.SET_CURVE)
 
     def test_early_power_recovery_restarts_meter(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
         machine.apply(command(Kind.RIGHT, 0)); machine.apply(command(Kind.CONFIRM, 0)); machine.apply(command(Kind.DART_HIT, 1, dart_index=0, x=0, y=0))
         machine.apply(command(Kind.DART_HIT, 50, dart_index=1, x=1, y=1)); machine.apply(command(Kind.REARMED, 51))
-        self.assertEqual((machine.snapshot.phase, machine.snapshot.curve_level, machine.snapshot.displayed_power_percent), (Phase.SET_POWER, CurveLevel.RIGHT_1, 70))
+        self.assertEqual((machine.snapshot.phase, machine.snapshot.curve_level, machine.snapshot.displayed_power_percent), (Phase.SET_POWER, CurveLevel.RIGHT_1, 40))
 
     def test_monotonic_rejection_is_atomic_and_equal_allowed(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED, 5)
@@ -232,10 +232,10 @@ class MachineTests(unittest.TestCase):
         self.assertEqual(machine.snapshot, before)
         machine.apply(command(Kind.RIGHT, 5))
 
-    def test_sparse_tick_crosses_every_deadline(self):
+    def test_sparse_tick_does_not_cross_setup(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
-        machine.apply(command(Kind.TICK, 100))
-        self.assertIs(machine.snapshot.phase, Phase.FOUL)
+        machine.apply(command(Kind.TICK, 600))
+        self.assertIs(machine.snapshot.phase, Phase.SET_CURVE)
 
     def test_quick_warning_and_foul_exact_boundaries(self):
         machine = ThrowControlMachine(ControlStyle.QUICK)

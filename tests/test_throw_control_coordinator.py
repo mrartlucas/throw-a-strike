@@ -94,7 +94,7 @@ class CoordinatorTests(unittest.TestCase):
         self.assertEqual((quick_input.calls, quick_clock.calls), (0, 0))
         self.assertEqual((advanced_input.calls, advanced_clock.calls), (0, 0))
         self.assertFalse(hasattr(quick, "machine"))
-        for name in ("reset", "restart", "run", "loop", "rearm"):
+        for name in ("reset", "restart", "run", "loop"):
             self.assertFalse(hasattr(quick, name))
 
     def test_constructor_validation_and_unavailable_capabilities(self):
@@ -149,11 +149,11 @@ class CoordinatorTests(unittest.TestCase):
     def test_advanced_flow_and_input_before_tick(self):
         batches = (
             (control("btn_right", sequence=9), control("btn_a", sequence=1)),
-            (control("btn_a", 0.150),),
+            (control("btn_a", 0.800),),
             (dart(2, index=3, x=11, y=99),),
         )
         coordinator, input_port, clock = self.make(
-            ControlStyle.ADVANCED, batches, (0, 0.150, 50)
+            ControlStyle.ADVANCED, batches, (0, 0.800, 50)
         )
         first = coordinator.step()
         self.assertEqual([c.kind for c in first.commands], [
@@ -303,10 +303,10 @@ class CoordinatorTests(unittest.TestCase):
             ControlStyle.ADVANCED,
             (
                 (control("btn_right"), control("btn_a")),
-                (control("btn_a", 0.150),),
+                (control("btn_a", 0.800),),
                 (dart(2),),
             ),
-            (0, 0.150),
+            (0, 0.800),
         )
         advanced.step()
         advanced.step()
@@ -373,6 +373,33 @@ class CoordinatorTests(unittest.TestCase):
                 ThrowControlCoordinatorStepError(*arguments)
         with self.assertRaises(InvalidThrowControlCoordinatorValueError):
             ThrowControlCoordinatorTerminalError(snapshot)
+
+
+    def test_rearm_applies_once_without_poll_or_clock(self):
+        coordinator,input_port,clock=self.make(
+            ControlStyle.ADVANCED,
+            batches=((dart(timestamp=1,index=0),),),
+            clocks=(1,),
+        )
+        recovery=coordinator.step().snapshot
+        self.assertIs(recovery.phase,ThrowControlPhase.EARLY_DART_RECOVERY)
+        calls=(input_port.calls,clock.calls)
+        rearmed=coordinator.rearm(2)
+        self.assertIs(rearmed.phase,ThrowControlPhase.SET_CURVE)
+        self.assertEqual((input_port.calls,clock.calls),calls)
+        with self.assertRaises(InvalidThrowControlCoordinatorValueError):
+            coordinator.rearm(3)
+
+    def test_rearm_preserves_monotonic_validation(self):
+        coordinator,_,_=self.make(
+            ControlStyle.ADVANCED,
+            batches=((dart(timestamp=2,index=0),),),
+            clocks=(2,),
+        )
+        coordinator.step()
+        with self.assertRaises(InvalidThrowControlCoordinatorValueError):
+            coordinator.rearm(1)
+        self.assertIs(coordinator.snapshot.phase,ThrowControlPhase.EARLY_DART_RECOVERY)
 
 
 if __name__ == "__main__":

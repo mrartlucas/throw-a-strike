@@ -53,3 +53,22 @@ The physical-board `DartsnutInputPort` remains event based and unchanged. No aut
 **Status: IMPLEMENTED - PLAYER-COLOR DART RETEST READY**
 
 Fixed DART 1 then DART 5 enforcement has been removed. Bowling throw number comes exclusively from round state; all three active-player-color darts are legal on either throw when fresh. Quick may leave Throw 1's dart in place and use either remaining same-color dart. Advanced may remove and freshly replace the same dart. Wrong player colors do not consume the throw. No physics, scoring, multiplayer rotation, coordinate transform, secondary-display API, or physical-board assumption was added.
+
+## Phase 0S.3 Advanced manual setup
+
+Advanced Play now requires a distinct A-button event to lock Curve and another
+distinct A-button event to stop Power. Curve selection has no setup timeout, and
+Power never locks automatically. Power starts at 40 and follows the deterministic
+0.200-second sequence `40, 50, 60, 70, 80, 90, 100, 90, 80, 70, 60, 50`, repeating
+every 2.400 seconds. The value at the exact input-event timestamp is locked; only
+entry into THROW READY starts the fresh 30-second throw timer.
+
+In the emulator diagnostic, an early active-player dart is tracked by its exact
+raw index. TOO SOON / REMOVE DART remains cached while that dart is active. Once
+it is removed, active-dart observation synchronizes the emulator baseline and an
+explicit semantic rearm returns to the interrupted setup phase; Power restarts
+at 40. Replacing that same dart is therefore fresh input. Pending dart-hit and button batches accumulated behind the recovery screen are discarded at removal before rearming, so setup resumes only from fresh input. This emulator-only
+observation does **not** establish physical-board removal behavior.
+
+This phase adds no trajectory, physics, pinfall, scoring integration, multiplayer
+rotation, coordinate transform, secondary-display, or audio behavior.

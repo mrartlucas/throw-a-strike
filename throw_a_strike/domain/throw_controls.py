@@ -1,6 +1,7 @@
 """Pure semantic controls for setting up exactly one bowling throw."""
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_FLOOR
 from enum import Enum
 from math import isfinite
 from numbers import Real
@@ -157,7 +158,8 @@ class ThrowControlOutcome:
 
 
 _POWER_VALUES = (40, 50, 60, 70, 80, 90, 100)
-_METER = (70, 80, 90, 100, 90, 80, 70, 60, 50, 40, 50, 60)
+_METER = (40, 50, 60, 70, 80, 90, 100, 90, 80, 70, 60, 50)
+_METER_STEP_SECONDS = 0.200
 
 
 @dataclass(frozen=True)
@@ -255,7 +257,9 @@ class ThrowControlMachine:
                 self._phase = self._recovery
                 self._recovery = None
                 self._phase_started = command.timestamp
-                self._displayed = 70
+                self._displayed = (
+                    40 if self._phase is ThrowControlPhase.SET_POWER else 70
+                )
             return self.snapshot
         if self._phase is ThrowControlPhase.SET_CURVE:
             levels = list(CurveLevel)
@@ -295,7 +299,7 @@ class ThrowControlMachine:
     def _enter_power(self, timestamp: float) -> None:
         self._phase = ThrowControlPhase.SET_POWER
         self._phase_started = timestamp
-        self._displayed = 70
+        self._displayed = 40
         self._locked = None
         self._warning = False
 
@@ -311,25 +315,19 @@ class ThrowControlMachine:
         self._warning = False
 
     def _advance(self, timestamp: float) -> None:
-        while True:
-            if self._phase is ThrowControlPhase.SET_CURVE and timestamp >= self._phase_started + 8.0:
-                self._curve = CurveLevel.STRAIGHT
-                self._enter_power(self._phase_started + 8.0)
-                continue
-            if self._phase is ThrowControlPhase.SET_POWER:
-                deadline = self._phase_started + 8.0
-                if timestamp >= deadline:
-                    self._locked = 70
-                    self._enter_ready(deadline)
-                    continue
-                steps = int((timestamp - self._phase_started) / 0.150)
-                self._displayed = _METER[steps % len(_METER)]
-            if self._phase is ThrowControlPhase.THROW_READY:
-                elapsed = timestamp - self._phase_started
-                if elapsed >= THROW_FOUL_SECONDS:
-                    self._phase = ThrowControlPhase.FOUL
-                    self._outcome = ThrowControlOutcome(ThrowControlOutcomeKind.FOUL)
-                    self._warning = False
-                    continue
+        if self._phase is ThrowControlPhase.SET_POWER:
+            steps = int(
+                ((Decimal(str(timestamp)) - Decimal(str(self._phase_started)))
+                 / Decimal(str(_METER_STEP_SECONDS))).to_integral_value(
+                    rounding=ROUND_FLOOR
+                )
+            )
+            self._displayed = _METER[steps % len(_METER)]
+        if self._phase is ThrowControlPhase.THROW_READY:
+            elapsed = timestamp - self._phase_started
+            if elapsed >= THROW_FOUL_SECONDS:
+                self._phase = ThrowControlPhase.FOUL
+                self._outcome = ThrowControlOutcome(ThrowControlOutcomeKind.FOUL)
+                self._warning = False
+            else:
                 self._warning = elapsed >= THROW_WARNING_SECONDS
-            return

@@ -289,6 +289,20 @@ class ThrowControlCoordinator:
     def snapshot(self) -> ThrowControlSnapshot:
         return self._machine.snapshot
 
+    def rearm(self, timestamp: float) -> ThrowControlSnapshot:
+        """Apply one explicit recovery transition without touching either port."""
+        if self.snapshot.phase is not ThrowControlPhase.EARLY_DART_RECOVERY:
+            raise InvalidThrowControlCoordinatorValueError(
+                "rearm is valid only during early-dart recovery"
+            )
+        try:
+            command = ThrowControlCommand(ThrowControlCommandKind.REARMED, timestamp)
+            return self._machine.apply(command)
+        except InvalidThrowControlError as error:
+            raise InvalidThrowControlCoordinatorValueError(
+                "rearm timestamp is invalid"
+            ) from error
+
     def step(self) -> ThrowControlStepResult:
         current = self.snapshot
         if _terminal(current):
