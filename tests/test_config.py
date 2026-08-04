@@ -3,13 +3,16 @@ import unittest
 from dataclasses import FrozenInstanceError
 
 from throw_a_strike.domain.config import (
-    InvalidMatchConfigError, LOCKED_BRANDING, MatchConfig, Mode, Theme,
+    ControlStyle, InvalidMatchConfigError, LOCKED_BRANDING, MatchConfig, Mode, Theme,
 )
 
 
 class LockedValuesTests(unittest.TestCase):
     def test_locked_modes(self):
         self.assertEqual([m.value for m in Mode], ["ten_pin", "hundred_pin", "remix", "party"])
+
+    def test_control_styles(self):
+        self.assertEqual([s.value for s in ControlStyle], ["quick", "advanced"])
 
     def test_locked_themes(self):
         self.assertEqual([t.value for t in Theme], ["regular", "blacklight"])
@@ -29,6 +32,15 @@ class MatchConfigTests(unittest.TestCase):
         values = dict(mode=Mode.REMIX, theme=Theme.REGULAR, player_count=1, frame_count=3, seed=0)
         values.update(changes)
         return MatchConfig(**values)
+
+    def test_control_style_default_and_all_modes(self):
+        self.assertIs(self.make().control_style, ControlStyle.QUICK)
+        for mode in Mode:
+            frames = 10 if mode is Mode.TEN_PIN else 3
+            for style in ControlStyle:
+                self.assertIs(self.make(mode=mode, frame_count=frames, control_style=style).control_style, style)
+        with self.assertRaises(InvalidMatchConfigError):
+            self.make(control_style="quick")
 
     def test_player_counts_one_through_four(self):
         for count in range(1, 5):
@@ -86,14 +98,26 @@ class MatchConfigTests(unittest.TestCase):
 
     def test_unsupported_missing_extra_and_non_mapping_payloads(self):
         payload = self.make().to_payload()
-        invalid = [dict(payload, schema_version=2), {k: v for k, v in payload.items() if k != "seed"}, dict(payload, extra=1), []]
+        invalid = [dict(payload, schema_version=3), {k: v for k, v in payload.items() if k != "control_style"}, {k: v for k, v in payload.items() if k != "seed"}, dict(payload, extra=1), []]
         for item in invalid:
             with self.subTest(item=item), self.assertRaises(InvalidMatchConfigError):
                 MatchConfig.from_payload(item)
 
+    def test_version_one_migrates_to_quick(self):
+        payload = self.make().to_payload()
+        payload.pop("control_style")
+        payload["schema_version"] = 1
+        self.assertIs(MatchConfig.from_payload(payload).control_style, ControlStyle.QUICK)
+
+    def test_schema_two_and_control_style_serialization(self):
+        config = self.make(control_style=ControlStyle.ADVANCED)
+        self.assertEqual(config.to_payload()["schema_version"], 2)
+        self.assertEqual(config.to_payload()["control_style"], "advanced")
+        self.assertEqual(MatchConfig.from_payload(config.to_payload()), config)
+
     def test_invalid_payload_values(self):
         payload = self.make().to_payload()
-        for key, value in (("mode", "arcade"), ("theme", "dark"), ("player_count", True), ("frame_count", 4), ("seed", -1)):
+        for key, value in (("mode", "arcade"), ("theme", "dark"), ("control_style", "expert"), ("player_count", True), ("frame_count", 4), ("seed", -1)):
             changed = dict(payload)
             changed[key] = value
             with self.subTest(key=key), self.assertRaises(InvalidMatchConfigError):
