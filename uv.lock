@@ -20,7 +20,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=1.20.0" },
-    { name = "pydartsnut" },
+    { name = "pydartsnut", specifier = "==1.2.1" },
     { name = "pygame", specifier = ">=2.0.0" },
 ]
 
