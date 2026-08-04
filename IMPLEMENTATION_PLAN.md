@@ -1047,4 +1047,6 @@ explicit fallback composition remain future work.
 
 **Status: IMPLEMENTED - 30-SECOND TIMER RETEST READY.** THROW READY now owns an exact 30-second attempt timer: THROW NOW begins at exactly 20 seconds and FOUL wins at exactly 30 seconds, producing a 10-second warning window. Time advancement still precedes same-timestamp commands, so a dart at the 30-second deadline loses to FOUL. Advanced SET CURVE and SET POWER time is excluded; its timer begins only on entry to THROW READY. Quick and Advanced retries receive clean timers and warning state. Accepted-dart and FOUL holds remain exactly 1.5 seconds, and emulator automatic blocking resets remain disabled.
 
+**Final verification:** the complete suite passes **484 tests**.
+
 Dartsnut Agent emulator evidence records displayed Blue 1/5/9, Red 2/6/10, Green 3/7/11, and Yellow 4/8/12, corresponding to raw zero-based indices Blue 0/4/8, Red 1/5/9, Green 2/6/10, and Yellow 3/7/11. This patch documents but does not implement that mapping. Standard game flow will later use the first two same-color darts per round; each third dart is reserved for later rules. This is not a physical-board parity claim. No scoring, round progression, player assignment, throw-slot enforcement, coordinate transformation, secondary-display API, or physical-board assumption was added.
