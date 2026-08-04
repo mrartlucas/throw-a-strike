@@ -80,6 +80,14 @@ from .throw_control_input import (
     interpret_throw_control_event,
     interpret_throw_control_events,
 )
+from .throw_control_coordinator import (
+    InvalidThrowControlCoordinatorValueError,
+    ThrowControlCoordinator,
+    ThrowControlCoordinatorStage,
+    ThrowControlCoordinatorStepError,
+    ThrowControlCoordinatorTerminalError,
+    ThrowControlStepResult,
+)
 
 __all__ = (
     "SessionPhase",
@@ -149,4 +157,10 @@ __all__ = (
     "InvalidThrowControlInputError",
     "interpret_throw_control_event",
     "interpret_throw_control_events",
+    "InvalidThrowControlCoordinatorValueError",
+    "ThrowControlCoordinatorStage",
+    "ThrowControlStepResult",
+    "ThrowControlCoordinatorStepError",
+    "ThrowControlCoordinatorTerminalError",
+    "ThrowControlCoordinator",
 )
