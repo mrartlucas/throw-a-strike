@@ -2,21 +2,30 @@
 
 ## Purpose
 
-Phase 0R is a one-attempt interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
+Phase 0R.1 is an interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
 
 ## Current supported emulator behavior
 
-The harness selects Quick or Advanced control style, displays curve and power state, accepts an unchanged dart index/x/y, and holds COMPLETE, early-recovery, or FOUL terminal artwork. It submits one packed, row-major RGB888 main framebuffer per iteration.
+The harness selects Quick or Advanced control style, calls the verified `reset_blocking_state` operation before each fresh attempt, displays curve and power state, and accepts an unchanged dart index/x/y. COMPLETE and early recovery remain restart-only holds. FOUL holds for exactly 1.5 seconds and then starts a fresh attempt in the already selected style. It submits one packed, row-major RGB888 main framebuffer per iteration.
 
 ## Exact controls
 
 On **CONTROL STYLE**, Left selects **QUICK PLAY**, Right selects **ADVANCED PLAY**, and A confirms. With no confirmation for 15 seconds, Quick Play is confirmed. B, Up, Down, and darts have no selection effect.
 
-## Quick Play procedure
+## Hardware retest procedure
 
-1. Confirm Quick Play and verify **THROW READY**, STR, and 70%.
-2. Throw one dart.
-3. Verify the prompt disappears and the terminal HUD preserves curve and power.
+1. Remove every dart from the board.
+2. Launch Throw a Strike.
+3. Select Quick Play.
+4. Confirm with A.
+5. Verify THROW READY, STR, 70%, and GOOD.
+6. Throw one physical dart.
+7. Verify THROW READY disappears and COMPLETE holds.
+8. Record whether the dart registered.
+9. Restart after a successful COMPLETE test.
+10. For FOUL testing, do not throw.
+11. Verify FOUL plus 0 PINS.
+12. Verify a fresh Quick attempt begins after 1.5 seconds.
 
 ## Advanced Play procedure
 
@@ -30,7 +39,7 @@ In Advanced Play, throw before THROW READY. Verify **TOO SOON** and **REMOVE DAR
 
 ## Warning and FOUL procedure
 
-Reach THROW READY, wait 30 seconds, and verify **THROW NOW** remains visible. At 60 seconds verify **FOUL** and **0 PINS**.
+Reach THROW READY, wait 30 seconds, and verify **THROW NOW** remains visible. At 60 seconds verify **FOUL** and **0 PINS**. The cached FOUL frame holds for 1.5 seconds without polling input; the harness then rearms and begins a clean attempt without returning to style selection.
 
 ## Expected 128×128 screen
 
@@ -42,9 +51,11 @@ Packed RGB888 and 128×128 (49,152 bytes) are emulator-test assumptions based on
 
 The emulator visibly has a 64×32 control canvas, but no verified submission API exists. This harness submits only to the main framebuffer and invents no secondary-display operation.
 
-## Recovery-hold restart limitation
+## Hold and retry limitations
 
 No verified dart-removal signal exists and the coordinator intentionally has no rearm operation. Recovery hold therefore republishes cached artwork without polling, reading time, resetting hardware, or consuming future input. Restart the app to repeat the test.
+
+COMPLETE likewise remains held until restart so the accepted raw dart can be confirmed. Only FOUL automatically retries. The blocking-state reset and FOUL retry are based on emulator testing and are retest preparation, not proof of physical-cabinet parity.
 
 ## COMPLETE behavior
 
@@ -52,7 +63,7 @@ An accepted dart produces COMPLETE with the exact raw coordinates retained by th
 
 ## What is not implemented
 
-There is no trajectory, ball animation, collision, pin result, scoring, frame progression, multiplayer, player/color or dart-index mapping, coordinate transformation, audio, theme switching, automatic reset, or physical-cabinet claim.
+There is no trajectory, ball animation, collision, pin result, scoring, frame progression, multiplayer, player/color or dart-index mapping, coordinate transformation, audio, theme switching, or physical-cabinet claim. No secondary screen or secondary-display API is used.
 
 ## Run/deploy steps
 
