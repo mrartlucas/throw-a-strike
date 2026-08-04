@@ -7,6 +7,11 @@ from .bowling import (
     IllegalRollError,
     RollSnapshot,
 )
+from .bowling_round import (
+    InvalidBowlingRoundValueError, BowlingThrowNumber, BowlingThrowResultKind,
+    BowlingThrowResult, BowlingRoundSnapshot, BowlingRoundMachine,
+    expected_emulator_dart_index, is_expected_emulator_dart,
+)
 from .cumulative import (
     CumulativeFrameSnapshot,
     CumulativeGame,
@@ -63,6 +68,9 @@ from .schedule import (
 )
 
 __all__ = [
+    "InvalidBowlingRoundValueError", "BowlingThrowNumber", "BowlingThrowResultKind",
+    "BowlingThrowResult", "BowlingRoundSnapshot", "BowlingRoundMachine",
+    "expected_emulator_dart_index", "is_expected_emulator_dart",
     "BowlingGame",
     "BowlingSnapshot",
     "FrameSnapshot",

@@ -1050,3 +1050,13 @@ explicit fallback composition remain future work.
 **Final verification:** the complete suite passes **484 tests**.
 
 Dartsnut Agent emulator evidence records displayed Blue 1/5/9, Red 2/6/10, Green 3/7/11, and Yellow 4/8/12, corresponding to raw zero-based indices Blue 0/4/8, Red 1/5/9, Green 2/6/10, and Yellow 3/7/11. This patch documents but does not implement that mapping. Standard game flow will later use the first two same-color darts per round; each third dart is reserved for later rules. This is not a physical-board parity claim. No scoring, round progression, player assignment, throw-slot enforcement, coordinate transformation, secondary-display API, or physical-board assumption was added.
+
+## Phase 0S — two-throw round foundation
+
+Status: IMPLEMENTED - TWO-THROW ROUND RETEST READY
+
+The pure round contract now models two explicit throws, an unchanged or reduced standing rack, exact zero/PIN_HIT vocabulary, and the emulator-only same-color dart-slot policy. The diagnostic runtime exercises one Blue round with raw darts 0 then 4, temporary MISS results, wrong-dart rejection, per-throw FOUL progression, and a restart-only terminal screen. Physics, scoring, multiplayer/frame progression, transforms, and secondary output remain later phases.
+
+The final retest correction preserves all locked control prompts beneath a compact round header, gives FOUL precedence over a wrong dart at the 30-second deadline, and rejects impossible manually constructed public round snapshots.
+
+Final verification restores the locked THROW READY blink in that compact round HUD: blink-off hides only THROW READY, while THROW NOW and every non-ready prompt remain visible. The post-correction suite contains 502 passing tests.

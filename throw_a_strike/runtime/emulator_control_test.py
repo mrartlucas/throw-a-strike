@@ -1,4 +1,4 @@
-"""Single-attempt interactive control-test runtime for the Dartsnut emulator."""
+"""Deterministic Blue two-throw diagnostic runtime for the Dartsnut emulator."""
 from dataclasses import dataclass
 from enum import Enum
 import math
@@ -7,13 +7,15 @@ import time
 from typing import Callable
 
 from throw_a_strike.adapters import DartsnutInputPort
-from throw_a_strike.application import (ClockPort, InvalidPortValueError, PortCapabilities,
+from throw_a_strike.application import (ClockPort, InputEventKind, InvalidPortValueError, PortCapabilities,
     ThrowControlCoordinator, ThrowControlPresentation, ThrowControlStyleSelectionSnapshot,
     ThrowControlStyleSelector, build_throw_control_presentation, build_throw_control_step_presentation)
-from throw_a_strike.domain import ThrowControlPhase, ThrowSetup
+from throw_a_strike.domain import (BowlingRoundMachine, BowlingThrowNumber, BowlingThrowResult,
+    BowlingThrowResultKind, ThrowControlPhase, ThrowSetup, expected_emulator_dart_index)
 from throw_a_strike.platform import DartsnutSdkFacade
 from throw_a_strike.rendering import (EMULATOR_RGB888_BYTE_LENGTH,
-    render_dart_accepted_rgb888, render_style_selection_rgb888, render_throw_control_rgb888)
+    render_dart_accepted_rgb888, render_round_complete_rgb888, render_round_throw_rgb888,
+    render_style_selection_rgb888, render_throw_control_rgb888, render_wrong_dart_rgb888)
 
 class EmulatorControlTestPhase(str, Enum):
     SELECT_STYLE="select_style"
@@ -21,10 +23,13 @@ class EmulatorControlTestPhase(str, Enum):
     RECOVERY_HOLD="recovery_hold"
     FOUL_HOLD="foul_hold"
     ACCEPTED_HOLD="accepted_hold"
+    WRONG_DART_HOLD="wrong_dart_hold"
+    ROUND_COMPLETE="round_complete"
     TERMINAL="terminal"
 
 FOUL_HOLD_SECONDS = 1.5
 ACCEPTED_HOLD_SECONDS = 1.5
+WRONG_DART_HOLD_SECONDS = 1.0
 
 @dataclass(frozen=True)
 class EmulatorControlTestStep:
@@ -46,6 +51,8 @@ class EmulatorControlTestStep:
             valid = (self.selection.confirmed and self.presentation is not None
                      and not self.presentation.terminal
                      and self.presentation.phase is not ThrowControlPhase.EARLY_DART_RECOVERY)
+        elif self.phase is EmulatorControlTestPhase.WRONG_DART_HOLD:
+            valid = self.selection.confirmed and self.presentation is not None and not self.presentation.terminal
         elif self.phase is EmulatorControlTestPhase.RECOVERY_HOLD:
             valid = (self.selection.confirmed and self.presentation is not None
                      and not self.presentation.terminal
@@ -62,10 +69,14 @@ class EmulatorControlTestStep:
                      and self.framebuffer == render_dart_accepted_rgb888(
                          self.presentation,self.accepted_setup.dart_index,
                          self.accepted_setup.aim_x,self.accepted_setup.aim_y))
-        else:
+        elif self.phase is EmulatorControlTestPhase.ROUND_COMPLETE:
+            valid = self.selection.confirmed and self.presentation is not None and self.presentation.terminal
+        elif self.phase is EmulatorControlTestPhase.TERMINAL:
             valid = (self.selection.confirmed and self.presentation is not None
                      and self.presentation.terminal
                      and self.presentation.phase is ThrowControlPhase.COMPLETE)
+        else:
+            valid = False
         if not valid:
             raise InvalidPortValueError("phase, selection, and presentation are inconsistent")
         if self.phase is not EmulatorControlTestPhase.ACCEPTED_HOLD and self.accepted_setup is not None:
@@ -79,6 +90,21 @@ def _nonnegative(value, name):
     if not math.isfinite(result) or result<0: raise InvalidPortValueError(f"{name} must be finite nonnegative")
     return result
 
+class _ExpectedDartInputPort:
+    """Consumes SDK events but forwards only the current expected dart."""
+    def __init__(self, source): self.source=source; self.expected=0; self.wrong_event=None
+    @property
+    def capabilities(self): return self.source.capabilities
+    def poll(self):
+        events=self.source.poll(); self.wrong_event=None
+        for event in events:
+            if event.kind is InputEventKind.DART_HIT and event.dart_index != self.expected:
+                self.wrong_event=event
+                break
+        if self.wrong_event is not None:
+            return tuple(event for event in events if event.kind is not InputEventKind.DART_HIT)
+        return events
+
 class EmulatorControlTestRuntime:
     def __init__(self, facade: DartsnutSdkFacade, clock: ClockPort, started_at: float):
         if type(facade) is not DartsnutSdkFacade: raise InvalidPortValueError("facade must be exact DartsnutSdkFacade")
@@ -86,8 +112,10 @@ class EmulatorControlTestRuntime:
         capabilities=clock.capabilities
         if type(capabilities) is not PortCapabilities: raise InvalidPortValueError("clock capabilities must be exact PortCapabilities")
         start=_nonnegative(started_at,"started_at")
-        self._facade=facade; self._clock=clock; self._input=DartsnutInputPort(facade,clock)
+        self._facade=facade; self._clock=clock; self._raw_input=DartsnutInputPort(facade,clock)
+        self._input=_ExpectedDartInputPort(self._raw_input)
         self._selector=ThrowControlStyleSelector(start); self._coordinator=None
+        self._round=BowlingRoundMachine(); self._wrong_timestamp=None
         self._phase=EmulatorControlTestPhase.SELECT_STYLE; self._cached=None; self._presentation=None
         self._foul_timestamp=None
         self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
@@ -101,23 +129,43 @@ class EmulatorControlTestRuntime:
     def accepted_snapshot(self): return self._accepted_snapshot
     @property
     def accepted_setup(self): return self._accepted_setup
+    @property
+    def round_snapshot(self): return self._round.snapshot
+    @property
+    def expected_dart_index(self): return expected_emulator_dart_index(1,self._round.snapshot.throw_number)
+    @property
+    def expected_displayed_dart_number(self): return self.expected_dart_index+1
     def _begin_attempt(self, style, started_at):
+        self._input.expected=self.expected_dart_index
         self._coordinator=ThrowControlCoordinator(style,self._input,self._clock,started_at)
         self._foul_timestamp=None
         self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
         self._presentation=build_throw_control_presentation(self._coordinator.snapshot)
-        self._cached=render_throw_control_rgb888(self._presentation)
+        self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
+                                                self.expected_displayed_dart_number)
         self._phase=EmulatorControlTestPhase.ATTEMPT
         accepted=self._facade.submit_framebuffer(self._cached)
         return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
     def step(self):
-        if self._phase in (EmulatorControlTestPhase.RECOVERY_HOLD,EmulatorControlTestPhase.TERMINAL):
+        if self._phase in (EmulatorControlTestPhase.RECOVERY_HOLD,EmulatorControlTestPhase.ROUND_COMPLETE,EmulatorControlTestPhase.TERMINAL):
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
                                            self._accepted_setup)
+        if self._phase is EmulatorControlTestPhase.WRONG_DART_HOLD:
+            now=self._clock.monotonic_seconds()
+            if now >= self._wrong_timestamp + WRONG_DART_HOLD_SECONDS:
+                self._phase=EmulatorControlTestPhase.ATTEMPT
+                self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),self.expected_displayed_dart_number)
+            accepted=self._facade.submit_framebuffer(self._cached)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         if self._phase is EmulatorControlTestPhase.FOUL_HOLD:
             now=self._clock.monotonic_seconds()
             if now >= self._foul_timestamp + FOUL_HOLD_SECONDS:
+                if self._round.snapshot.complete:
+                    self._phase=EmulatorControlTestPhase.ROUND_COMPLETE
+                    self._cached=render_round_complete_rgb888(self._presentation)
+                    accepted=self._facade.submit_framebuffer(self._cached)
+                    return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
                 return self._begin_attempt(self._selector.snapshot.selected_style,now)
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
@@ -125,12 +173,17 @@ class EmulatorControlTestRuntime:
         if self._phase is EmulatorControlTestPhase.ACCEPTED_HOLD:
             now=self._clock.monotonic_seconds()
             if now >= self._accepted_timestamp + ACCEPTED_HOLD_SECONDS:
+                if self._round.snapshot.complete:
+                    self._phase=EmulatorControlTestPhase.ROUND_COMPLETE
+                    self._cached=render_round_complete_rgb888(self._presentation)
+                    accepted=self._facade.submit_framebuffer(self._cached)
+                    return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
                 return self._begin_attempt(self._selector.snapshot.selected_style,now)
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
                                            self._accepted_setup)
         if self._phase is EmulatorControlTestPhase.SELECT_STYLE:
-            events=self._input.poll()
+            events=self._raw_input.poll()
             now=events[0].timestamp if events else self._clock.monotonic_seconds()
             selection=self._selector.apply(events,now)
             if not selection.confirmed:
@@ -139,16 +192,31 @@ class EmulatorControlTestRuntime:
             return self._begin_attempt(selection.selected_style,selection.confirmed_at)
         result=self._coordinator.step()
         self._presentation=build_throw_control_step_presentation(result)
+        # The coordinator's established input-before-tick ordering decides the
+        # deadline. A terminal tick (notably FOUL at/after 30 seconds) always
+        # takes precedence over temporary wrong-dart feedback.
+        if self._input.wrong_event is not None and not self._presentation.terminal:
+            self._wrong_timestamp=self._input.wrong_event.timestamp
+            self._cached=render_wrong_dart_rgb888(self._presentation,self.expected_displayed_dart_number)
+            self._phase=EmulatorControlTestPhase.WRONG_DART_HOLD
+            accepted=self._facade.submit_framebuffer(self._cached)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         blink=True if result.tick_timestamp is None else int(result.tick_timestamp*2)%2==0
-        self._cached=render_throw_control_rgb888(self._presentation,blink)
+        self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
+                                                self.expected_displayed_dart_number,blink)
         if self._presentation.phase is ThrowControlPhase.EARLY_DART_RECOVERY: self._phase=EmulatorControlTestPhase.RECOVERY_HOLD
         elif self._presentation.phase is ThrowControlPhase.FOUL:
+            rack=self._round.snapshot.standing_pins
+            self._round.record_throw(BowlingThrowResult(BowlingThrowResultKind.FOUL,rack,(),rack,None,None,None))
             self._foul_timestamp=result.tick_timestamp
             self._phase=EmulatorControlTestPhase.FOUL_HOLD
         elif self._presentation.terminal:
             self._accepted_snapshot=result.snapshot
             self._accepted_setup=result.snapshot.outcome.setup
             setup=self._accepted_setup
+            rack=self._round.snapshot.standing_pins
+            self._round.record_throw(BowlingThrowResult(BowlingThrowResultKind.MISS,rack,(),rack,
+                                                        setup.dart_index,setup.aim_x,setup.aim_y))
             self._accepted_timestamp=result.events[-1].timestamp
             self._cached=render_dart_accepted_rgb888(
                 self._presentation,setup.dart_index,setup.aim_x,setup.aim_y)
