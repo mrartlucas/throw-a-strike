@@ -342,3 +342,9 @@ The mapping is emulator evidence, not physical-board parity. Fixed DART 1 then D
 **Status: IMPLEMENTED - ROUND COMPLETE HOLD RETEST READY**
 
 `ROUND_COMPLETE` remains a nonterminal, restart-only sticky state, but its public step no longer carries the previous throw's accepted setup. All accepted throw/FOUL round-ending combinations are covered through five repeated hold steps with an identical framebuffer, exactly two retained round results, framebuffer submission only, and no input, clock, or blocking-reset activity. This corrects post-round public-state consistency only; gameplay rules, timings, renderers, physics, scoring, multiplayer rotation, coordinate handling, and the second screen are unchanged.
+
+## Phase 0S.2b audit — straight-curve icon direction correction
+
+**Status: IMPLEMENTED - UPWARD STRAIGHT ICON RETEST READY**
+
+The STRAIGHT curve artwork now points upward toward the pins with a centered vertical shaft and a two-sided arrowhead. Focused pixel coverage locks the new STRAIGHT geometry and the pre-existing LEFT and RIGHT geometry, while renderer size and determinism remain covered. This display-only correction changes no labels, selection behavior, other feedback or indicators, player colors, timing, accepted coordinates, wrong-color behavior, round hold, pin deck, framebuffer, game logic, or secondary-screen behavior.

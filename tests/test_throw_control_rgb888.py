@@ -29,6 +29,54 @@ def power_presentation(power):
 
 
 class RendererTests(unittest.TestCase):
+    def arrow_pixels(self, icon):
+        buf = renderer._canvas()
+        renderer._arrow(buf, icon, 0, 0)
+        return {
+            (x, y) for y in range(11) for x in range(11)
+            if bytes(buf[(y * 128 + x) * 3:(y * 128 + x) * 3 + 3]) == bytes(renderer._CYAN)
+        }
+
+    def test_straight_arrow_points_up_with_center_shaft_and_two_sided_head(self):
+        pixels = self.arrow_pixels(renderer.ThrowControlCurveIcon.STRAIGHT)
+        self.assertIn((5, 2), pixels)
+        self.assertTrue(all((5, y) in pixels for y in range(2, 11)))
+        self.assertTrue(any(x < 5 and y > 2 for x, y in pixels))
+        self.assertTrue(any(x > 5 and y > 2 for x, y in pixels))
+        self.assertNotIn((10, 6), pixels)
+
+    def test_left_and_right_arrow_geometry_remains_locked(self):
+        self.assertEqual(self.arrow_pixels(renderer.ThrowControlCurveIcon.LEFT), {
+            (10, 9), (9, 9), (8, 9), (7, 9), (6, 9), (5, 9),
+            (4, 8), (3, 7), (3, 6), (2, 5), (1, 5), (1, 4), (1, 6), (1, 7), (1, 8),
+            (2, 4), (3, 4), (4, 4), (5, 4),
+        })
+        self.assertEqual(self.arrow_pixels(renderer.ThrowControlCurveIcon.RIGHT), {
+            (0, 9), (1, 9), (2, 9), (3, 9), (4, 9), (5, 9),
+            (6, 8), (7, 7), (7, 6), (8, 5), (9, 5), (9, 4), (9, 6), (9, 7), (9, 8),
+            (8, 4), (7, 4), (6, 4), (5, 4),
+        })
+
+    def test_every_renderer_is_exact_rgb888_size_and_deterministic(self):
+        machine = ThrowControlMachine(ControlStyle.QUICK)
+        ready = build_throw_control_presentation(machine.snapshot)
+        complete = build_throw_control_presentation(machine.apply(
+            ThrowControlCommand(ThrowControlCommandKind.DART_HIT, 1, dart_index=0, x=1, y=2)))
+        selection = ThrowControlStyleSelector(0).snapshot
+        render_calls = (
+            lambda: render_throw_control_rgb888(ready),
+            lambda: render_dart_accepted_rgb888(complete, 0, 1, 2),
+            lambda: render_round_throw_rgb888(ready, 1, 1, PlayerColor.BLUE),
+            lambda: render_wrong_color_rgb888(ready, 1, 1, PlayerColor.BLUE),
+            lambda: render_round_complete_rgb888(complete),
+            lambda: render_style_selection_rgb888(selection),
+        )
+        for render in render_calls:
+            with self.subTest(render=render):
+                first = render()
+                self.assertEqual(len(first), EMULATOR_RGB888_BYTE_LENGTH)
+                self.assertEqual(first, render())
+
     def assert_round_labels(self, presentation, expected, throw=1):
         captured=[]; original=renderer._text
         with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
