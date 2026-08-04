@@ -325,6 +325,14 @@ Final verification restores THROW READY flashing in the round renderer without b
 
 **Status: IMPLEMENTED - STALE-SAFE EMULATOR INPUT RETEST READY**
 
-The verified SDK boundary now includes `get_active_darts`. Only the emulator diagnostic adapter uses it, after `get_dart_hits` and before buttons, to baseline startup active darts and recognize later coordinate/state changes. Duplicate same-index normal/active evidence emits once with normal-hit coordinates. A stale raw Dart 0 therefore cannot score during selection but can score with updated coordinates after it moves. FOUL progression remains Throw 1 to Throw 2 / Dart 5, and fresh raw Dart 4 completes the round.
+The verified SDK boundary now includes `get_active_darts`. Only the emulator diagnostic adapter uses it, after `get_dart_hits` and before buttons, to baseline startup active darts and recognize later coordinate/state changes. Duplicate same-index normal/active evidence emits once with normal-hit coordinates. A stale raw Dart 0 therefore cannot score during selection but can score with updated coordinates after it moves. FOUL progression remains Throw 1 to Throw 2, where any fresh Blue raw 0, 4, or 8 may complete the round.
 
 The physical `DartsnutInputPort` remains transition-event based and unchanged; zero automatic blocking resets are made. This is emulator compatibility policy, not a physical-board claim, and it adds no physics, scoring, multiplayer rotation, coordinate transform, secondary-display API, or other physical assumption.
+
+## Phase 0S.2 — active-player color enforcement
+
+**Status: IMPLEMENTED - PLAYER-COLOR DART RETEST READY**
+
+Bowling Throw 1 versus Throw 2 now comes only from the two-throw round state; physical dart identity no longer selects a throw. The emulator-confirmed color policy accepts Blue raw 0/4/8 for either throw when fresh, while Red, Green, and Yellow produce a one-second WRONG COLOR / USE BLUE DART hold without a result or throw consumption. Quick requires no retrieval between throws, Advanced may reuse the same dart after fresh removal/replacement, and a Throw 1 FOUL leaves every Blue dart available for Throw 2. The stale startup baseline, changed-coordinate freshness, normal/active deduplication, 20/30-second timing, and zero-reset policy remain intact.
+
+The mapping is emulator evidence, not physical-board parity. Fixed DART 1 then DART 5 enforcement was removed without adding physics, scoring, multiplayer rotation, coordinate transforms, a secondary-display API, or physical assumptions.

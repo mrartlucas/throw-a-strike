@@ -8,9 +8,8 @@ only immutable views of match state.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
-
 from .bowling import BowlingGame, BowlingSnapshot, RollSnapshot
+from .player_darts import PlayerColor
 
 
 class InvalidMatchConfigurationError(ValueError):
@@ -19,15 +18,6 @@ class InvalidMatchConfigurationError(ValueError):
 
 class MatchCompleteError(RuntimeError):
     """Raised when a roll is attempted after every player has finished."""
-
-
-class PlayerColor(Enum):
-    """The fixed display colors, in locked player order."""
-
-    BLUE = "Blue"
-    RED = "Red"
-    GREEN = "Green"
-    YELLOW = "Yellow"
 
 
 @dataclass(frozen=True)

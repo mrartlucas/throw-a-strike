@@ -1,4 +1,4 @@
-"""Pure two-throw bowling-round state and emulator dart-slot policy."""
+"""Pure two-throw bowling-round state."""
 
 from dataclasses import dataclass
 from enum import Enum, IntEnum
@@ -157,20 +157,5 @@ class BowlingRoundMachine:
         return self._snapshot
 
 
-def expected_emulator_dart_index(player_number: int, throw_number: BowlingThrowNumber) -> int:
-    if type(player_number) is not int or not 1 <= player_number <= 4:
-        raise InvalidBowlingRoundValueError("player_number must be an exact integer from 1 through 4")
-    if type(throw_number) is not BowlingThrowNumber:
-        raise InvalidBowlingRoundValueError("throw_number must be an exact BowlingThrowNumber")
-    return player_number - 1 + (4 if throw_number is BowlingThrowNumber.THROW_TWO else 0)
-
-
-def is_expected_emulator_dart(player_number: int, throw_number: BowlingThrowNumber,
-                              dart_index: int) -> bool:
-    _bounded_int(dart_index, "dart_index", 11)
-    return dart_index == expected_emulator_dart_index(player_number, throw_number)
-
-
 __all__ = ("InvalidBowlingRoundValueError", "BowlingThrowNumber", "BowlingThrowResultKind",
-           "BowlingThrowResult", "BowlingRoundSnapshot", "BowlingRoundMachine",
-           "expected_emulator_dart_index", "is_expected_emulator_dart")
+           "BowlingThrowResult", "BowlingRoundSnapshot", "BowlingRoundMachine")
