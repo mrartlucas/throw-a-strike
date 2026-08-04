@@ -310,3 +310,9 @@ This is an emulator-only policy, not physical-board integration evidence. The fa
 **Final verification:** the complete suite passes **484 tests**.
 
 Dartsnut Agent emulator evidence records displayed Blue 1/5/9, Red 2/6/10, Green 3/7/11, and Yellow 4/8/12, corresponding to raw zero-based indices Blue 0/4/8, Red 1/5/9, Green 2/6/10, and Yellow 3/7/11. This patch documents but does not implement that mapping. Standard game flow will later use the first two same-color darts per round; each third dart is reserved for later rules. This is not a physical-board parity claim. No scoring, round progression, player assignment, throw-slot enforcement, coordinate transformation, secondary-display API, or physical-board assumption was added.
+
+## Phase 0S audit — two-throw round foundation
+
+Status: IMPLEMENTED - TWO-THROW ROUND RETEST READY
+
+Phase 0S adds a frozen, validated pure two-throw round snapshot/result vocabulary and the emulator-evidence dart policy (Blue raw 0 then 4). The emulator harness preserves the rack, records legal darts temporarily as MISS, advances both accepted and FOUL throws, rejects wrong slots without consumption or reset, and holds ROUND COMPLETE. No physics, pin collision/pinfall calculation, scoring change, multiplayer rotation, coordinate transform, secondary-display API, or physical-board parity assertion is introduced.

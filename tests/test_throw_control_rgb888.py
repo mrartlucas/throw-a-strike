@@ -10,7 +10,8 @@ from throw_a_strike.domain import (
 )
 from throw_a_strike.rendering import (
     EMULATOR_MAIN_HEIGHT, EMULATOR_MAIN_WIDTH, EMULATOR_RGB888_BYTE_LENGTH,
-    render_dart_accepted_rgb888, render_style_selection_rgb888, render_throw_control_rgb888,
+    render_dart_accepted_rgb888, render_round_complete_rgb888, render_round_throw_rgb888,
+    render_style_selection_rgb888, render_throw_control_rgb888, render_wrong_dart_rgb888,
 )
 import throw_a_strike.rendering.throw_control_rgb888 as renderer
 
@@ -28,6 +29,21 @@ def power_presentation(power):
 
 
 class RendererTests(unittest.TestCase):
+    def test_round_throw_wrong_dart_and_complete_labels(self):
+        presentation=build_throw_control_presentation(ThrowControlMachine(ControlStyle.QUICK).snapshot)
+        captured=[]; original=renderer._text
+        with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
+                          (captured.append(t),original(b,t,x,y,c,scale))[1]):
+            active=render_round_throw_rgb888(presentation,2,5)
+            wrong=render_wrong_dart_rgb888(presentation,5)
+            complete_machine=ThrowControlMachine(ControlStyle.QUICK)
+            terminal=build_throw_control_presentation(complete_machine.apply(
+                ThrowControlCommand(ThrowControlCommandKind.DART_HIT,1,dart_index=4,x=1,y=2)))
+            finished=render_round_complete_rgb888(terminal)
+        self.assertEqual({len(active),len(wrong),len(finished)},{49152})
+        for label in ("THROW 2","USE DART 5","WRONG DART","ROUND COMPLETE"):
+            self.assertIn(label,captured)
+
     def test_constants_bytes_and_determinism(self):
         self.assertEqual((EMULATOR_MAIN_WIDTH, EMULATOR_MAIN_HEIGHT,
                           EMULATOR_RGB888_BYTE_LENGTH), (128, 128, 49152))

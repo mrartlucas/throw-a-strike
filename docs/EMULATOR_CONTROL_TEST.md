@@ -1,94 +1,50 @@
 # Emulator control test
 
-## Purpose
+## Purpose and scope
 
-Phase 0R.4 is an interactive verification harness for **Throw A Way Games presents Throw a Strike**. It exercises the completed Phase 0Q control architecture; it is not a bowling match.
+Phase 0S is a deterministic diagnostic harness for one Blue two-throw bowling round. It selects Quick or Advanced controls, preserves the standing ten-pin rack between throws, and submits only the observed 128×128 packed RGB888 main framebuffer. The 64×32 second screen remains unused because no verified submission API exists.
 
-## Current supported emulator behavior
+This mapping is confirmed **Dartsnut Agent emulator evidence only** and is not a physical-board parity claim:
 
-The harness selects Quick or Advanced control style without automatically calling `reset_blocking_state`, displays curve and power state, and accepts an unchanged dart index/x/y only after a new emulator board event. An accepted dart displays DART ACCEPTED with its unchanged raw D-index/X/Y, holds for exactly 1.5 seconds, and then starts a fresh attempt in the already selected style. Early recovery remains restart-only. FOUL retains its 1.5-second automatic retry. It submits one packed, row-major RGB888 main framebuffer per iteration.
+| Blue round slot | Displayed dart | Raw SDK index |
+| --- | ---: | ---: |
+| Throw 1 | 1 | 0 |
+| Throw 2 | 5 | 4 |
+| Reserved third dart | 9 | 8 |
 
-## Exact controls
+Red uses displayed 2/6/10 (raw 1/5/9), Green 3/7/11 (raw 2/6/10), and Yellow 4/8/12 (raw 3/7/11). Only Blue raw indices 0 then 4 are consumed by this runtime.
 
-On **CONTROL STYLE**, Left selects **QUICK PLAY**, Right selects **ADVANCED PLAY**, and A confirms. With no confirmation for 15 seconds, Quick Play is confirmed. B, Up, Down, and darts have no selection effect.
+## Round procedure
 
-## Hardware retest procedure
+1. Remove every dart, launch the app, choose Quick or Advanced, and confirm with A.
+2. Verify **THROW 1** and **USE DART 1**. Confirmation alone is not a dart.
+3. Emit raw dart 0 and verify **DART ACCEPTED** with unchanged raw index/X/Y.
+4. After exactly 1.5 seconds verify **THROW 2** and **USE DART 5**. Advanced starts again at SET CURVE and retains the selected Advanced style.
+5. Emit raw dart 4 and verify DART ACCEPTED.
+6. After exactly 1.5 seconds verify **ROUND COMPLETE**. It holds without polling until restart.
 
-1. Remove every dart from the board.
-2. Launch Throw a Strike.
-3. Select Quick Play.
-4. Confirm with A.
-5. Verify THROW READY, STR, 70%, and GOOD.
-6. Throw one physical dart.
-7. Verify **DART ACCEPTED** and the exact raw `D<index> X<x> Y<y>` line.
-8. Record whether the dart registered.
-9. Verify a fresh Quick attempt begins after exactly 1.5 seconds.
-10. For FOUL testing, do not throw.
-11. Verify FOUL plus 0 PINS.
-12. Verify a fresh Quick attempt begins after 1.5 seconds.
+A nonmatching raw index displays **WRONG DART** and the expected displayed number for exactly 1.0 second. It creates no result, does not consume the throw, does not reset blocking state, and returns to the same throw. Raw 8 is reserved and cannot complete Throw 2.
 
-## Advanced Play procedure
+Advanced SET CURVE and SET POWER occur separately for each throw. Setup time does not count toward the 30-second throw timer, which begins only at THROW READY. The selected Advanced style remains active throughout the round.
 
-1. Confirm Advanced Play. Use Left/Right at **SET CURVE**, then A to lock.
-2. Watch the moving percentage at **SET POWER**, then press A to lock it.
-3. Verify **THROW READY**, throw one dart, and verify the terminal HUD preserves the selected curve and power.
+## Timing and FOUL
 
-## Early-dart recovery procedure
+THROW NOW appears at exactly 20 seconds and FOUL occurs at exactly 30 seconds. FOUL means that no legal dart occurred before the deadline: no bowling ball launches, zero pins fall, and the current throw is consumed. The FOUL/0 PINS diagnostic holds exactly 1.5 seconds. Throw 1 FOUL advances to a fresh Throw 2 timer; Throw 2 FOUL completes the round. The runtime makes zero automatic `reset_blocking_state` calls.
 
-In Advanced Play, throw before THROW READY. Verify **TOO SOON** and **REMOVE DART**. Close and restart the emulator after validating this hold state.
+## Result vocabulary
 
-## Warning and FOUL procedure
+* **GUTTER** — the ball enters a side trench, touches no pins, and consumes the throw with zero pinfall.
+* **MISS** — the ball remains on the playable lane or pin deck, touches no currently standing pin, and consumes the throw with zero pinfall.
+* **FIELD GOAL** — a special MISS in which a separated or split leave remains untouched as the ball passes cleanly between its standing pins.
+* **FOUL** — the 30-second deadline expires without a legal dart; no ball launches and the unchanged rack advances.
+* **PIN HIT** — a legal ball contacts a standing pin and one or more pins may fall; later physics will supply exact pinfall.
 
-Reach THROW READY and verify **THROW NOW** appears at exactly 20 seconds. At exactly 30 seconds total, after a 10-second warning window, verify **FOUL** and **0 PINS**. The cached FOUL frame holds for exactly 1.5 seconds without polling input; the harness then begins a clean attempt with a fresh 30-second timer, without resetting blocking state or returning to style selection. Advanced SET CURVE and SET POWER time does not count: its timer starts only upon entry to THROW READY.
+Until physics exists, every legal expected dart is recorded as a temporary diagnostic **MISS**, preserving its exact raw index/X/Y and the full rack. This placeholder is not a claim about the future ball path. Coordinates do not generate GUTTER or FIELD GOAL in this phase, and a known named zero event should not be replaced by generic “0 PINS” gameplay text (FOUL retains that secondary diagnostic here).
 
-## Expected 128×128 screen
+**CHERRY PICK**, also called **LILY DIP**, means hitting only the front pin of a multi-pin spare leave while the others remain standing. **BLOWOUT** means all remaining pins fall except one, commonly the 7 or 10. These are documented future callouts only: the runtime does not detect or emit them and they are not scoring rules.
 
-The observed 128×128 emulator main canvas contains a close overhead ten-pin deck at y=0–87 and a compact HUD at y=88–127. The HUD shows the prompt(s), curve arrow and label, percentage, feedback, and Q/A style indicator. No pre-physics bowling ball, scorecard, frame, or player appears.
+## Deliberate exclusions
 
-Packed RGB888 and 128×128 (49,152 bytes) are emulator-test assumptions based on direct visual observation. The SDK does not prove dimensions, orientation, physical RGB ordering, or physical-cabinet parity.
+The display keeps the static pin deck, curve, power, and style. There is no trajectory or ball animation, collision, pinfall calculation or animation, scoring or bonuses, strike/spare logic, frame progression, multiplayer rotation, coordinate transformation, secondary-display API, or physical-board claim.
 
-## Known secondary-screen limitation
-
-The emulator visibly has a 64×32 control canvas, but no verified submission API exists. This harness submits only to the main framebuffer and invents no secondary-display operation.
-
-## Hold and retry limitations
-
-No verified dart-removal signal exists and the coordinator intentionally has no rearm operation. Recovery hold therefore republishes cached artwork without polling, reading time, resetting hardware, or consuming future input. Restart the app to repeat the test.
-
-Accepted COMPLETE enters `ACCEPTED_HOLD`: the cached diagnostic is resubmitted without input polling or reset before its deadline, then the harness begins a fresh attempt without resetting blocking state after exactly 1.5 seconds. FOUL follows the same duration and fresh-attempt boundary. These retries are emulator retest preparation, not proof of physical-cabinet parity.
-
-## Accepted-dart behavior
-
-An accepted dart preserves the exact completed coordinator outcome and displays **DART ACCEPTED** plus raw `D<dart_index> X<x> Y<y>` without mapping or coordinate transformation. The pin deck and locked curve/power HUD remain; there is no bowling ball, pinfall, or score.
-
-## What is not implemented
-
-There is no trajectory, ball animation, collision, pin result, scoring, frame progression, multiplayer, player/color or dart-index mapping, coordinate transformation, audio, theme switching, or physical-cabinet claim. No secondary screen or secondary-display API is used.
-
-## Run/deploy steps
-
-Use the repository's Python environment and run `python main.py`. For local verification run `python -m unittest discover -s tests -v`. Packaging dependencies remain unchanged in this phase.
-
-## Bug-report checklist
-
-Record the selected style, exact control sequence, elapsed time, displayed curve/power/feedback, prompt text, dart index/x/y, whether framebuffer submission was accepted, emulator version, main-canvas appearance, and whether the failure occurred in selection, attempt, recovery hold, or terminal hold. Do not infer cabinet behavior from an emulator report.
-
-## Evidence interpretation
-
-A log containing “event fired” confirms that the emulator emitted a dart event. Direct emulator testing recorded `Dart 0 BLOCKED (event fired at [77, 84])` followed by `active at coordinate (77, 84)`. The emulator may retain that dart as active at its last coordinate; calling `reset_blocking_state` while it remains active can emit the same dart again. Phase 0R.1 and 0R.2 automatic-reset assumptions were therefore disproven. This diagnostic runtime never resets automatically. A confirms style only, and acceptance requires a new board event. After DART ACCEPTED holds for 1.5 seconds, a fresh attempt remains active without a new click and can reach THROW NOW and FOUL.
-
-The Deploy panel must say **Connected** before testing a physical board. Local screen clicks are emulator evidence only. The second screen remains unused, and no physical-board parity is claimed.
-
-
-## Emulator dart-layout evidence
-
-The following layout was confirmed through the **Dartsnut Agent emulator** and is emulator evidence only; it is not yet a physical-board parity claim.
-
-| Color | Displayed dart buttons | Raw zero-based SDK indices |
-| --- | --- | --- |
-| Blue | 1 / 5 / 9 | 0 / 4 / 8 |
-| Red | 2 / 6 / 10 | 1 / 5 / 9 |
-| Green | 3 / 7 / 11 | 2 / 6 / 10 |
-| Yellow | 4 / 8 / 12 | 3 / 7 / 11 |
-
-No mapping behavior is implemented in this timing patch. Standard game flow will later use two darts per round: the first two same-color darts shown above. The third same-color dart remains reserved for later rules that need it. This evidence does not assign players, enforce throw slots, advance rounds, transform coordinates, or assert physical-board behavior. Emulator automatic resets remain disabled.
+Early Advanced darts still enter restart-only TOO SOON / REMOVE DART recovery. No verified removal signal exists, so recovery and ROUND COMPLETE republish cached artwork without polling input. Run locally with `python main.py`; validate with `python -m unittest discover -s tests -v`.
