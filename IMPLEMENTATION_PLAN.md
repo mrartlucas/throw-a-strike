@@ -997,3 +997,16 @@ explicit fallback composition remain future work.
 - **Display-neutral boundary:** the frozen model describes presentation meaning only. It adds no dimensions, layout, coordinates, pixels, framebuffer, fonts, colors, art, animation, flashing cadence, orientation, stride, byte order, or display submission.
 - **Explicit exclusions:** no hardware, Dartsnut, adapters, platform code, input polling, clock access, command generation, `TICK`, `REARMED`, blocking reset, machine/coordinator mutation, ball trajectory, physics, pinfall, scoring, session/controller changes, player/color mapping, coordinate transformation, or secondary-display API.
 - **Accelerated recommended next task:** Phase 0R should be an Emulator Control Test Vertical Slice that renders this model and wires the existing input/coordinator into a finite emulator runtime. It may target the observed 128×128 main emulator display and the observed 64×32 control emulator display only through verified APIs, keep gameplay/pin deck dominant with a bottom HUD, and document any secondary-screen limitation rather than inventing a submission API. Ball trajectory, collision, pinfall, scoring, and multiplayer remain outside that slice.
+
+## Phase 0R: Interactive emulator control-test vertical slice
+
+**Status: IMPLEMENTED - EMULATOR TEST READY**
+
+- **Baseline/final verification:** baseline 429 tests; final suite **441 tests**, including 4 clock, 3 selector, 2 renderer, and 3 runtime tests.
+- **Exact files:** created `throw_a_strike/adapters/system_clock.py`, `throw_a_strike/application/throw_control_style_selection.py`, both `throw_a_strike/rendering` files, both `throw_a_strike/runtime` files, four focused tests, and `docs/EMULATOR_CONTROL_TEST.md`; updated `main.py`, `conf.json`, adapter/application exports, this plan, and `PROJECT_AUDIT.md`.
+- **Selection and rendering:** Quick begins selected, Left/Right select, A confirms, and the exact 15-second boundary confirms Quick before commands. Pure drawing code produces deterministic 128×128 packed RGB888 bytes, a close ten-pin deck, and compact lower HUD with locked curve/power retained during THROW READY flashing.
+- **Runtime wiring:** one existing Dartsnut input adapter feeds one coordinator constructed only after confirmation. Each active step polls/coordinators once and submits once. Quick and Advanced, warning/FOUL, accepted coordinates, and submission results are covered.
+- **Evidence boundary:** 128×128 and RGB888 are emulator-only observations/assumptions, not SDK or physical parity proof. No secondary submission API was found or invented.
+- **Intentional hold:** early recovery caches TOO SOON/REMOVE DART and requires restart because no verified removal signal exists; it adds neither reset nor REARMED. Terminal state similarly requires restart.
+- **Exclusions:** no trajectory, animation, collision, pin result, score, frame progression, multiplayer, player/color mapping, coordinate transformation, audio, asset, or cabinet claim.
+- **Recommended next task:** Phase 0S should consume unchanged aim x/y, locked curve, and power to produce deterministic trajectory and pin-contact data plus post-dart animation, separate from scoring. It must add no randomness, mapping guesses, physical transforms, score submission, frame advancement, or multiplayer orchestration.
