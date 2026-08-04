@@ -1,125 +1,1329 @@
 {
   "brightness": {
-    "accepted_range": [
-      10,
-      100
+    "bounds": {
+      "claim_ids": [
+        "CLM-090"
+      ],
+      "value": [
+        10,
+        100
+      ]
+    },
+    "return_claim_ids": [
+      "CLM-092"
     ],
-    "evidence_ids": [
-      "E019"
-    ],
-    "hardware_effect": "UNKNOWN_HARDWARE",
-    "method": "set_brightness",
-    "out_of_range": "ignored",
-    "return": null,
-    "signature": "(self, brightness)"
+    "signature": {
+      "claim_ids": [
+        "CLM-022"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": "(self, brightness)"
+    },
+    "write_claim_ids": [
+      "CLM-091"
+    ]
   },
   "button_input": {
-    "debounce_seconds": 0.03,
-    "default_values": false,
-    "event_semantics": "rising-edge booleans for keys returned by polling",
-    "evidence_ids": [
-      "E018",
-      "E025",
-      "E009"
-    ],
-    "keys": [
-      "btn_a",
-      "btn_b",
-      "btn_down",
-      "btn_home",
-      "btn_left",
-      "btn_reserved",
-      "btn_right",
-      "btn_up"
-    ],
-    "methods": {
-      "get_button_events": "(self)",
-      "get_buttons": "(self)"
+    "debounce_seconds": {
+      "claim_ids": [
+        "CLM-087"
+      ],
+      "value": 0.03
     },
-    "ordering_guarantee": null,
-    "polling_semantics": "debounced current booleans",
-    "unknown_keys_possible": "Event handler follows polling mapping; package polling defines exactly eight keys"
+    "event_claim_ids": [
+      "CLM-088",
+      "CLM-089"
+    ],
+    "keys": {
+      "claim_ids": [
+        "CLM-086"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": [
+        "btn_a",
+        "btn_b",
+        "btn_up",
+        "btn_right",
+        "btn_left",
+        "btn_down",
+        "btn_home",
+        "btn_reserved"
+      ]
+    }
   },
-  "constructor": {
-    "arguments": {
-      "--data-store": null,
-      "--idle-unblock-duration": null,
-      "--min-active-duration": null,
-      "--params": "{}",
-      "--shm": "pdishm"
+  "claims": [
+    {
+      "claim_id": "CLM-001",
+      "evidence_ids": [
+        "E001"
+      ],
+      "status": "VERIFIED_PACKAGE_METADATA",
+      "topic": "package.name",
+      "value": "pydartsnut"
     },
-    "behavior": "Parses process arguments, JSON-decodes widget parameters, installs SIGINT handling, connects display/input shared memory, and initializes data storage and InputHandler.",
-    "evidence_ids": [
-      "E012"
+    {
+      "claim_id": "CLM-002",
+      "evidence_ids": [
+        "E001"
+      ],
+      "status": "VERIFIED_PACKAGE_METADATA",
+      "topic": "package.version",
+      "value": "1.2.1"
+    },
+    {
+      "claim_id": "CLM-003",
+      "evidence_ids": [
+        "E001"
+      ],
+      "status": "VERIFIED_PACKAGE_METADATA",
+      "topic": "package.python_requirement",
+      "value": ">=3.1"
+    },
+    {
+      "claim_id": "CLM-004",
+      "evidence_ids": [
+        "E003"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.EngineProtocol.get_darts",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-005",
+      "evidence_ids": [
+        "E004"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.EngineProtocol.get_buttons",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-006",
+      "evidence_ids": [
+        "E007"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.InputHandler.__init__",
+      "value": "(self, engine, min_active_duration=None, idle_unblock_duration=None)"
+    },
+    {
+      "claim_id": "CLM-007",
+      "evidence_ids": [
+        "E008"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.InputHandler._update_blocking_timers",
+      "value": "(self, dart_states)"
+    },
+    {
+      "claim_id": "CLM-008",
+      "evidence_ids": [
+        "E009"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.InputHandler.get_dart_hits",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-009",
+      "evidence_ids": [
+        "E010"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.InputHandler.get_active_darts",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-010",
+      "evidence_ids": [
+        "E011"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.InputHandler.get_buttons",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-011",
+      "evidence_ids": [
+        "E012"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.InputHandler.reset_blocking_state",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-012",
+      "evidence_ids": [
+        "E014"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.__init__",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-013",
+      "evidence_ids": [
+        "E015"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut._open_render_semaphore",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-014",
+      "evidence_ids": [
+        "E016"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut._post_render_semaphore",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-015",
+      "evidence_ids": [
+        "E017"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.remove_shm_from_resource_tracker",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-016",
+      "evidence_ids": [
+        "E018"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.sigint_handler",
+      "value": "(self, signum, frame)"
+    },
+    {
+      "claim_id": "CLM-017",
+      "evidence_ids": [
+        "E019"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.update_frame_buffer",
+      "value": "(self, frame)"
+    },
+    {
+      "claim_id": "CLM-018",
+      "evidence_ids": [
+        "E020"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.close",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-019",
+      "evidence_ids": [
+        "E021"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.__del__",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-020",
+      "evidence_ids": [
+        "E022"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.get_darts",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-021",
+      "evidence_ids": [
+        "E023"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.get_buttons",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-022",
+      "evidence_ids": [
+        "E024"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.set_brightness",
+      "value": "(self, brightness)"
+    },
+    {
+      "claim_id": "CLM-023",
+      "evidence_ids": [
+        "E025"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.set_value",
+      "value": "(self, key, value)"
+    },
+    {
+      "claim_id": "CLM-024",
+      "evidence_ids": [
+        "E026"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.get_value",
+      "value": "(self, key, default=None)"
+    },
+    {
+      "claim_id": "CLM-025",
+      "evidence_ids": [
+        "E027"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.get_dart_hits",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-026",
+      "evidence_ids": [
+        "E028"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.get_active_darts",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-027",
+      "evidence_ids": [
+        "E029"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.reset_blocking_state",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-028",
+      "evidence_ids": [
+        "E030"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "signature.Dartsnut.get_button_events",
+      "value": "(self)"
+    },
+    {
+      "claim_id": "CLM-029",
+      "evidence_ids": [
+        "E031"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "constructor.signal_handler_registration",
+      "value": "signal.signal(signal.SIGINT, self.sigint_handler)"
+    },
+    {
+      "claim_id": "CLM-030",
+      "evidence_ids": [
+        "E032"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "constructor.option.--params.default",
+      "value": "{}"
+    },
+    {
+      "claim_id": "CLM-031",
+      "evidence_ids": [
+        "E033"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "constructor.option.--shm.default",
+      "value": "pdishm"
+    },
+    {
+      "claim_id": "CLM-032",
+      "evidence_ids": [
+        "E034"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "constructor.option.--data-store.default",
+      "value": null
+    },
+    {
+      "claim_id": "CLM-033",
+      "evidence_ids": [
+        "E035"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "constructor.option.--min-active-duration.default",
+      "value": null
+    },
+    {
+      "claim_id": "CLM-034",
+      "evidence_ids": [
+        "E036"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "constructor.option.--idle-unblock-duration.default",
+      "value": null
+    },
+    {
+      "claim_id": "CLM-035",
+      "evidence_ids": [
+        "E037"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "widget_parameters.parse",
+      "value": "json.loads"
+    },
+    {
+      "claim_id": "CLM-036",
+      "evidence_ids": [
+        "E038"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.directory_creation",
+      "value": "os.makedirs"
+    },
+    {
+      "claim_id": "CLM-037",
+      "evidence_ids": [
+        "E039"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "lifecycle.running_initial",
+      "value": true
+    },
+    {
+      "claim_id": "CLM-038",
+      "evidence_ids": [
+        "E040"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.filename",
+      "value": "data.json"
+    },
+    {
+      "claim_id": "CLM-039",
+      "evidence_ids": [
+        "E041"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.accepts_bytearray",
+      "value": true
+    },
+    {
+      "claim_id": "CLM-040",
+      "evidence_ids": [
+        "E042"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.accepts_tobytes",
+      "value": true
+    },
+    {
+      "claim_id": "CLM-041",
+      "evidence_ids": [
+        "E043"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.posts_render_semaphore",
+      "value": true
+    },
+    {
+      "claim_id": "CLM-042",
+      "evidence_ids": [
+        "E044"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.status_comparison",
+      "value": 2
+    },
+    {
+      "claim_id": "CLM-043",
+      "evidence_ids": [
+        "E045"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.status_comparison",
+      "value": 1
+    },
+    {
+      "claim_id": "CLM-044",
+      "evidence_ids": [
+        "E046"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.status_mutation",
+      "value": 0
+    },
+    {
+      "claim_id": "CLM-045",
+      "evidence_ids": [
+        "E047"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.return_value",
+      "value": false
+    },
+    {
+      "claim_id": "CLM-046",
+      "evidence_ids": [
+        "E048"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.return_value",
+      "value": true
+    },
+    {
+      "claim_id": "CLM-047",
+      "evidence_ids": [
+        "E049"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.return_value",
+      "value": false
+    },
+    {
+      "claim_id": "CLM-048",
+      "evidence_ids": [
+        "E050"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "main_display.pixel_format_wording",
+      "value": "RGB888"
+    },
+    {
+      "claim_id": "CLM-049",
+      "evidence_ids": [
+        "E051"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.slot_count",
+      "value": 12
+    },
+    {
+      "claim_id": "CLM-050",
+      "evidence_ids": [
+        "E052"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.slot_count",
+      "value": 12
+    },
+    {
+      "claim_id": "CLM-051",
+      "evidence_ids": [
+        "E053"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.slot_count",
+      "value": 12
+    },
+    {
+      "claim_id": "CLM-052",
+      "evidence_ids": [
+        "E054"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.event_tuple_arity",
+      "value": 3
+    },
+    {
+      "claim_id": "CLM-053",
+      "evidence_ids": [
+        "E055"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.event_tuple_arity",
+      "value": 3
+    },
+    {
+      "claim_id": "CLM-054",
+      "evidence_ids": [
+        "E056"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 8
+    },
+    {
+      "claim_id": "CLM-055",
+      "evidence_ids": [
+        "E056"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 1
+    },
+    {
+      "claim_id": "CLM-056",
+      "evidence_ids": [
+        "E056"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 4
+    },
+    {
+      "claim_id": "CLM-057",
+      "evidence_ids": [
+        "E056"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 2
+    },
+    {
+      "claim_id": "CLM-058",
+      "evidence_ids": [
+        "E056"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 4
+    },
+    {
+      "claim_id": "CLM-059",
+      "evidence_ids": [
+        "E057"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 8
+    },
+    {
+      "claim_id": "CLM-060",
+      "evidence_ids": [
+        "E057"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 3
+    },
+    {
+      "claim_id": "CLM-061",
+      "evidence_ids": [
+        "E057"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 4
+    },
+    {
+      "claim_id": "CLM-062",
+      "evidence_ids": [
+        "E057"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 4
+    },
+    {
+      "claim_id": "CLM-063",
+      "evidence_ids": [
+        "E057"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 4
+    },
+    {
+      "claim_id": "CLM-064",
+      "evidence_ids": [
+        "E058"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 65535
+    },
+    {
+      "claim_id": "CLM-065",
+      "evidence_ids": [
+        "E058"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 65535
+    },
+    {
+      "claim_id": "CLM-066",
+      "evidence_ids": [
+        "E059"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 1800
+    },
+    {
+      "claim_id": "CLM-067",
+      "evidence_ids": [
+        "E060"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 39800
+    },
+    {
+      "claim_id": "CLM-068",
+      "evidence_ids": [
+        "E061"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 299
+    },
+    {
+      "claim_id": "CLM-069",
+      "evidence_ids": [
+        "E061"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 1800
+    },
+    {
+      "claim_id": "CLM-070",
+      "evidence_ids": [
+        "E062"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 1800
+    },
+    {
+      "claim_id": "CLM-071",
+      "evidence_ids": [
+        "E063"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 39800
+    },
+    {
+      "claim_id": "CLM-072",
+      "evidence_ids": [
+        "E064"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 299
+    },
+    {
+      "claim_id": "CLM-073",
+      "evidence_ids": [
+        "E064"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_constant",
+      "value": 1800
+    },
+    {
+      "claim_id": "CLM-074",
+      "evidence_ids": [
+        "E065"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_output_constant",
+      "value": 0
+    },
+    {
+      "claim_id": "CLM-075",
+      "evidence_ids": [
+        "E066"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_output_constant",
+      "value": 127
+    },
+    {
+      "claim_id": "CLM-076",
+      "evidence_ids": [
+        "E067"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_output_constant",
+      "value": 0
+    },
+    {
+      "claim_id": "CLM-077",
+      "evidence_ids": [
+        "E068"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.mapping_output_constant",
+      "value": 127
+    },
+    {
+      "claim_id": "CLM-078",
+      "evidence_ids": [
+        "E069"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.invalid_sentinel",
+      "value": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "claim_id": "CLM-079",
+      "evidence_ids": [
+        "E069"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.invalid_sentinel",
+      "value": [
+        0,
+        0
+      ]
+    },
+    {
+      "claim_id": "CLM-080",
+      "evidence_ids": [
+        "E070"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.idle_unblock_duration",
+      "value": 0.2
+    },
+    {
+      "claim_id": "CLM-081",
+      "evidence_ids": [
+        "E071"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.min_active_duration",
+      "value": 0.0
+    },
+    {
+      "claim_id": "CLM-082",
+      "evidence_ids": [
+        "E072"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.block_add",
+      "value": "add"
+    },
+    {
+      "claim_id": "CLM-083",
+      "evidence_ids": [
+        "E073"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.block_remove",
+      "value": "remove"
+    },
+    {
+      "claim_id": "CLM-084",
+      "evidence_ids": [
+        "E074"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.block_remove",
+      "value": "remove"
+    },
+    {
+      "claim_id": "CLM-085",
+      "evidence_ids": [
+        "E075"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.block_reset",
+      "value": "clear"
+    },
+    {
+      "claim_id": "CLM-086",
+      "evidence_ids": [
+        "E076"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "button_input.keys",
+      "value": [
+        "btn_a",
+        "btn_b",
+        "btn_up",
+        "btn_right",
+        "btn_left",
+        "btn_down",
+        "btn_home",
+        "btn_reserved"
+      ]
+    },
+    {
+      "claim_id": "CLM-087",
+      "evidence_ids": [
+        "E077"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "button_input.debounce_seconds",
+      "value": 0.03
+    },
+    {
+      "claim_id": "CLM-088",
+      "evidence_ids": [
+        "E078"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "button_input.event_default",
+      "value": false
+    },
+    {
+      "claim_id": "CLM-089",
+      "evidence_ids": [
+        "E079"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "button_input.edge_iteration",
+      "value": "(btn_name, button_pressed)"
+    },
+    {
+      "claim_id": "CLM-090",
+      "evidence_ids": [
+        "E080"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "brightness.accepted_bounds",
+      "value": [
+        10,
+        100
+      ]
+    },
+    {
+      "claim_id": "CLM-091",
+      "evidence_ids": [
+        "E081"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "brightness.write",
+      "value": "self.shm_pdo_buf[49] = brightness"
+    },
+    {
+      "claim_id": "CLM-092",
+      "evidence_ids": [
+        "E082"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "brightness.implicit_return",
+      "value": null
+    },
+    {
+      "claim_id": "CLM-093",
+      "evidence_ids": [
+        "E083"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.os.path.dirname",
+      "value": "os.path.dirname"
+    },
+    {
+      "claim_id": "CLM-094",
+      "evidence_ids": [
+        "E084"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.os.path.abspath",
+      "value": "os.path.abspath"
+    },
+    {
+      "claim_id": "CLM-095",
+      "evidence_ids": [
+        "E085"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.os.getcwd",
+      "value": "os.getcwd"
+    },
+    {
+      "claim_id": "CLM-096",
+      "evidence_ids": [
+        "E086"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.__init__",
+      "value": [
+        "json.JSONDecodeError"
+      ]
+    },
+    {
+      "claim_id": "CLM-097",
+      "evidence_ids": [
+        "E087"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.__init__",
+      "value": [
+        "FileNotFoundError"
+      ]
+    },
+    {
+      "claim_id": "CLM-098",
+      "evidence_ids": [
+        "E088"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.__init__",
+      "value": [
+        "FileNotFoundError"
+      ]
+    },
+    {
+      "claim_id": "CLM-099",
+      "evidence_ids": [
+        "E089"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.__init__",
+      "value": [
+        "NameError"
+      ]
+    },
+    {
+      "claim_id": "CLM-100",
+      "evidence_ids": [
+        "E090"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.__init__",
+      "value": [
+        "OSError"
+      ]
+    },
+    {
+      "claim_id": "CLM-101",
+      "evidence_ids": [
+        "E091"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.os.path.exists",
+      "value": "os.path.exists"
+    },
+    {
+      "claim_id": "CLM-102",
+      "evidence_ids": [
+        "E092"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.json.load",
+      "value": "json.load"
+    },
+    {
+      "claim_id": "CLM-103",
+      "evidence_ids": [
+        "E093"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.json.dump",
+      "value": "json.dump"
+    },
+    {
+      "claim_id": "CLM-104",
+      "evidence_ids": [
+        "E094"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.os.replace",
+      "value": "os.replace"
+    },
+    {
+      "claim_id": "CLM-105",
+      "evidence_ids": [
+        "E095"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.os.path.exists",
+      "value": "os.path.exists"
+    },
+    {
+      "claim_id": "CLM-106",
+      "evidence_ids": [
+        "E096"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.os.remove",
+      "value": "os.remove"
+    },
+    {
+      "claim_id": "CLM-107",
+      "evidence_ids": [
+        "E097"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.set_value",
+      "value": [
+        "(json.JSONDecodeError, IOError)"
+      ]
+    },
+    {
+      "claim_id": "CLM-108",
+      "evidence_ids": [
+        "E098"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.set_value",
+      "value": [
+        "(IOError, OSError)"
+      ]
+    },
+    {
+      "claim_id": "CLM-109",
+      "evidence_ids": [
+        "E099"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.set_value",
+      "value": [
+        "OSError"
+      ]
+    },
+    {
+      "claim_id": "CLM-110",
+      "evidence_ids": [
+        "E100"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.os.path.exists",
+      "value": "os.path.exists"
+    },
+    {
+      "claim_id": "CLM-111",
+      "evidence_ids": [
+        "E101"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.operation.json.load",
+      "value": "json.load"
+    },
+    {
+      "claim_id": "CLM-112",
+      "evidence_ids": [
+        "E102"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.error_handlers.Dartsnut.get_value",
+      "value": [
+        "(json.JSONDecodeError, IOError)"
+      ]
+    },
+    {
+      "claim_id": "CLM-113",
+      "evidence_ids": [
+        "E103"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "persistence.temporary_suffix",
+      "value": ".tmp"
+    },
+    {
+      "claim_id": "CLM-114",
+      "evidence_ids": [],
+      "status": "NOT_FOUND_IN_INSPECTED_PACKAGE",
+      "topic": "secondary_display.search_result",
+      "value": "No secondary-display API was found in the inspected pydartsnut 1.2.1 wheel."
+    },
+    {
+      "claim_id": "CLM-115",
+      "evidence_ids": [
+        "E104"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "topic": "dart_input.documented_rearm_seconds",
+      "value": 0.5
+    }
+  ],
+  "constructor": {
+    "options": {
+      "--data-store": {
+        "claim_ids": [
+          "CLM-032"
+        ],
+        "default": null,
+        "status": "VERIFIED_PACKAGE_SOURCE"
+      },
+      "--idle-unblock-duration": {
+        "claim_ids": [
+          "CLM-034"
+        ],
+        "default": null,
+        "status": "VERIFIED_PACKAGE_SOURCE"
+      },
+      "--min-active-duration": {
+        "claim_ids": [
+          "CLM-033"
+        ],
+        "default": null,
+        "status": "VERIFIED_PACKAGE_SOURCE"
+      },
+      "--params": {
+        "claim_ids": [
+          "CLM-030"
+        ],
+        "default": "{}",
+        "status": "VERIFIED_PACKAGE_SOURCE"
+      },
+      "--shm": {
+        "claim_ids": [
+          "CLM-031"
+        ],
+        "default": "pdishm",
+        "status": "VERIFIED_PACKAGE_SOURCE"
+      }
+    },
+    "setup_claim_ids": [
+      "CLM-029",
+      "CLM-030",
+      "CLM-031",
+      "CLM-032",
+      "CLM-033",
+      "CLM-034"
     ],
-    "public_class_import_path": "pydartsnut.Dartsnut",
-    "signature": "(self)"
+    "signature": {
+      "claim_ids": [
+        "CLM-012"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": "(self)"
+    }
   },
   "contradictions": [
     {
       "contradiction_id": "C001",
-      "impact": "Native render size and safe framebuffer length cannot be selected.",
-      "required_next_evidence": "Official platform contract plus emulator and cabinet native-size patterns.",
+      "impact": "Native size and safe payload length cannot be selected.",
+      "required_next_evidence": "Platform specification and cabinet patterns.",
       "resolution_status": "UNRESOLVED",
       "source_a": "main.py uses 128×160",
-      "source_b": "wheel implementation encodes no width or height; package descriptions refer to 0–127 coordinates",
+      "source_b": "no width/height literal was extracted from update_frame_buffer",
       "topic": "main.py display dimensions versus package implementation"
     },
     {
       "contradiction_id": "C002",
-      "impact": "Manifest size cannot be treated as verified hardware size.",
-      "required_next_evidence": "Launcher schema and physical display verification.",
+      "impact": "Manifest size is not verified hardware size.",
+      "required_next_evidence": "Launcher schema and cabinet evidence.",
       "resolution_status": "UNRESOLVED",
       "source_a": "conf.json declares [128,160]",
-      "source_b": "wheel implementation encodes no width or height; package descriptions refer to 0–127 coordinates",
+      "source_b": "no width/height literal was extracted from update_frame_buffer",
       "topic": "conf.json dimensions versus package implementation"
     },
     {
       "contradiction_id": "C003",
-      "impact": "Consumers must not adopt the stale prose as final hardware input policy.",
-      "required_next_evidence": "Cabinet timing trace and maintained SDK clarification.",
+      "impact": "Final input policy cannot rely on stale prose.",
+      "required_next_evidence": "Maintainer clarification and cabinet timing trace.",
       "resolution_status": "UNRESOLVED",
-      "source_a": "Dartsnut.get_dart_hits docstring says 0.5 seconds",
-      "source_b": "InputHandler implementation default is 0.2 seconds",
+      "source_a": {
+        "claim_ids": [
+          "CLM-115"
+        ],
+        "value": 0.5
+      },
+      "source_b": {
+        "claim_ids": [
+          "CLM-080"
+        ],
+        "value": 0.2
+      },
       "topic": "dart re-arm documentation versus implementation"
     }
   ],
   "dart_input": {
-    "active_shape": "list of (dart_index, x, y) tuples",
-    "coordinate_max": 127,
-    "coordinate_min": 0,
-    "dart_index_max": 11,
-    "dart_index_min": 0,
-    "dart_slot_count": 12,
-    "default_rearm_seconds": 0.2,
-    "duplicate_blocking": "An emitted index is blocked until invalid continuously for the configured interval",
-    "event_shape": "list of (dart_index, x, y) tuples",
-    "evidence_ids": [
-      "E017",
-      "E022",
-      "E023",
-      "E024",
-      "E007"
+    "blocking_claim_ids": [
+      "CLM-082",
+      "CLM-083",
+      "CLM-084",
+      "CLM-085"
     ],
-    "hardware_guarantee": "UNKNOWN_HARDWARE",
     "invalid_sentinels": [
-      [
-        -1,
-        -1
-      ],
-      [
-        0,
-        0
-      ]
+      {
+        "claim_ids": [
+          "CLM-078"
+        ],
+        "value": [
+          -1,
+          -1
+        ]
+      },
+      {
+        "claim_ids": [
+          "CLM-079"
+        ],
+        "value": [
+          0,
+          0
+        ]
+      }
     ],
-    "methods": {
-      "get_active_darts": "(self)",
-      "get_dart_hits": "(self)",
-      "get_darts": "(self)",
-      "reset_blocking_state": "(self)"
+    "mapping_constants": {
+      "0": [
+        "CLM-074",
+        "CLM-076"
+      ],
+      "1": [
+        "CLM-055"
+      ],
+      "127": [
+        "CLM-075",
+        "CLM-077"
+      ],
+      "1800": [
+        "CLM-066",
+        "CLM-069",
+        "CLM-070",
+        "CLM-073"
+      ],
+      "2": [
+        "CLM-057"
+      ],
+      "299": [
+        "CLM-068",
+        "CLM-072"
+      ],
+      "3": [
+        "CLM-060"
+      ],
+      "39800": [
+        "CLM-067",
+        "CLM-071"
+      ],
+      "4": [
+        "CLM-056",
+        "CLM-058",
+        "CLM-061",
+        "CLM-062",
+        "CLM-063"
+      ],
+      "65535": [
+        "CLM-064",
+        "CLM-065"
+      ],
+      "8": [
+        "CLM-054",
+        "CLM-059"
+      ]
     },
-    "polling_shape": "12 entries of [x, y]",
-    "simultaneous_hits": "Source iterates all 12 slots in index order"
+    "reset_claim_ids": [
+      "CLM-085"
+    ],
+    "slot_count": {
+      "claim_ids": [
+        "CLM-049",
+        "CLM-050",
+        "CLM-051"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": 12
+    },
+    "timing": {
+      "IDLE_UNBLOCK_DURATION": {
+        "claim_ids": [
+          "CLM-080"
+        ],
+        "value": 0.2
+      },
+      "MIN_ACTIVE_DURATION": {
+        "claim_ids": [
+          "CLM-081"
+        ],
+        "value": 0.0
+      }
+    },
+    "tuple_arity": {
+      "claim_ids": [
+        "CLM-052",
+        "CLM-053"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": 3
+    }
   },
   "evidence": [
     {
@@ -166,6 +1370,16 @@
       "archive_path": "pydartsnut/_input_handler.py",
       "evidence_id": "E005",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 56,
+      "line_start": 44,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "_is_invalid_dart"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E006",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.ClassDef",
       "line_end": 342,
       "line_start": 59,
@@ -174,7 +1388,7 @@
     },
     {
       "archive_path": "pydartsnut/_input_handler.py",
-      "evidence_id": "E006",
+      "evidence_id": "E007",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 105,
@@ -184,7 +1398,17 @@
     },
     {
       "archive_path": "pydartsnut/_input_handler.py",
-      "evidence_id": "E007",
+      "evidence_id": "E008",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 156,
+      "line_start": 107,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler._update_blocking_timers"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E009",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 242,
@@ -194,7 +1418,7 @@
     },
     {
       "archive_path": "pydartsnut/_input_handler.py",
-      "evidence_id": "E008",
+      "evidence_id": "E010",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 308,
@@ -204,7 +1428,7 @@
     },
     {
       "archive_path": "pydartsnut/_input_handler.py",
-      "evidence_id": "E009",
+      "evidence_id": "E011",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 331,
@@ -214,7 +1438,7 @@
     },
     {
       "archive_path": "pydartsnut/_input_handler.py",
-      "evidence_id": "E010",
+      "evidence_id": "E012",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 342,
@@ -224,7 +1448,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E011",
+      "evidence_id": "E013",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.ClassDef",
       "line_end": 467,
@@ -234,7 +1458,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E012",
+      "evidence_id": "E014",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 145,
@@ -244,7 +1468,27 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E013",
+      "evidence_id": "E015",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 157,
+      "line_start": 147,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut._open_render_semaphore"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E016",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 166,
+      "line_start": 159,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut._post_render_semaphore"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E017",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 190,
@@ -254,7 +1498,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E014",
+      "evidence_id": "E018",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 202,
@@ -264,7 +1508,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E015",
+      "evidence_id": "E019",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 237,
@@ -274,7 +1518,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E016",
+      "evidence_id": "E020",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 247,
@@ -284,7 +1528,17 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E017",
+      "evidence_id": "E021",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef",
+      "line_end": 250,
+      "line_start": 249,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__del__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E022",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 287,
@@ -294,7 +1548,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E018",
+      "evidence_id": "E023",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 331,
@@ -304,7 +1558,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E019",
+      "evidence_id": "E024",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 341,
@@ -314,7 +1568,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E020",
+      "evidence_id": "E025",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 385,
@@ -324,7 +1578,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E021",
+      "evidence_id": "E026",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 408,
@@ -334,7 +1588,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E022",
+      "evidence_id": "E027",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 425,
@@ -344,7 +1598,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E023",
+      "evidence_id": "E028",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 443,
@@ -354,7 +1608,7 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E024",
+      "evidence_id": "E029",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 451,
@@ -364,22 +1618,773 @@
     },
     {
       "archive_path": "pydartsnut/dartsnut.py",
-      "evidence_id": "E025",
+      "evidence_id": "E030",
       "evidence_level": "VERIFIED_PACKAGE_SOURCE",
       "extraction_method": "ast.FunctionDef",
       "line_end": 467,
       "line_start": 453,
       "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
       "symbol": "Dartsnut.get_button_events"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E031",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(signal.signal)",
+      "line_end": 54,
+      "line_start": 54,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E032",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(add_argument)",
+      "line_end": 69,
+      "line_start": 64,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E033",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(add_argument)",
+      "line_end": 75,
+      "line_start": 70,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E034",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(add_argument)",
+      "line_end": 81,
+      "line_start": 76,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E035",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(add_argument)",
+      "line_end": 87,
+      "line_start": 82,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E036",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(add_argument)",
+      "line_end": 93,
+      "line_start": 88,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E037",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(json.loads)",
+      "line_end": 97,
+      "line_start": 97,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E038",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.makedirs)",
+      "line_end": 133,
+      "line_start": 133,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E039",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Assign",
+      "line_end": 60,
+      "line_start": 60,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E040",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.path.join)",
+      "line_end": 138,
+      "line_start": 138,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E041",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(isinstance)",
+      "line_end": 222,
+      "line_start": 222,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E042",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(hasattr)",
+      "line_end": 224,
+      "line_start": 224,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E043",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call",
+      "line_end": 234,
+      "line_start": 234,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E044",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Compare",
+      "line_end": 229,
+      "line_start": 229,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E045",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Compare",
+      "line_end": 231,
+      "line_start": 231,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E046",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Assign",
+      "line_end": 233,
+      "line_start": 233,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E047",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Return",
+      "line_end": 230,
+      "line_start": 230,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E048",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Return",
+      "line_end": 235,
+      "line_start": 235,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E049",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Return",
+      "line_end": 237,
+      "line_start": 237,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E050",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.get_docstring",
+      "line_end": 221,
+      "line_start": 205,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.update_frame_buffer"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E051",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(range)",
+      "line_end": 267,
+      "line_start": 267,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E052",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(range)",
+      "line_end": 123,
+      "line_start": 123,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler._update_blocking_timers"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E053",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(range)",
+      "line_end": 293,
+      "line_start": 293,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_active_darts"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E054",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Tuple",
+      "line_end": 222,
+      "line_start": 222,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_dart_hits"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E055",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Tuple",
+      "line_end": 306,
+      "line_start": 306,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_active_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E056",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 268,
+      "line_start": 268,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E057",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 269,
+      "line_start": 269,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E058",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 270,
+      "line_start": 270,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E059",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 271,
+      "line_start": 271,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E060",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 273,
+      "line_start": 273,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E061",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 276,
+      "line_start": 276,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E062",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 278,
+      "line_start": 278,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E063",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 280,
+      "line_start": 280,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E064",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant in ast.Compare/BinOp",
+      "line_end": 283,
+      "line_start": 283,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E065",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant assigned to mapped coordinate",
+      "line_end": 272,
+      "line_start": 272,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E066",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant assigned to mapped coordinate",
+      "line_end": 274,
+      "line_start": 274,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E067",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant assigned to mapped coordinate",
+      "line_end": 279,
+      "line_start": 279,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E068",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Constant assigned to mapped coordinate",
+      "line_end": 281,
+      "line_start": 281,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_darts"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E069",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Compare",
+      "line_end": 56,
+      "line_start": 56,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "_is_invalid_dart"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E070",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Assign",
+      "line_end": 76,
+      "line_start": 76,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E071",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Assign",
+      "line_end": 77,
+      "line_start": 77,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E072",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call",
+      "line_end": 224,
+      "line_start": 224,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_dart_hits"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E073",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call",
+      "line_end": 138,
+      "line_start": 138,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler._update_blocking_timers"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E074",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call",
+      "line_end": 151,
+      "line_start": 151,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler._update_blocking_timers"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E075",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call",
+      "line_end": 340,
+      "line_start": 340,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.reset_blocking_state"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E076",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Dict",
+      "line_end": 316,
+      "line_start": 307,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_buttons"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E077",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Assign",
+      "line_end": 321,
+      "line_start": 321,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_buttons"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E078",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.DictComp",
+      "line_end": 323,
+      "line_start": 323,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_buttons"
+    },
+    {
+      "archive_path": "pydartsnut/_input_handler.py",
+      "evidence_id": "E079",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.For",
+      "line_end": 329,
+      "line_start": 326,
+      "source_sha256": "76d63d9e9c38438130f70f9d41576064fd6345fc04d498f99a35acd8eb68a565",
+      "symbol": "InputHandler.get_buttons"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E080",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Compare",
+      "line_end": 340,
+      "line_start": 340,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_brightness"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E081",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Assign",
+      "line_end": 341,
+      "line_start": 341,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_brightness"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E082",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.FunctionDef(no Return)",
+      "line_end": 341,
+      "line_start": 333,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_brightness"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E083",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.path.dirname)",
+      "line_end": 125,
+      "line_start": 125,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E084",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.path.abspath)",
+      "line_end": 125,
+      "line_start": 125,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E085",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.getcwd)",
+      "line_end": 129,
+      "line_start": 129,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E086",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 101,
+      "line_start": 96,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E087",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 107,
+      "line_start": 103,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E088",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 113,
+      "line_start": 109,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E089",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 129,
+      "line_start": 124,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E090",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 135,
+      "line_start": 132,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.__init__"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E091",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.path.exists)",
+      "line_end": 359,
+      "line_start": 359,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E092",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(json.load)",
+      "line_end": 362,
+      "line_start": 362,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E093",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(json.dump)",
+      "line_end": 375,
+      "line_start": 375,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E094",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.replace)",
+      "line_end": 377,
+      "line_start": 377,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E095",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.path.exists)",
+      "line_end": 380,
+      "line_start": 380,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E096",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.remove)",
+      "line_end": 382,
+      "line_start": 382,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E097",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 366,
+      "line_start": 360,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E098",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 385,
+      "line_start": 373,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E099",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 384,
+      "line_start": 381,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E100",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(os.path.exists)",
+      "line_end": 399,
+      "line_start": 399,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E101",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Call(json.load)",
+      "line_end": 404,
+      "line_start": 404,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E102",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Try/ExceptHandler",
+      "line_end": 408,
+      "line_start": 402,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E103",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.Assign/BinOp",
+      "line_end": 372,
+      "line_start": 372,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.set_value"
+    },
+    {
+      "archive_path": "pydartsnut/dartsnut.py",
+      "evidence_id": "E104",
+      "evidence_level": "VERIFIED_PACKAGE_SOURCE",
+      "extraction_method": "ast.get_docstring",
+      "line_end": 424,
+      "line_start": 411,
+      "source_sha256": "c35e760f3652bd893c45c3f651f8152b73114c0985d9fe2b4ce9ee9020da5234",
+      "symbol": "Dartsnut.get_dart_hits"
     }
   ],
   "inspection": {
     "ast_only": true,
     "contradiction_count": 3,
     "deterministic_generation": true,
-    "generated_claim_count": 52,
+    "generated_claim_count": 115,
     "hardware_access": false,
     "inspector_schema_version": 1,
+    "module_functions": [
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E005"
+        ],
+        "line_end": 56,
+        "line_start": 44,
+        "name": "_is_invalid_dart"
+      }
+    ],
     "package_execution": false,
     "public_classes": [
       {
@@ -394,7 +2399,7 @@
       {
         "archive_path": "pydartsnut/_input_handler.py",
         "evidence_ids": [
-          "E005"
+          "E006"
         ],
         "line_end": 342,
         "line_start": 59,
@@ -403,7 +2408,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E011"
+          "E013"
         ],
         "line_end": 467,
         "line_start": 30,
@@ -434,7 +2439,7 @@
       {
         "archive_path": "pydartsnut/_input_handler.py",
         "evidence_ids": [
-          "E006"
+          "E007"
         ],
         "line_end": 105,
         "line_start": 79,
@@ -444,7 +2449,17 @@
       {
         "archive_path": "pydartsnut/_input_handler.py",
         "evidence_ids": [
-          "E007"
+          "E008"
+        ],
+        "line_end": 156,
+        "line_start": 107,
+        "signature": "(self, dart_states)",
+        "symbol": "InputHandler._update_blocking_timers"
+      },
+      {
+        "archive_path": "pydartsnut/_input_handler.py",
+        "evidence_ids": [
+          "E009"
         ],
         "line_end": 242,
         "line_start": 159,
@@ -454,7 +2469,7 @@
       {
         "archive_path": "pydartsnut/_input_handler.py",
         "evidence_ids": [
-          "E008"
+          "E010"
         ],
         "line_end": 308,
         "line_start": 244,
@@ -464,7 +2479,7 @@
       {
         "archive_path": "pydartsnut/_input_handler.py",
         "evidence_ids": [
-          "E009"
+          "E011"
         ],
         "line_end": 331,
         "line_start": 310,
@@ -474,7 +2489,7 @@
       {
         "archive_path": "pydartsnut/_input_handler.py",
         "evidence_ids": [
-          "E010"
+          "E012"
         ],
         "line_end": 342,
         "line_start": 333,
@@ -484,7 +2499,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E012"
+          "E014"
         ],
         "line_end": 145,
         "line_start": 52,
@@ -494,7 +2509,27 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E013"
+          "E015"
+        ],
+        "line_end": 157,
+        "line_start": 147,
+        "signature": "(self)",
+        "symbol": "Dartsnut._open_render_semaphore"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E016"
+        ],
+        "line_end": 166,
+        "line_start": 159,
+        "signature": "(self)",
+        "symbol": "Dartsnut._post_render_semaphore"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E017"
         ],
         "line_end": 190,
         "line_start": 168,
@@ -504,7 +2539,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E014"
+          "E018"
         ],
         "line_end": 202,
         "line_start": 192,
@@ -514,7 +2549,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E015"
+          "E019"
         ],
         "line_end": 237,
         "line_start": 204,
@@ -524,7 +2559,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E016"
+          "E020"
         ],
         "line_end": 247,
         "line_start": 239,
@@ -534,7 +2569,17 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E017"
+          "E021"
+        ],
+        "line_end": 250,
+        "line_start": 249,
+        "signature": "(self)",
+        "symbol": "Dartsnut.__del__"
+      },
+      {
+        "archive_path": "pydartsnut/dartsnut.py",
+        "evidence_ids": [
+          "E022"
         ],
         "line_end": 287,
         "line_start": 252,
@@ -544,7 +2589,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E018"
+          "E023"
         ],
         "line_end": 331,
         "line_start": 289,
@@ -554,7 +2599,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E019"
+          "E024"
         ],
         "line_end": 341,
         "line_start": 333,
@@ -564,7 +2609,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E020"
+          "E025"
         ],
         "line_end": 385,
         "line_start": 343,
@@ -574,7 +2619,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E021"
+          "E026"
         ],
         "line_end": 408,
         "line_start": 387,
@@ -584,7 +2629,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E022"
+          "E027"
         ],
         "line_end": 425,
         "line_start": 410,
@@ -594,7 +2639,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E023"
+          "E028"
         ],
         "line_end": 443,
         "line_start": 427,
@@ -604,7 +2649,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E024"
+          "E029"
         ],
         "line_end": 451,
         "line_start": 445,
@@ -614,7 +2659,7 @@
       {
         "archive_path": "pydartsnut/dartsnut.py",
         "evidence_ids": [
-          "E025"
+          "E030"
         ],
         "line_end": 467,
         "line_start": 453,
@@ -632,46 +2677,130 @@
       "pydartsnut/dartsnut.py,sha256=w152DzZSvYk8RcP2UfgVK3MRTAmF2f4rTOnukCDaUjQ,18308",
       "pydartsnut/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0"
     ],
+    "synthetic_mode": false,
     "unknown_claim_count": 24,
-    "verified_claim_count": 25
+    "verified_claim_count": 114
   },
   "lifecycle": {
-    "application_loop": null,
-    "cleanup": "close closes render semaphore; destructor calls close",
-    "evidence_ids": [
-      "E014",
-      "E016",
-      "E012"
+    "claim_ids": [
+      "CLM-037",
+      "CLM-018",
+      "CLM-016"
     ],
-    "missing_shared_memory": "prints message and exits with status 1",
-    "running_initial": true,
-    "sigint_behavior": "sets running False"
+    "running_initial": {
+      "claim_ids": [
+        "CLM-037"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": true
+    },
+    "signal_claim_ids": [
+      "CLM-029"
+    ]
   },
   "main_display": {
-    "accepted_input_categories": [
-      "bytearray",
-      "object with tobytes attribute"
+    "accepted_bytearray": {
+      "claim_ids": [
+        "CLM-039"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": true
+    },
+    "accepted_tobytes": {
+      "claim_ids": [
+        "CLM-040"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": true
+    },
+    "byte_length_validation": {
+      "claim_ids": [],
+      "status": "UNKNOWN_HARDWARE",
+      "value": "UNKNOWN"
+    },
+    "channel_count": {
+      "claim_ids": [],
+      "status": "UNKNOWN_HARDWARE",
+      "value": "UNKNOWN"
+    },
+    "encoded_height": {
+      "claim_ids": [],
+      "status": "UNKNOWN_HARDWARE",
+      "value": "UNKNOWN"
+    },
+    "encoded_width": {
+      "claim_ids": [],
+      "status": "UNKNOWN_HARDWARE",
+      "value": "UNKNOWN"
+    },
+    "pixel_format_wording": {
+      "claim_ids": [
+        "CLM-048"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": "RGB888"
+    },
+    "return_values": [
+      {
+        "claim_ids": [
+          "CLM-045"
+        ],
+        "value": false
+      },
+      {
+        "claim_ids": [
+          "CLM-046"
+        ],
+        "value": true
+      },
+      {
+        "claim_ids": [
+          "CLM-047"
+        ],
+        "value": false
+      }
     ],
-    "brightness_interaction": "none in this method",
-    "busy_state": "status byte 2 returns False",
-    "channel_count": 3,
-    "encoded_height": null,
-    "encoded_width": null,
-    "evidence_ids": [
-      "E015"
+    "semaphore_call": {
+      "claim_ids": [
+        "CLM-041"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": true
+    },
+    "signature": {
+      "claim_ids": [
+        "CLM-017"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": "(self, frame)"
+    },
+    "status_comparisons": [
+      {
+        "claim_ids": [
+          "CLM-042"
+        ],
+        "value": 2
+      },
+      {
+        "claim_ids": [
+          "CLM-043"
+        ],
+        "value": 1
+      }
     ],
-    "expected_byte_length": null,
-    "image_mode_handling": "No conversion or mode validation",
-    "invalid_state": "other status values return False",
-    "method": "update_frame_buffer",
-    "pixel_format": "RGB888 (documented by package source)",
-    "ready_state": "status byte 1 copies bytes, sets status 0, posts semaphore, returns True",
-    "return_type": "bool",
-    "signature": "(self, frame)"
+    "status_mutation": {
+      "claim_ids": [
+        "CLM-044"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": 0
+    }
   },
   "package": {
-    "evidence_ids": [
-      "E001"
+    "claim_ids": [
+      "CLM-001",
+      "CLM-002",
+      "CLM-003"
     ],
     "license": null,
     "metadata_name": "pydartsnut",
@@ -699,29 +2828,68 @@
     "wheel_size": 12897
   },
   "persistence": {
-    "corruption": "set starts empty; get returns default",
-    "default_path": "package source directory, with cwd fallback if __file__ unavailable",
-    "evidence_ids": [
-      "E020",
-      "E021",
-      "E012"
+    "directory_claim_ids": [
+      "CLM-036"
     ],
-    "file": "data.json",
-    "key_restriction": "string documented",
-    "methods": {
-      "get_value": "(self, key, default=None)",
-      "set_value": "(self, key, value)"
+    "error_claim_ids": [
+      "CLM-096",
+      "CLM-097",
+      "CLM-098",
+      "CLM-099",
+      "CLM-100",
+      "CLM-107",
+      "CLM-108",
+      "CLM-109",
+      "CLM-112"
+    ],
+    "filename": {
+      "claim_ids": [
+        "CLM-038"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": "data.json"
     },
-    "serialization": "JSON",
-    "value_restriction": "JSON-serializable",
-    "write_strategy": "temporary .tmp file followed by os.replace"
+    "operations": {
+      "json.dump": [
+        "CLM-103"
+      ],
+      "json.load": [
+        "CLM-102",
+        "CLM-111"
+      ],
+      "os.getcwd": [
+        "CLM-095"
+      ],
+      "os.path.abspath": [
+        "CLM-094"
+      ],
+      "os.path.dirname": [
+        "CLM-093"
+      ],
+      "os.path.exists": [
+        "CLM-101",
+        "CLM-105",
+        "CLM-110"
+      ],
+      "os.remove": [
+        "CLM-106"
+      ],
+      "os.replace": [
+        "CLM-104"
+      ]
+    },
+    "temporary_suffix": {
+      "claim_ids": [
+        "CLM-113"
+      ],
+      "value": ".tmp"
+    }
   },
   "repository_usage": {
     "conf_json_size": [
       128,
       160
     ],
-    "evidence_level": "VERIFIED_REPOSITORY_USAGE",
     "main_py": [
       "imports Dartsnut",
       "creates a 128×160 Pygame surface",
@@ -733,15 +2901,21 @@
       "calls update_frame_buffer"
     ],
     "pyproject_before_phase": "pydartsnut unconstrained",
-    "uv_lock": "pydartsnut 1.2.1 with exact wheel and sdist hashes"
+    "status": "VERIFIED_REPOSITORY_USAGE",
+    "uv_lock": "pydartsnut 1.2.1 with exact hashes"
   },
   "schema_version": 1,
   "secondary_display": {
     "caveat": "This does not prove that the Dartsnut launcher, cabinet platform, another package, or a private API lacks secondary-display support.",
+    "claim_ids": [
+      "CLM-114"
+    ],
     "finding": "No secondary-display API was found in the inspected pydartsnut 1.2.1 wheel.",
     "matching_source_locations": [],
     "matching_symbols": [],
+    "metadata_matches": [],
     "public_api_candidates": [],
+    "record_matches": [],
     "searched_symbols": [
       "aux_display",
       "auxiliary",
@@ -754,7 +2928,8 @@
       "touch_screen",
       "widget_display"
     ],
-    "status": "NOT_FOUND_IN_INSPECTED_PACKAGE"
+    "status": "NOT_FOUND_IN_INSPECTED_PACKAGE",
+    "text_file_matches": []
   },
   "unknowns": [
     {
@@ -764,8 +2939,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Physical display width and height on every supported cabinet",
       "unknown_id": "U001",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -774,8 +2949,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "RGB channel order on actual hardware",
       "unknown_id": "U002",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -784,8 +2959,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Framebuffer stride",
       "unknown_id": "U003",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -794,8 +2969,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Display refresh limit",
       "unknown_id": "U004",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -804,8 +2979,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Safe update rate",
       "unknown_id": "U005",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -814,8 +2989,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Dropped-frame behavior",
       "unknown_id": "U006",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -824,8 +2999,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Physical x/y orientation",
       "unknown_id": "U007",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -834,8 +3009,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Coordinate calibration",
       "unknown_id": "U008",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
@@ -844,8 +3019,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Coordinate dead zones",
       "unknown_id": "U009",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
@@ -854,8 +3029,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Coordinate jitter",
       "unknown_id": "U010",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
@@ -864,48 +3039,48 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Simultaneous-hit behavior under real hardware load",
       "unknown_id": "U011",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
       "blocks_multiplayer": true,
       "blocks_rendering": false,
       "current_status": "UNKNOWN_HARDWARE",
-      "question": "Dart-index to Blue/Red/Green/Yellow mapping",
+      "question": "Dart-index to player-color mapping",
       "unknown_id": "U012",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
       "blocks_multiplayer": true,
       "blocks_rendering": false,
       "current_status": "UNKNOWN_HARDWARE",
-      "question": "Dart-index stability across boots and replacements",
+      "question": "Dart-index stability",
       "unknown_id": "U013",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
       "blocks_multiplayer": true,
       "blocks_rendering": false,
       "current_status": "UNKNOWN_HARDWARE",
-      "question": "Multiplayer wrong-dart behavior",
+      "question": "Wrong-dart behavior",
       "unknown_id": "U014",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
       "blocks_multiplayer": true,
       "blocks_rendering": true,
       "current_status": "UNKNOWN_HARDWARE",
-      "question": "Secondary-display API outside this package",
+      "question": "Secondary-display API outside the package",
       "unknown_id": "U015",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
@@ -914,8 +3089,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Touch-screen behavior",
       "unknown_id": "U016",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
@@ -924,18 +3099,18 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Physical button placement",
       "unknown_id": "U017",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
       "blocks_multiplayer": false,
       "blocks_rendering": false,
       "current_status": "UNKNOWN_HARDWARE",
-      "question": "Cabinet audio routing",
+      "question": "Audio routing",
       "unknown_id": "U018",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -944,8 +3119,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Emulator behavior",
       "unknown_id": "U019",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -954,8 +3129,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Packaging and installation format",
       "unknown_id": "U020",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -964,8 +3139,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Launcher lifecycle",
       "unknown_id": "U021",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
@@ -974,8 +3149,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Data-store quota and retention",
       "unknown_id": "U022",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": true,
@@ -984,8 +3159,8 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Cabinet and firmware compatibility",
       "unknown_id": "U023",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     },
     {
       "blocks_adapter": false,
@@ -994,18 +3169,24 @@
       "current_status": "UNKNOWN_HARDWARE",
       "question": "Performance budgets",
       "unknown_id": "U024",
-      "verification_method": "Verify with current operator documentation, emulator traces, and recorded physical-cabinet testing.",
-      "why_package_source_is_insufficient": "The wheel describes a client API, not cabinet, firmware, launcher, or operational guarantees."
+      "verification_method": "Use current platform documentation, emulator traces, and recorded cabinet testing.",
+      "why_package_source_is_insufficient": "The client wheel does not establish cabinet, firmware, launcher, or operational behavior."
     }
   ],
   "widget_parameters": {
-    "attribute": "widget_params",
-    "default": "{}",
-    "evidence_ids": [
-      "E012"
-    ],
-    "invalid": "prints error and exits 1",
-    "parse": "json.loads",
-    "source": "--params JSON string"
+    "params_option": {
+      "claim_ids": [
+        "CLM-030"
+      ],
+      "default": "{}",
+      "status": "VERIFIED_PACKAGE_SOURCE"
+    },
+    "parse": {
+      "claim_ids": [
+        "CLM-035"
+      ],
+      "status": "VERIFIED_PACKAGE_SOURCE",
+      "value": "json.loads"
+    }
   }
 }

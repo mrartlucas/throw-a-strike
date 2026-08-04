@@ -175,3 +175,18 @@ verified raw methods and deterministic fakes. Native rendering dimensions,
 physical transforms, player/color mapping, wrong-dart policy, secondary output,
 audio, performance targets, and packaging remain blocked pending recorded
 platform/cabinet evidence.
+
+### Phase 0K evidence-integrity correction
+
+The inspector now derives detailed contract values from exact AST/literal nodes
+instead of populating known-wheel constants. Production mode rejects every
+artifact unless its filename, package metadata, computed hash, and expected hash
+all identify the canonical locked wheel. A separate internal synthetic mode is
+used only by parser tests and marks its result noncanonical.
+
+The evidence now contains 115 explicit claim records, including 114 verified
+metadata/source claims, with precise evidence pointers; 24 hardware unknowns;
+and 3 unresolved contradictions. Absent or ambiguous synthetic syntax produces
+unknown fields. Secondary-display discovery now searches Python text and AST
+symbols/functions/assignments/imports/string constants, METADATA headers and
+description, RECORD paths, and every safely decoded small UTF-8 wheel file.

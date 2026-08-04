@@ -860,7 +860,26 @@ explicit fallback composition remain future work.
 - Validation commands: full `python -m unittest discover -s tests -v`; focused
   `python -m unittest tests.test_dartsnut_platform_contract -v`; plus evidence
   `--check`, `py_compile`, protected-file, archive, scope, diff, and status
-  checks. Final suite: **259 tests** (248 unchanged baseline plus 11 new tests).
+  checks. Final suite before the integrity correction: **259 tests** (248 unchanged baseline plus 11 new tests).
 - Remaining limitation: this evidence spike adds no adapter, rendering, input
   polling loop, physics, audio, storage adapter, Pygame integration, application
   loop, or hardware integration.
+
+### Phase 0K evidence-integrity correction for PR #12
+
+- Production inspection now requires the canonical filename, exact package
+  name/version, computed locked wheel SHA-256, and the same canonical
+  `--expected-sha256`; caller-selected hashes cannot bless modified wheels.
+- Detailed values are extracted from precise AST/literal/docstring nodes.
+  Missing and ambiguous values become unknown, and synthetic parser inspection
+  is clearly separate and marked synthetic.
+- The JSON contains 115 actual claim records (114 verified package
+  metadata/source claims), 24 hardware unknowns, and 3 contradictions.
+  `generated_claim_count` is the length of the claims collection, not evidence
+  pointer count. Every verified claim references precise evidence.
+- Secondary search covers source text, classes, methods, module functions,
+  public assignments, imports/exports, string constants, METADATA headers and
+  description, RECORD paths, and safely decoded small UTF-8 files; result arrays
+  are populated from matches rather than constants.
+- Focused coverage is now 24 tests. The complete suite is **272 tests**: the
+  existing unchanged 248 tests plus 24 Phase 0K integrity tests.
