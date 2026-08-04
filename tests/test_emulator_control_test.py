@@ -210,6 +210,50 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertEqual(runtime.round_snapshot.standing_pins,tuple(range(1,11)))
         self.assertEqual(sdk.reset_blocking_count,0)
 
+    def test_all_round_endings_hold_round_complete_without_io_or_history_changes(self):
+        cases=(
+            ("throw + throw",("throw","throw"),Clock(1,2,3.5,4,5.5)),
+            ("foul + throw",("foul","throw"),Clock(1,31,32.5,33,34.5)),
+            ("throw + foul",("throw","foul"),Clock(1,2,3.5,33.5,35)),
+            ("foul + foul",("foul","foul"),Clock(1,31,32.5,62.5,64)),
+        )
+        for name,outcomes,clock in cases:
+            with self.subTest(name=name):
+                sdk=FakeDartsnutSdk()
+                runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
+                sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+                for number,outcome in enumerate(outcomes):
+                    if outcome == "throw":
+                        sdk.queue_dart_hits((RawDartHit(4*number,20+number,40+number),))
+                        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.ACCEPTED_HOLD)
+                    else:
+                        self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.FOUL_HOLD)
+                    transition=runtime.step()
+
+                self.assertEqual(transition.phase,EmulatorControlTestPhase.ROUND_COMPLETE)
+                self.assertIsNone(transition.accepted_setup)
+                self.assertFalse(transition.terminal)
+                frame=transition.framebuffer
+                calls_before=tuple(sdk.calls); reads_before=clock.reads
+                first=runtime.round_snapshot.first_result
+                second=runtime.round_snapshot.second_result
+
+                for _ in range(5):
+                    held=runtime.step()
+                    self.assertEqual(held.phase,EmulatorControlTestPhase.ROUND_COMPLETE)
+                    self.assertIsNone(held.accepted_setup)
+                    self.assertEqual(held.framebuffer,frame)
+                    self.assertFalse(held.terminal)
+
+                self.assertIs(runtime.round_snapshot.first_result,first)
+                self.assertIs(runtime.round_snapshot.second_result,second)
+                self.assertTrue(runtime.round_snapshot.complete)
+                self.assertEqual(sum(result is not None for result in (first,second)),2)
+                self.assertEqual(clock.reads,reads_before)
+                self.assertEqual(sdk.calls[len(calls_before):],
+                                 (DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION,)*5)
+                self.assertEqual(sdk.reset_blocking_count,0)
+
     def test_constructor_and_active_selection_do_not_rearm(self):
         sdk=FakeDartsnutSdk(); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(1),0)
         self.assertEqual(sdk.reset_blocking_count,0)
