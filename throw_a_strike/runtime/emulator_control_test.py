@@ -163,8 +163,7 @@ class EmulatorControlTestRuntime:
     def step(self):
         if self._phase in (EmulatorControlTestPhase.RECOVERY_HOLD,EmulatorControlTestPhase.ROUND_COMPLETE,EmulatorControlTestPhase.TERMINAL):
             accepted=self._facade.submit_framebuffer(self._cached)
-            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,
-                                           self._accepted_setup)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         if self._phase is EmulatorControlTestPhase.WRONG_COLOR_HOLD:
             now=self._clock.monotonic_seconds()
             if now >= self._wrong_timestamp + WRONG_COLOR_HOLD_SECONDS:

@@ -1076,3 +1076,9 @@ This policy belongs only to the emulator adapter. The physical event adapter is 
 Bowling Throw 1 versus Throw 2 now comes only from the two-throw round state; physical dart identity no longer selects a throw. The emulator-confirmed color policy accepts Blue raw 0/4/8 for either throw when fresh, while Red, Green, and Yellow produce a one-second WRONG COLOR / USE BLUE DART hold without a result or throw consumption. Quick requires no retrieval between throws, Advanced may reuse the same dart after fresh removal/replacement, and a Throw 1 FOUL leaves every Blue dart available for Throw 2. The stale startup baseline, changed-coordinate freshness, normal/active deduplication, 20/30-second timing, and zero-reset policy remain intact.
 
 The mapping is emulator evidence, not physical-board parity. Fixed DART 1 then DART 5 enforcement was removed without adding physics, scoring, multiplayer rotation, coordinate transforms, a secondary-display API, or physical assumptions.
+
+## Phase 0S.2a — ROUND COMPLETE sticky-hold correction
+
+**Status: IMPLEMENTED - ROUND COMPLETE HOLD RETEST READY**
+
+The public runtime step now exposes an accepted setup only during `ACCEPTED_HOLD`; the retained diagnostic setup is not leaked after the transition to `ROUND_COMPLETE`. Regression coverage completes all four accepted/FOUL combinations and verifies five further sticky hold steps preserve the framebuffer and exactly two results without input polling, clock reads, blocking resets, terminal progression, or exceptions. This is a post-round sticky-state correction, not a gameplay-rule, timing, rendering, physics, scoring, multiplayer, coordinate, or secondary-display change.

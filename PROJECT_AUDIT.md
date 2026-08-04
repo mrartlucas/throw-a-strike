@@ -336,3 +336,9 @@ The physical `DartsnutInputPort` remains transition-event based and unchanged; z
 Bowling Throw 1 versus Throw 2 now comes only from the two-throw round state; physical dart identity no longer selects a throw. The emulator-confirmed color policy accepts Blue raw 0/4/8 for either throw when fresh, while Red, Green, and Yellow produce a one-second WRONG COLOR / USE BLUE DART hold without a result or throw consumption. Quick requires no retrieval between throws, Advanced may reuse the same dart after fresh removal/replacement, and a Throw 1 FOUL leaves every Blue dart available for Throw 2. The stale startup baseline, changed-coordinate freshness, normal/active deduplication, 20/30-second timing, and zero-reset policy remain intact.
 
 The mapping is emulator evidence, not physical-board parity. Fixed DART 1 then DART 5 enforcement was removed without adding physics, scoring, multiplayer rotation, coordinate transforms, a secondary-display API, or physical assumptions.
+
+## Phase 0S.2a audit — ROUND COMPLETE sticky-hold correction
+
+**Status: IMPLEMENTED - ROUND COMPLETE HOLD RETEST READY**
+
+`ROUND_COMPLETE` remains a nonterminal, restart-only sticky state, but its public step no longer carries the previous throw's accepted setup. All accepted throw/FOUL round-ending combinations are covered through five repeated hold steps with an identical framebuffer, exactly two retained round results, framebuffer submission only, and no input, clock, or blocking-reset activity. This corrects post-round public-state consistency only; gameplay rules, timings, renderers, physics, scoring, multiplayer rotation, coordinate handling, and the second screen are unchanged.
