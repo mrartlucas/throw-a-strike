@@ -273,3 +273,13 @@ The observed emulator target is a 128×128, 49,152-byte main-only packed RGB888 
 Each active iteration performs one finite selection poll or coordinator step and one main submission. Warning retains THROW NOW at 30 seconds; 60 seconds shows FOUL and 0 PINS. COMPLETE retains accepted raw dart coordinates in the coordinator outcome but shows no ball or pin result. Early recovery intentionally holds cached TOO SOON/REMOVE DART without polling, clock access, hardware reset, or REARMED until app restart. Terminal frames likewise hold.
 
 No trajectory, bowling-ball animation, collision, pin result, scoring, frame progression, multiplayer, player/color or dart-index mapping, coordinate transformation, audio, automatic reset, assets, or physical behavior claim is added.
+
+### Phase 0R.1 dart rearm and FOUL-retry record
+
+**Status: IMPLEMENTED - RETEST READY.** New emulator evidence showed that a physical dart was not accepted and the resulting FOUL held indefinitely. The runtime now invokes only the verified facade `reset_blocking_state()` operation after style selection is consumed and before each fresh coordinator and initial attempt framebuffer. Constructor and active-selection steps do not reset. Quick, Advanced, and the 15-second Quick timeout all use this same ordered boundary, and a reset failure prevents coordinator construction and propagates through runner cleanup.
+
+FOUL now enters a distinct terminal-presentation `FOUL_HOLD`, retaining FOUL plus 0 PINS and its exact tick timestamp. For exactly 1.5 seconds it reads the injected clock once per step, polls no input, performs no reset, and republishes the cached frame. At the deadline it resets once, constructs one clean coordinator at the current timestamp in the already selected style, and submits one fresh attempt frame. Quick resumes at THROW READY/STR/70; Advanced resumes at SET CURVE/STR/70. Prior warning and FOUL outcome state are not carried forward.
+
+COMPLETE remains the only `TERMINAL` phase and holds exact accepted raw dart index/x/y until restart without reset. EARLY_DART_RECOVERY remains the only `RECOVERY_HOLD` phase and still holds TOO SOON/REMOVE DART until restart without polling, clock access, reset, or `REARMED`. The verified final suite contains 474 tests, including 22 focused runtime tests.
+
+This is emulator-based retest preparation, not physical-cabinet parity evidence. It adds no physics, pinfall, scoring, multiplayer, coordinate transformation, player mapping, secondary-display API, dart-removal API, or guessed orientation/color behavior.

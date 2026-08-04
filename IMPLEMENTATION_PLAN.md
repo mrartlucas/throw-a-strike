@@ -1010,3 +1010,13 @@ explicit fallback composition remain future work.
 - **Intentional hold:** early recovery caches TOO SOON/REMOVE DART and requires restart because no verified removal signal exists; it adds neither reset nor REARMED. Terminal state similarly requires restart.
 - **Exclusions:** no trajectory, animation, collision, pin result, score, frame progression, multiplayer, player/color mapping, coordinate transformation, audio, asset, or cabinet claim.
 - **Recommended next task:** Phase 0S should consume unchanged aim x/y, locked curve, and power to produce deterministic trajectory and pin-contact data plus post-dart animation, separate from scoring. It must add no randomness, mapping guesses, physical transforms, score submission, frame advancement, or multiplayer orchestration.
+
+## Phase 0R.1: Dart rearming and automatic FOUL retry hotfix
+
+**Status: IMPLEMENTED - RETEST READY**
+
+- **Verification:** the final suite is **474 tests**, including **22 focused emulator-control runtime tests**.
+- **Fresh-attempt boundary:** after manual Quick or Advanced confirmation, or the exact 15-second Quick timeout, the runtime consumes selection input, calls the existing facade `reset_blocking_state()` exactly once, constructs exactly one coordinator in the preserved style, and submits one initial framebuffer. Reset failures propagate before coordinator construction and runner cleanup still closes the facade.
+- **FOUL retry:** FOUL plus 0 PINS is cached in `FOUL_HOLD` for exactly 1.5 seconds. Before the deadline each step reads the injected clock once, consumes no input, performs no reset, and resubmits the cached frame once. At or after the deadline, one reset precedes one clean coordinator and one fresh attempt framebuffer; Quick restarts at THROW READY/STR/70 and Advanced at SET CURVE/STR/70.
+- **Unchanged holds:** COMPLETE alone uses `TERMINAL`, preserves exact raw dart index/x/y, and remains restart-only without reset. EARLY_DART_RECOVERY alone uses `RECOVERY_HOLD` and remains restart-only without polling, clock reads, reset, or `REARMED`.
+- **Evidence boundary:** this narrow retest hotfix follows emulator evidence. It adds no physics, pinfall, scoring, multiplayer, coordinate transform, player mapping, secondary-display API, or physical-cabinet parity claim.
