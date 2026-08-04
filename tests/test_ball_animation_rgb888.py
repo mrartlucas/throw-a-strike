@@ -1,7 +1,14 @@
 import unittest
 from throw_a_strike.application import build_throw_control_presentation
-from throw_a_strike.domain import *
-from throw_a_strike.rendering import *
+from throw_a_strike.domain import (
+    ControlStyle, CurveLevel, PlayerColor, ThrowControlCommand,
+    ThrowControlCommandKind, ThrowControlMachine, ThrowSetup,
+    build_ball_trajectory, sample_ball_trajectory,
+)
+from throw_a_strike.rendering import (
+    render_ball_arrival_rgb888, render_ball_roll_rgb888,
+    render_round_throw_rgb888,
+)
 
 class BallRendererTests(unittest.TestCase):
     def setUp(self):

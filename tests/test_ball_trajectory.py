@@ -1,5 +1,9 @@
 import unittest
-from throw_a_strike.domain import *
+from throw_a_strike.domain import (
+    BallTrajectory, BallTrajectorySample, ControlStyle, CurveLevel,
+    InvalidBallTrajectoryValueError, ThrowSetup, build_ball_trajectory,
+    sample_ball_trajectory,
+)
 
 class BallTrajectoryTests(unittest.TestCase):
     def setup(self, curve=CurveLevel.STRAIGHT, power=70, x=64, y=40):
@@ -21,9 +25,9 @@ class BallTrajectoryTests(unittest.TestCase):
         self.assertEqual(actual,expected); self.assertEqual(list(actual.values()),sorted(actual.values(),reverse=True))
     def test_sampling_clamps_and_is_repeatable(self):
         t=build_ball_trajectory(self.setup(x=65,y=23))
-        self.assertEqual(sample_ball_trajectory(t,-1),BallTrajectorySample(0,64,84))
-        self.assertEqual(sample_ball_trajectory(t,t.duration_seconds),BallTrajectorySample(1,65,23))
-        self.assertEqual(sample_ball_trajectory(t,99),BallTrajectorySample(1,65,23))
+        self.assertEqual(sample_ball_trajectory(t,-1),BallTrajectorySample(0.0,64,84))
+        self.assertEqual(sample_ball_trajectory(t,t.duration_seconds),BallTrajectorySample(1.0,65,23))
+        self.assertEqual(sample_ball_trajectory(t,99),BallTrajectorySample(1.0,65,23))
         self.assertEqual(sample_ball_trajectory(t,.45),sample_ball_trajectory(t,.45))
     def test_half_up_rounding_and_arrival_vector(self):
         t=build_ball_trajectory(self.setup(x=66,y=84))
@@ -32,4 +36,23 @@ class BallTrajectoryTests(unittest.TestCase):
     def test_exact_input_validation(self):
         with self.assertRaises(InvalidBallTrajectoryValueError): build_ball_trajectory(None)
         with self.assertRaises(InvalidBallTrajectoryValueError): sample_ball_trajectory(build_ball_trajectory(self.setup()),float('inf'))
+
+    def test_public_value_constructors_validate_exact_metadata(self):
+        trajectory = build_ball_trajectory(self.setup())
+        values = list(trajectory.__dict__.values())
+        for index, replacement in ((0, True), (2, 11), (6, float("nan")),
+                                   (8, "straight"), (10, 45), (11, 9.0),
+                                   (12, float("inf"))):
+            with self.subTest(index=index):
+                invalid = values.copy(); invalid[index] = replacement
+                with self.assertRaises(InvalidBallTrajectoryValueError):
+                    BallTrajectory(*invalid)
+
+    def test_public_sample_constructor_validates_progress_and_pixels(self):
+        for arguments in ((0,64,84), (-0.1,64,84), (1.1,64,84),
+                          (float("nan"),64,84), (0.5,64.0,84), (0.5,-1,84)):
+            with self.subTest(arguments=arguments):
+                with self.assertRaises(InvalidBallTrajectoryValueError):
+                    BallTrajectorySample(*arguments)
+
 if __name__=='__main__': unittest.main()

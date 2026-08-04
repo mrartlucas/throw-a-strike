@@ -40,12 +40,48 @@ class BallTrajectory:
     arrival_dx: float
     arrival_dy: float
 
+    def __post_init__(self) -> None:
+        integer_fields = {
+            "raw_aim_x": self.raw_aim_x, "raw_aim_y": self.raw_aim_y,
+            "target_x": self.target_x, "target_y": self.target_y,
+            "start_x": self.start_x, "start_y": self.start_y,
+            "power_percent": self.power_percent,
+        }
+        if any(type(value) is not int for value in integer_fields.values()):
+            raise InvalidBallTrajectoryValueError("trajectory integer fields must be exact ints")
+        if not 0 <= self.raw_aim_x <= 127 or not 0 <= self.raw_aim_y <= 127:
+            raise InvalidBallTrajectoryValueError("raw aim must be within the emulator input range")
+        if (self.start_x, self.start_y) != (BALL_START_X, BALL_START_Y):
+            raise InvalidBallTrajectoryValueError("trajectory start must be the exact ball start")
+        if not BALL_MIN_X <= self.target_x <= BALL_MAX_X or not BALL_MIN_Y <= self.target_y <= BALL_MAX_Y:
+            raise InvalidBallTrajectoryValueError("trajectory target must be within display bounds")
+        if type(self.curve_level) is not CurveLevel:
+            raise InvalidBallTrajectoryValueError("curve_level must be exact")
+        float_fields = (self.control_x, self.control_y, self.curve_strength,
+                        self.duration_seconds, self.arrival_dx, self.arrival_dy)
+        if any(type(value) is not float or not isfinite(value) for value in float_fields):
+            raise InvalidBallTrajectoryValueError("trajectory numeric metadata must be finite floats")
+        if not BALL_MIN_X <= self.control_x <= BALL_MAX_X or not BALL_MIN_Y <= self.control_y <= BALL_MAX_Y:
+            raise InvalidBallTrajectoryValueError("control point must be within display bounds")
+        if self.curve_strength != self.curve_level.strength:
+            raise InvalidBallTrajectoryValueError("curve strength must match curve level")
+        if self.power_percent not in _DURATIONS or self.duration_seconds != _DURATIONS[self.power_percent]:
+            raise InvalidBallTrajectoryValueError("duration must match power")
+
 
 @dataclass(frozen=True)
 class BallTrajectorySample:
     progress: float
     x: int
     y: int
+
+    def __post_init__(self) -> None:
+        if type(self.progress) is not float or not isfinite(self.progress) or not 0.0 <= self.progress <= 1.0:
+            raise InvalidBallTrajectoryValueError("progress must be a finite float from zero through one")
+        if type(self.x) is not int or type(self.y) is not int:
+            raise InvalidBallTrajectoryValueError("sample pixels must be exact ints")
+        if not 0 <= self.x < 128 or not 0 <= self.y < 128:
+            raise InvalidBallTrajectoryValueError("sample pixels must be within the framebuffer")
 
 
 def build_ball_trajectory(setup: ThrowSetup) -> BallTrajectory:
@@ -89,4 +125,3 @@ def sample_ball_trajectory(trajectory: BallTrajectory, elapsed_seconds: Real) ->
     x = inverse * inverse * trajectory.start_x + 2 * inverse * progress * trajectory.control_x + progress * progress * trajectory.target_x
     y = inverse * inverse * trajectory.start_y + 2 * inverse * progress * trajectory.control_y + progress * progress * trajectory.target_y
     return BallTrajectorySample(progress, _pixel(x), _pixel(y))
-
