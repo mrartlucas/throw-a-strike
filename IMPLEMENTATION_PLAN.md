@@ -934,7 +934,7 @@ explicit fallback composition remain future work.
 
 **Status: IMPLEMENTED - LOCALLY VERIFIED**
 
-- **Baseline/final verification:** the Phase 0M baseline was 337 tests; the final suite is **360 tests**, including **21 focused configuration tests** and **19 focused throw-control tests**.
+- **Baseline/final verification:** the Phase 0M baseline was 337 tests; the final suite is **364 tests**, including **21 focused configuration tests** and **23 focused throw-control tests**.
 - **Exact files changed:** created `throw_a_strike/domain/throw_controls.py` and `tests/test_throw_controls.py`; updated `throw_a_strike/domain/config.py`, `throw_a_strike/domain/__init__.py`, `tests/test_config.py`, this plan, and `PROJECT_AUDIT.md`.
 - **Configuration:** `ControlStyle` provides Quick Play (`quick`) and Advanced Play (`advanced`), with Quick Play as the `MatchConfig` default. Every one of 10-Pin, 100-Pin, Remix, and Party accepts either style. Schema version 2 has the exact former fields plus `control_style`; exact version 1 payloads migrate to Quick Play.
 - **Quick Play:** a machine begins at **THROW READY**, always Straight and locked at 70 percent. One valid semantic dart command creates one immutable `ThrowSetup` while retaining its raw dart index, x, and y numbers.

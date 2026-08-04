@@ -1,5 +1,6 @@
 import unittest
 from dataclasses import FrozenInstanceError
+from fractions import Fraction
 
 from throw_a_strike.domain import (
     ControlStyle, CurveLevel, InvalidThrowControlError, PowerFeedback,
@@ -37,6 +38,10 @@ class ValueTests(unittest.TestCase):
         with self.assertRaises(InvalidThrowControlError): command(Kind.LEFT, 0, x=1)
         for timestamp in (-1, True, float("inf"), float("nan")):
             with self.assertRaises(InvalidThrowControlError): command(Kind.TICK, timestamp)
+
+    def test_timestamp_float_conversion_overflow_is_normalized(self):
+        with self.assertRaises(InvalidThrowControlError):
+            command(Kind.TICK, Fraction(10 ** 10000, 1))
 
     def test_exact_types_and_frozen_values(self):
         class IntSubclass(int): pass
@@ -91,10 +96,58 @@ class MachineTests(unittest.TestCase):
             machine.apply(command(Kind.TICK, step * .15))
             self.assertEqual(machine.snapshot.displayed_power_percent, expected)
 
+    def test_every_meter_transition_uses_strict_half_open_intervals(self):
+        sequence = (70, 80, 90, 100, 90, 80, 70, 60, 50, 40, 50, 60, 70)
+        nanosecond = 0.000000001
+        for step in range(1, len(sequence)):
+            boundary = step * 0.150
+            with self.subTest(step=step, position="before"):
+                machine = ThrowControlMachine(ControlStyle.ADVANCED)
+                machine.apply(command(Kind.CONFIRM, 0))
+                machine.apply(command(Kind.TICK, boundary - nanosecond))
+                self.assertEqual(machine.snapshot.displayed_power_percent, sequence[step - 1])
+            with self.subTest(step=step, position="exact"):
+                machine = ThrowControlMachine(ControlStyle.ADVANCED)
+                machine.apply(command(Kind.CONFIRM, 0))
+                machine.apply(command(Kind.TICK, boundary))
+                self.assertEqual(machine.snapshot.displayed_power_percent, sequence[step])
+            with self.subTest(step=step, position="after"):
+                machine = ThrowControlMachine(ControlStyle.ADVANCED)
+                machine.apply(command(Kind.CONFIRM, 0))
+                machine.apply(command(Kind.TICK, boundary + nanosecond))
+                self.assertEqual(machine.snapshot.displayed_power_percent, sequence[step])
+
+        machine = ThrowControlMachine(ControlStyle.ADVANCED)
+        machine.apply(command(Kind.CONFIRM, 0))
+        machine.apply(command(Kind.TICK, 1.799999999))
+        self.assertEqual(machine.snapshot.displayed_power_percent, 60)
+        machine.apply(command(Kind.TICK, 1.800))
+        self.assertEqual(machine.snapshot.displayed_power_percent, 70)
+
+        # The same strict boundary behavior repeats in a later cycle.
+        for timestamp, expected in ((3.749999999, 70), (3.750, 80), (3.750000001, 80)):
+            with self.subTest(timestamp=timestamp):
+                later = ThrowControlMachine(ControlStyle.ADVANCED)
+                later.apply(command(Kind.CONFIRM, 0))
+                later.apply(command(Kind.TICK, timestamp))
+                self.assertEqual(later.snapshot.displayed_power_percent, expected)
+
+    def test_confirm_observes_strict_first_meter_boundary(self):
+        before = ThrowControlMachine(ControlStyle.ADVANCED)
+        before.apply(command(Kind.CONFIRM, 0))
+        before.apply(command(Kind.CONFIRM, 0.149999999))
+        self.assertEqual(before.snapshot.locked_power_percent, 70)
+
+        exact = ThrowControlMachine(ControlStyle.ADVANCED)
+        exact.apply(command(Kind.CONFIRM, 0))
+        exact.apply(command(Kind.CONFIRM, 0.150))
+        self.assertEqual(exact.snapshot.locked_power_percent, 80)
+        self.assertIs(exact.snapshot.power_feedback, PowerFeedback.PERFECT)
+
     def test_meter_uses_elapsed_time_and_confirm_locks(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
-        machine.apply(command(Kind.CONFIRM, 1))
-        machine.apply(command(Kind.TICK, 1.01)); machine.apply(command(Kind.CONFIRM, 1.15))
+        machine.apply(command(Kind.CONFIRM, 0))
+        machine.apply(command(Kind.TICK, 0.01)); machine.apply(command(Kind.CONFIRM, 0.15))
         self.assertEqual(machine.snapshot.locked_power_percent, 80)
         self.assertIs(machine.snapshot.power_feedback, PowerFeedback.PERFECT)
 
@@ -116,6 +169,26 @@ class MachineTests(unittest.TestCase):
                          (11, 3, 124, CurveLevel.STRAIGHT, 70))
         first = result.outcome
         machine.apply(command(Kind.DART_HIT, 3, dart_index=1, x=9, y=8))
+        self.assertIs(machine.snapshot.outcome, first)
+
+    def test_advanced_success_preserves_controls_and_raw_aim(self):
+        machine = ThrowControlMachine(ControlStyle.ADVANCED)
+        machine.apply(command(Kind.LEFT, 0))
+        machine.apply(command(Kind.CONFIRM, 0))
+        machine.apply(command(Kind.CONFIRM, 0.150))
+        result = machine.apply(
+            command(Kind.DART_HIT, 1, dart_index=9, x=17, y=113)
+        )
+        self.assertIs(result.phase, Phase.COMPLETE)
+        self.assertIs(result.outcome.kind, ThrowControlOutcomeKind.THROW)
+        setup = result.outcome.setup
+        self.assertEqual(
+            (setup.curve_level, setup.power_percent),
+            (CurveLevel.LEFT_1, 80),
+        )
+        self.assertEqual((setup.dart_index, setup.aim_x, setup.aim_y), (9, 17, 113))
+        first = result.outcome
+        machine.apply(command(Kind.DART_HIT, 2, dart_index=1, x=113, y=17))
         self.assertIs(machine.snapshot.outcome, first)
 
     def test_advanced_ready_back_warning_and_foul(self):

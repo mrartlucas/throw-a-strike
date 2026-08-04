@@ -60,7 +60,12 @@ class ThrowControlCommandKind(str, Enum):
 def _timestamp(value: object, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, Real):
         raise InvalidThrowControlError(f"{name} must be a finite nonnegative real number")
-    normalized = float(value)
+    try:
+        normalized = float(value)
+    except (OverflowError, ValueError) as exc:
+        raise InvalidThrowControlError(
+            f"{name} must be a finite nonnegative real number"
+        ) from exc
     if not isfinite(normalized) or normalized < 0:
         raise InvalidThrowControlError(f"{name} must be a finite nonnegative real number")
     return normalized
@@ -312,7 +317,7 @@ class ThrowControlMachine:
                     self._locked = 70
                     self._enter_ready(deadline)
                     continue
-                steps = int((timestamp - self._phase_started + 1e-12) / 0.150)
+                steps = int((timestamp - self._phase_started) / 0.150)
                 self._displayed = _METER[steps % len(_METER)]
             if self._phase is ThrowControlPhase.THROW_READY:
                 elapsed = timestamp - self._phase_started
