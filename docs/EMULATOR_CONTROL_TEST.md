@@ -17,11 +17,13 @@ Red uses displayed 2/6/10 (raw 1/5/9), Green 3/7/11 (raw 2/6/10), and Yellow 4/8
 ## Round procedure
 
 1. Remove every dart, launch the app, choose Quick or Advanced, and confirm with A.
-2. Verify **THROW 1** and **USE DART 1**. Confirmation alone is not a dart.
+2. Verify **THROW 1** and **DART 1**. Confirmation alone is not a dart.
 3. Emit raw dart 0 and verify **DART ACCEPTED** with unchanged raw index/X/Y.
-4. After exactly 1.5 seconds verify **THROW 2** and **USE DART 5**. Advanced starts again at SET CURVE and retains the selected Advanced style.
+4. After exactly 1.5 seconds verify **THROW 2** and **DART 5**. Advanced starts again at SET CURVE and retains the selected Advanced style.
 5. Emit raw dart 4 and verify DART ACCEPTED.
 6. After exactly 1.5 seconds verify **ROUND COMPLETE**. It holds without polling until restart.
+
+During every active throw, a compact THROW/DART header is shown without replacing the control prompts below it. THROW READY and THROW NOW, SET CURVE and SET POWER, TOO SOON and REMOVE DART, or FOUL and 0 PINS therefore remain visible alongside curve, power, feedback, and style diagnostics.
 
 A nonmatching raw index displays **WRONG DART** and the expected displayed number for exactly 1.0 second. It creates no result, does not consume the throw, does not reset blocking state, and returns to the same throw. Raw 8 is reserved and cannot complete Throw 2.
 
@@ -30,6 +32,8 @@ Advanced SET CURVE and SET POWER occur separately for each throw. Setup time doe
 ## Timing and FOUL
 
 THROW NOW appears at exactly 20 seconds and FOUL occurs at exactly 30 seconds. FOUL means that no legal dart occurred before the deadline: no bowling ball launches, zero pins fall, and the current throw is consumed. The FOUL/0 PINS diagnostic holds exactly 1.5 seconds. Throw 1 FOUL advances to a fresh Throw 2 timer; Throw 2 FOUL completes the round. The runtime makes zero automatic `reset_blocking_state` calls.
+
+A wrong dart strictly before the deadline may show the one-second WRONG DART hold. At or after exactly 30 seconds, the coordinator's terminal FOUL takes precedence; the wrong event never produces a terminal WRONG DART screen and the round records that FOUL only once.
 
 ## Result vocabulary
 

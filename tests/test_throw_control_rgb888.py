@@ -29,6 +29,50 @@ def power_presentation(power):
 
 
 class RendererTests(unittest.TestCase):
+    def assert_round_labels(self, presentation, expected, throw=1, dart=1):
+        captured=[]; original=renderer._text
+        with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
+                          (captured.append(t),original(b,t,x,y,c,scale))[1]):
+            frame=render_round_throw_rgb888(presentation,throw,dart)
+        self.assertEqual(len(frame),49152)
+        for label in expected: self.assertIn(label,captured)
+        return captured
+
+    def test_round_header_preserves_quick_ready_warning_and_locked_hud(self):
+        machine=ThrowControlMachine(ControlStyle.QUICK)
+        ready=build_throw_control_presentation(machine.snapshot)
+        labels=self.assert_round_labels(ready,("THROW 1","DART 1","THROW READY",
+                                                "STR","70%","GOOD","Q"))
+        warning=build_throw_control_presentation(machine.apply(
+            ThrowControlCommand(ThrowControlCommandKind.TICK,THROW_WARNING_SECONDS)))
+        labels=self.assert_round_labels(warning,("THROW 1","DART 1","THROW READY","THROW NOW"))
+        captured=[]; original=renderer._text
+        with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
+                          (captured.append(t),original(b,t,x,y,c,scale))[1]):
+            render_round_throw_rgb888(warning,1,1,False)
+        self.assertIn("THROW READY",captured); self.assertIn("THROW NOW",captured)
+
+    def test_round_header_preserves_advanced_setup_and_recovery_prompts(self):
+        curve_machine=ThrowControlMachine(ControlStyle.ADVANCED)
+        self.assert_round_labels(build_throw_control_presentation(curve_machine.snapshot),
+                                 ("THROW 1","DART 1","SET CURVE","STR","70%","GOOD","A"))
+        power=build_throw_control_presentation(curve_machine.apply(
+            ThrowControlCommand(ThrowControlCommandKind.CONFIRM,1)))
+        self.assert_round_labels(power,("SET POWER",))
+        recovery_machine=ThrowControlMachine(ControlStyle.ADVANCED)
+        recovery=build_throw_control_presentation(recovery_machine.apply(
+            ThrowControlCommand(ThrowControlCommandKind.DART_HIT,1,dart_index=0,x=1,y=2)))
+        self.assert_round_labels(recovery,("TOO SOON","REMOVE DART"))
+        second_machine=ThrowControlMachine(ControlStyle.ADVANCED)
+        self.assert_round_labels(build_throw_control_presentation(second_machine.snapshot),
+                                 ("THROW 2","DART 5","SET CURVE"),2,5)
+
+    def test_round_header_preserves_foul_and_zero_pins(self):
+        machine=ThrowControlMachine(ControlStyle.QUICK)
+        foul=build_throw_control_presentation(machine.apply(
+            ThrowControlCommand(ThrowControlCommandKind.TICK,THROW_FOUL_SECONDS)))
+        self.assert_round_labels(foul,("THROW 1","DART 1","FOUL","0 PINS"))
+
     def test_round_throw_wrong_dart_and_complete_labels(self):
         presentation=build_throw_control_presentation(ThrowControlMachine(ControlStyle.QUICK).snapshot)
         captured=[]; original=renderer._text

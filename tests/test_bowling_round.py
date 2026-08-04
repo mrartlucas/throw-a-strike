@@ -2,7 +2,7 @@ import unittest
 from dataclasses import FrozenInstanceError
 
 from throw_a_strike.domain import (
-    BowlingRoundMachine, BowlingThrowNumber, BowlingThrowResult,
+    BowlingRoundMachine, BowlingRoundSnapshot, BowlingThrowNumber, BowlingThrowResult,
     BowlingThrowResultKind, InvalidBowlingRoundValueError,
     expected_emulator_dart_index, is_expected_emulator_dart,
 )
@@ -16,6 +16,32 @@ def result(kind=BowlingThrowResultKind.MISS, before=RACK, knocked=(), after=None
     return BowlingThrowResult(kind,before,knocked,after,dart,x,y)
 
 class RoundTests(unittest.TestCase):
+    def test_snapshot_accepts_only_three_continuous_round_states(self):
+        first=result(BowlingThrowResultKind.PIN_HIT,knocked=(1,))
+        second=result(BowlingThrowResultKind.MISS,before=first.pins_after,
+                      after=first.pins_after,dart=4)
+        valid=(
+            BowlingRoundSnapshot(BowlingThrowNumber.THROW_ONE,RACK,RACK,None,None,False),
+            BowlingRoundSnapshot(BowlingThrowNumber.THROW_TWO,RACK,first.pins_after,first,None,False),
+            BowlingRoundSnapshot(BowlingThrowNumber.THROW_TWO,RACK,second.pins_after,first,second,True),
+        )
+        self.assertEqual(len(valid),3)
+
+    def test_snapshot_rejects_impossible_phase_and_result_combinations(self):
+        first=result(); other=result(before=(1,2),after=(1,2),dart=4)
+        invalid=(
+            (BowlingThrowNumber.THROW_TWO,RACK,RACK,None,None,True),
+            (BowlingThrowNumber.THROW_ONE,RACK,RACK,first,None,False),
+            (BowlingThrowNumber.THROW_TWO,RACK,RACK,None,None,False),
+            (BowlingThrowNumber.THROW_TWO,(1,2),(1,2),first,None,False),
+            (BowlingThrowNumber.THROW_TWO,RACK,(1,2),first,other,True),
+            (BowlingThrowNumber.THROW_ONE,(1,2),(1,3),None,None,False),
+            (BowlingThrowNumber.THROW_TWO,RACK,(1,2),first,None,False),
+        )
+        for values in invalid:
+            with self.subTest(values=values),self.assertRaises(InvalidBowlingRoundValueError):
+                BowlingRoundSnapshot(*values)
+
     def test_initial_full_and_custom_racks(self):
         full=BowlingRoundMachine().snapshot
         self.assertEqual((full.throw_number,full.opening_rack,full.standing_pins,

@@ -117,10 +117,21 @@ def render_round_throw_rgb888(presentation: ThrowControlPresentation, throw_numb
     """Render the active diagnostic throw and its expected displayed emulator dart."""
     if type(throw_number) is not int or throw_number not in (1,2): raise TypeError("invalid throw number")
     if type(expected_dart_number) is not int or expected_dart_number not in (1,5): raise TypeError("invalid dart number")
-    buf=bytearray(render_throw_control_rgb888(presentation,blink_on))
-    _rect(buf,0,89,128,19,_HUD)
-    _center(buf,f"THROW {throw_number}",91,_YELLOW)
-    _center(buf,f"USE DART {expected_dart_number}",99,_RED)
+    if type(presentation) is not ThrowControlPresentation or type(blink_on) is not bool:
+        raise TypeError("invalid renderer argument")
+    buf=_canvas(); _deck(buf); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
+    _text(buf,f"THROW {throw_number}",2,90,_CYAN)
+    _text(buf,f"DART {expected_dart_number}",105,90,_CYAN)
+    primary=presentation.primary_prompt
+    if primary is not None:
+        _center(buf,primary.label,96,_YELLOW)
+    if presentation.secondary_prompt is not None:
+        _center(buf,presentation.secondary_prompt.label,102,_RED)
+    _arrow(buf,presentation.curve_icon,5,111)
+    _text(buf,presentation.curve_label,19,111,_WHITE)
+    _text(buf,f"{presentation.power_percent}%",73,111,_WHITE)
+    _text(buf,presentation.power_feedback_label,72,121,_MUTED)
+    _text(buf,"Q" if presentation.control_style is ControlStyle.QUICK else "A",120,111,_CYAN)
     return bytes(buf)
 
 def render_wrong_dart_rgb888(presentation: ThrowControlPresentation,

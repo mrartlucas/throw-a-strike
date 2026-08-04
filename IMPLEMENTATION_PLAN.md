@@ -1056,3 +1056,5 @@ Dartsnut Agent emulator evidence records displayed Blue 1/5/9, Red 2/6/10, Green
 Status: IMPLEMENTED - TWO-THROW ROUND RETEST READY
 
 The pure round contract now models two explicit throws, an unchanged or reduced standing rack, exact zero/PIN_HIT vocabulary, and the emulator-only same-color dart-slot policy. The diagnostic runtime exercises one Blue round with raw darts 0 then 4, temporary MISS results, wrong-dart rejection, per-throw FOUL progression, and a restart-only terminal screen. Physics, scoring, multiplayer/frame progression, transforms, and secondary output remain later phases.
+
+The final retest correction preserves all locked control prompts beneath a compact round header, gives FOUL precedence over a wrong dart at the 30-second deadline, and rejects impossible manually constructed public round snapshots.

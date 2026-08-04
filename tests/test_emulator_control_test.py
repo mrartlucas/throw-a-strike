@@ -93,6 +93,27 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertEqual(id(runtime.coordinator),coordinator)
         self.assertEqual(runtime.expected_dart_index,0)
 
+    def test_wrong_dart_at_or_after_deadline_is_one_foul_not_wrong_hold(self):
+        for timestamp in (30,31):
+            with self.subTest(timestamp=timestamp):
+                sdk=FakeDartsnutSdk()
+                runtime=EmulatorControlTestRuntime(
+                    DartsnutSdkFacade(sdk),Clock(0,timestamp,timestamp,timestamp+.5),0)
+                sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+                sdk.queue_dart_hits((RawDartHit(8,7,9),)); foul=runtime.step()
+                self.assertEqual(foul.phase,EmulatorControlTestPhase.FOUL_HOLD)
+                self.assertEqual(foul.presentation.phase,ThrowControlPhase.FOUL)
+                first=runtime.round_snapshot.first_result
+                self.assertEqual(first.kind,BowlingThrowResultKind.FOUL)
+                self.assertIsNone(first.dart_index)
+                self.assertIsNone(runtime.coordinator.snapshot.outcome.setup)
+                self.assertEqual(runtime.round_snapshot.throw_number,BowlingThrowNumber.THROW_TWO)
+                held=runtime.step()
+                self.assertEqual(held.phase,EmulatorControlTestPhase.FOUL_HOLD)
+                self.assertIs(runtime.round_snapshot.first_result,first)
+                self.assertIsNone(runtime.round_snapshot.second_result)
+                self.assertEqual(sdk.reset_blocking_count,0)
+
     def test_two_fouls_consume_both_throws_and_complete_round(self):
         sdk=FakeDartsnutSdk(); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),Clock(1,31,32.5,62.5,64),0)
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()

@@ -316,3 +316,5 @@ Dartsnut Agent emulator evidence records displayed Blue 1/5/9, Red 2/6/10, Green
 Status: IMPLEMENTED - TWO-THROW ROUND RETEST READY
 
 Phase 0S adds a frozen, validated pure two-throw round snapshot/result vocabulary and the emulator-evidence dart policy (Blue raw 0 then 4). The emulator harness preserves the rack, records legal darts temporarily as MISS, advances both accepted and FOUL throws, rejects wrong slots without consumption or reset, and holds ROUND COMPLETE. No physics, pin collision/pinfall calculation, scoring change, multiplayer rotation, coordinate transform, secondary-display API, or physical-board parity assertion is introduced.
+
+Final review corrections retain every locked primary/secondary prompt in the active HUD, enforce FOUL over wrong-dart feedback at and after the exact deadline, and validate continuous rack history for every publicly constructible round snapshot.

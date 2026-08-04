@@ -192,7 +192,10 @@ class EmulatorControlTestRuntime:
             return self._begin_attempt(selection.selected_style,selection.confirmed_at)
         result=self._coordinator.step()
         self._presentation=build_throw_control_step_presentation(result)
-        if self._input.wrong_event is not None:
+        # The coordinator's established input-before-tick ordering decides the
+        # deadline. A terminal tick (notably FOUL at/after 30 seconds) always
+        # takes precedence over temporary wrong-dart feedback.
+        if self._input.wrong_event is not None and not self._presentation.terminal:
             self._wrong_timestamp=self._input.wrong_event.timestamp
             self._cached=render_wrong_dart_rgb888(self._presentation,self.expected_displayed_dart_number)
             self._phase=EmulatorControlTestPhase.WRONG_DART_HOLD

@@ -99,6 +99,35 @@ class BowlingRoundSnapshot:
             raise InvalidBowlingRoundValueError("second_result must be exact or None")
         if type(self.complete) is not bool:
             raise InvalidBowlingRoundValueError("complete must be an exact bool")
+        if any(pin not in self.opening_rack for pin in self.standing_pins):
+            raise InvalidBowlingRoundValueError("standing_pins must be a subset of opening_rack")
+
+        initial = (
+            self.throw_number is BowlingThrowNumber.THROW_ONE
+            and self.first_result is None
+            and self.second_result is None
+            and not self.complete
+            and self.standing_pins == self.opening_rack
+        )
+        after_first = (
+            self.throw_number is BowlingThrowNumber.THROW_TWO
+            and type(self.first_result) is BowlingThrowResult
+            and self.second_result is None
+            and not self.complete
+            and self.first_result.pins_before == self.opening_rack
+            and self.standing_pins == self.first_result.pins_after
+        )
+        complete = (
+            self.throw_number is BowlingThrowNumber.THROW_TWO
+            and type(self.first_result) is BowlingThrowResult
+            and type(self.second_result) is BowlingThrowResult
+            and self.complete
+            and self.first_result.pins_before == self.opening_rack
+            and self.second_result.pins_before == self.first_result.pins_after
+            and self.standing_pins == self.second_result.pins_after
+        )
+        if not (initial or after_first or complete):
+            raise InvalidBowlingRoundValueError("snapshot does not describe a continuous two-throw round")
 
 
 class BowlingRoundMachine:
