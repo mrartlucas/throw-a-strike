@@ -107,6 +107,32 @@ class FacadeTests(unittest.TestCase):
         for value in cases:
             self.sdk.buttons=value
             with self.subTest(value=value), self.assertRaises(InvalidDartsnutSdkResponseError): self.facade.read_button_events()
+    def test_button_rejects_one_string_subclass_key_once(self):
+        class StringKey(str): pass
+        self.sdk.buttons = {b.value: False for b in DartsnutButtonId if b is not DartsnutButtonId.A}
+        self.sdk.buttons[StringKey(DartsnutButtonId.A.value)] = True
+        with self.assertRaises(InvalidDartsnutSdkResponseError) as caught:
+            self.facade.read_button_events()
+        self.assertIs(caught.exception.operation, DartsnutSdkOperation.BUTTON_EVENTS)
+        self.assertEqual(self.sdk.counts["buttons"], 1)
+
+    def test_button_rejects_multiple_string_subclass_keys_once(self):
+        class StringKey(str): pass
+        replaced = {DartsnutButtonId.A.value, DartsnutButtonId.HOME.value}
+        self.sdk.buttons = {b.value: False for b in DartsnutButtonId if b.value not in replaced}
+        for key in replaced:
+            self.sdk.buttons[StringKey(key)] = True
+        with self.assertRaises(InvalidDartsnutSdkResponseError) as caught:
+            self.facade.read_button_events()
+        self.assertIs(caught.exception.operation, DartsnutSdkOperation.BUTTON_EVENTS)
+        self.assertEqual(self.sdk.counts["buttons"], 1)
+
+    def test_button_accepts_only_ordinary_exact_string_keys_once(self):
+        self.sdk.buttons = {b.value: b is DartsnutButtonId.RIGHT for b in DartsnutButtonId}
+        self.assertTrue(all(type(key) is str for key in self.sdk.buttons))
+        self.assertEqual(self.facade.read_button_events(), (DartsnutButtonId.RIGHT,))
+        self.assertEqual(self.sdk.counts["buttons"], 1)
+
     def test_button_error_wrapped_once(self):
         cause=RuntimeError("bad")
         def fail(): self.sdk._call("buttons"); raise cause
@@ -118,6 +144,42 @@ class FacadeTests(unittest.TestCase):
         self.assertIsNone(self.facade.reset_blocking_state()); self.facade.reset_blocking_state(); self.assertEqual(self.sdk.counts["reset"],2)
         self.sdk.none_result=False
         with self.assertRaises(InvalidDartsnutSdkResponseError): self.facade.reset_blocking_state()
+    def test_reset_member_lookup_failure_is_wrapped_and_chained_once(self):
+        cause = LookupError("reset lookup")
+        class DeferredMember:
+            def __init__(self): self.lookups = 0
+            def __get__(self, instance, owner):
+                self.lookups += 1
+                if self.lookups == 1: return lambda: None
+                raise cause
+        member = DeferredMember()
+        class S(RawSdk): reset_blocking_state = member
+        facade = DartsnutSdkFacade(S())
+        with self.assertRaises(DartsnutSdkOperationError) as caught:
+            facade.reset_blocking_state()
+        self.assertIs(caught.exception.operation, DartsnutSdkOperation.RESET_BLOCKING_STATE)
+        self.assertIs(caught.exception.cause, cause)
+        self.assertIs(caught.exception.__cause__, cause)
+        self.assertEqual(member.lookups, 2)
+
+    def test_close_member_lookup_failure_is_wrapped_and_chained_once(self):
+        cause = LookupError("close lookup")
+        class DeferredMember:
+            def __init__(self): self.lookups = 0
+            def __get__(self, instance, owner):
+                self.lookups += 1
+                if self.lookups == 1: return lambda: None
+                raise cause
+        member = DeferredMember()
+        class S(RawSdk): close = member
+        facade = DartsnutSdkFacade(S())
+        with self.assertRaises(DartsnutSdkOperationError) as caught:
+            facade.close()
+        self.assertIs(caught.exception.operation, DartsnutSdkOperation.CLOSE)
+        self.assertIs(caught.exception.cause, cause)
+        self.assertIs(caught.exception.__cause__, cause)
+        self.assertEqual(member.lookups, 2)
+
     def test_framebuffer_copy_arbitrary_content_and_results(self):
         caller=bytearray(b"abc"); self.assertTrue(self.facade.submit_framebuffer(caller)); self.assertEqual(caller,b"abc")
         self.assertIsNot(self.sdk.received[0],caller); self.assertEqual(self.sdk.received[0],caller)

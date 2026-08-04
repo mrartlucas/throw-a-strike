@@ -892,7 +892,7 @@ explicit fallback composition remain future work.
 
 **Status: IMPLEMENTED - LOCALLY VERIFIED**
 
-- **Baseline/final verification:** The unchanged baseline was 276 tests; the final suite is 310 tests, including 34 focused facade tests.
+- **Baseline/final verification:** The unchanged baseline was 276 tests; the final suite is 315 tests, including 39 focused facade tests.
 - **Exact files changed:** created `throw_a_strike/platform/__init__.py`, `throw_a_strike/platform/dartsnut_sdk.py`, `throw_a_strike/platform/dartsnut_sdk_fakes.py`, and `tests/test_dartsnut_sdk.py`; updated only this plan and `PROJECT_AUDIT.md`.
 - **Public types:** `DartsnutButtonId`, `RawDartHit`, `DartsnutSdkOperation`, `DartsnutSdkProtocol`, `DartsnutSdkFacade`, `FakeDartsnutSdk`, `InvalidDartsnutSdkValueError`, `InvalidDartsnutSdkResponseError`, and `DartsnutSdkOperationError`.
 - **Wrapped SDK surface:** the facade reads `running` and calls only `get_dart_hits()`, `get_button_events()`, `reset_blocking_state()`, `update_frame_buffer(frame)`, `set_brightness(brightness)`, and `close()`.

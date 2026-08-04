@@ -149,14 +149,19 @@ class DartsnutSdkFacade:
         except Exception as error:
             raise DartsnutSdkOperationError(operation, error) from error
         expected = {button.value for button in DartsnutButtonId}
-        if type(response) is not dict or set(response) != expected:
-            raise self._malformed(operation, "response must be an exact dict with all verified button keys")
+        if (
+            type(response) is not dict
+            or len(response) != len(expected)
+            or any(type(key) is not str for key in response)
+            or set(response) != expected
+        ):
+            raise self._malformed(operation, "response must be an exact dict with all verified exact-string button keys")
         if any(type(value) is not bool for value in response.values()):
             raise self._malformed(operation, "button values must be exact bools")
         return tuple(button for button in DartsnutButtonId if response[button.value])
 
     def reset_blocking_state(self) -> None:
-        self._none_operation(DartsnutSdkOperation.RESET_BLOCKING_STATE, self.__sdk.reset_blocking_state)
+        self._none_operation(DartsnutSdkOperation.RESET_BLOCKING_STATE, lambda: self.__sdk.reset_blocking_state())
 
     def submit_framebuffer(self, frame: bytes | bytearray) -> bool:
         if type(frame) not in (bytes, bytearray):
@@ -177,7 +182,7 @@ class DartsnutSdkFacade:
         self._none_operation(DartsnutSdkOperation.BRIGHTNESS, lambda: self.__sdk.set_brightness(brightness))
 
     def close(self) -> None:
-        self._none_operation(DartsnutSdkOperation.CLOSE, self.__sdk.close)
+        self._none_operation(DartsnutSdkOperation.CLOSE, lambda: self.__sdk.close())
 
     def _none_operation(self, operation: DartsnutSdkOperation, call: object) -> None:
         try:
