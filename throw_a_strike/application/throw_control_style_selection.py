@@ -20,7 +20,12 @@ class InvalidThrowControlStyleSelectionValueError(ValueError):
 def _timestamp(value: object, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, Real):
         raise InvalidThrowControlStyleSelectionValueError(f"{name} must be a finite nonnegative real")
-    result = float(value)
+    try:
+        result = float(value)
+    except (OverflowError, ValueError):
+        raise InvalidThrowControlStyleSelectionValueError(
+            f"{name} must be a finite nonnegative real"
+        ) from None
     if not math.isfinite(result) or result < 0:
         raise InvalidThrowControlStyleSelectionValueError(f"{name} must be a finite nonnegative real")
     return result
@@ -50,10 +55,17 @@ class ThrowControlStyleSelectionSnapshot:
             raise InvalidThrowControlStyleSelectionValueError("phase and confirmed_at are inconsistent")
         if confirmed is not None and confirmed < start:
             raise InvalidThrowControlStyleSelectionValueError("confirmed_at cannot precede started_at")
-        if self.timed_out and (confirmed != start + 15.0 or self.selected_style is not ControlStyle.QUICK):
-            raise InvalidThrowControlStyleSelectionValueError("timeout confirmation is inconsistent")
-        if self.phase is ThrowControlStyleSelectionPhase.SELECTING and self.timed_out:
-            raise InvalidThrowControlStyleSelectionValueError("selecting cannot be timed out")
+        deadline = start + 15.0
+        if self.phase is ThrowControlStyleSelectionPhase.SELECTING:
+            if confirmed is not None or self.timed_out:
+                raise InvalidThrowControlStyleSelectionValueError("selecting snapshot is inconsistent")
+        elif self.timed_out:
+            if confirmed != deadline or self.selected_style is not ControlStyle.QUICK:
+                raise InvalidThrowControlStyleSelectionValueError("timeout confirmation is inconsistent")
+        elif confirmed is None or confirmed >= deadline:
+            raise InvalidThrowControlStyleSelectionValueError(
+                "manual confirmation must occur strictly before the deadline"
+            )
         object.__setattr__(self, "started_at", start)
         object.__setattr__(self, "confirmed_at", confirmed)
 
@@ -78,17 +90,26 @@ class ThrowControlStyleSelector:
         current = _timestamp(now, "now")
         if current < self.__snapshot.started_at:
             raise InvalidThrowControlStyleSelectionValueError("now cannot precede started_at")
-        if current >= self.__snapshot.started_at + 15.0:
-            self.__snapshot = ThrowControlStyleSelectionSnapshot(
-                ThrowControlStyleSelectionPhase.CONFIRMED, ControlStyle.QUICK,
-                self.__snapshot.started_at, self.__snapshot.started_at + 15.0, True)
-            return self.__snapshot
         try:
             commands = interpret_throw_control_events(events)
         except (TypeError, ValueError) as exc:
             raise InvalidThrowControlStyleSelectionValueError("events are invalid") from exc
+        deadline = self.__snapshot.started_at + 15.0
         selected = self.__snapshot.selected_style
         for command in commands:
+            if command.timestamp < self.__snapshot.started_at:
+                raise InvalidThrowControlStyleSelectionValueError(
+                    "command timestamp cannot precede started_at"
+                )
+            if command.timestamp > current:
+                raise InvalidThrowControlStyleSelectionValueError(
+                    "command timestamp cannot exceed now"
+                )
+            if command.timestamp >= deadline:
+                self.__snapshot = ThrowControlStyleSelectionSnapshot(
+                    ThrowControlStyleSelectionPhase.CONFIRMED, ControlStyle.QUICK,
+                    self.__snapshot.started_at, deadline, True)
+                return self.__snapshot
             if command.kind is ThrowControlCommandKind.LEFT:
                 selected = ControlStyle.QUICK
             elif command.kind is ThrowControlCommandKind.RIGHT:
@@ -98,6 +119,11 @@ class ThrowControlStyleSelector:
                     ThrowControlStyleSelectionPhase.CONFIRMED, selected,
                     self.__snapshot.started_at, command.timestamp, False)
                 return self.__snapshot
+        if current >= deadline:
+            self.__snapshot = ThrowControlStyleSelectionSnapshot(
+                ThrowControlStyleSelectionPhase.CONFIRMED, ControlStyle.QUICK,
+                self.__snapshot.started_at, deadline, True)
+            return self.__snapshot
         self.__snapshot = ThrowControlStyleSelectionSnapshot(
             ThrowControlStyleSelectionPhase.SELECTING, selected, self.__snapshot.started_at, None, False)
         return self.__snapshot

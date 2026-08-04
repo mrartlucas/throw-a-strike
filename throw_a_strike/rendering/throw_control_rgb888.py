@@ -83,7 +83,7 @@ def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
     power=f"{presentation.power_percent}%"; _text(buf,power,73,111,_WHITE)
-    _text(buf,presentation.power_feedback_label[:4],94,121,_MUTED)
+    _text(buf,presentation.power_feedback_label,72,121,_MUTED)
     _text(buf,"Q" if presentation.control_style is ControlStyle.QUICK else "A",120,111,_CYAN)
     return bytes(buf)
 
