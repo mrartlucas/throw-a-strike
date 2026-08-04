@@ -283,3 +283,13 @@ FOUL now enters a distinct terminal-presentation `FOUL_HOLD`, retaining FOUL plu
 COMPLETE remains the only `TERMINAL` phase and holds exact accepted raw dart index/x/y until restart without reset. EARLY_DART_RECOVERY remains the only `RECOVERY_HOLD` phase and still holds TOO SOON/REMOVE DART until restart without polling, clock access, reset, or `REARMED`. The verified final suite contains 474 tests, including 22 focused runtime tests.
 
 This is emulator-based retest preparation, not physical-cabinet parity evidence. It adds no physics, pinfall, scoring, multiplayer, coordinate transformation, player mapping, secondary-display API, dart-removal API, or guessed orientation/color behavior.
+
+### Phase 0R.2 visible acceptance and continuous-retest record
+
+**Status: IMPLEMENTED - CONTINUOUS RETEST READY.** Every normally accepted dart now preserves the exact completed coordinator snapshot and `ThrowSetup`, displays DART ACCEPTED and unchanged raw D-index/X/Y, and enters `ACCEPTED_HOLD`. The diagnostic retains the pin deck and locked curve/power HUD but adds no ball, pinfall, or score.
+
+The verified suite contains 477 tests, including 23 focused runtime tests and 10 focused RGB888 renderer tests.
+
+For exactly 1.5 seconds the accepted hold reads the clock once per step, polls no input, performs no reset, and republishes its cached frame. At or after the deadline it resets blocking state once, constructs one clean coordinator at the current timestamp, preserves Quick or Advanced style, clears the old outcome, and submits one fresh initial attempt frame. FOUL retry and restart-only early recovery remain unchanged.
+
+An emulator log containing “event fired” proves only emitted emulator input; “BLOCKED” may describe duplicate suppression pending reset. Physical testing requires the Deploy panel to say Connected. Local clicks, the unused second screen, and this runtime establish no physical-board parity. No physics, pinfall, scoring, player/color mapping, coordinate transformation, secondary-display API, or cabinet-parity claim was added.

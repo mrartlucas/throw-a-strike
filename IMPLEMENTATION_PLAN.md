@@ -1020,3 +1020,13 @@ explicit fallback composition remain future work.
 - **FOUL retry:** FOUL plus 0 PINS is cached in `FOUL_HOLD` for exactly 1.5 seconds. Before the deadline each step reads the injected clock once, consumes no input, performs no reset, and resubmits the cached frame once. At or after the deadline, one reset precedes one clean coordinator and one fresh attempt framebuffer; Quick restarts at THROW READY/STR/70 and Advanced at SET CURVE/STR/70.
 - **Unchanged holds:** COMPLETE alone uses `TERMINAL`, preserves exact raw dart index/x/y, and remains restart-only without reset. EARLY_DART_RECOVERY alone uses `RECOVERY_HOLD` and remains restart-only without polling, clock reads, reset, or `REARMED`.
 - **Evidence boundary:** this narrow retest hotfix follows emulator evidence. It adds no physics, pinfall, scoring, multiplayer, coordinate transform, player mapping, secondary-display API, or physical-cabinet parity claim.
+
+## Phase 0R.2: Visible dart acceptance and continuous throw retest
+
+**Status: IMPLEMENTED - CONTINUOUS RETEST READY**
+
+- **Verification:** the final suite contains **477 tests**, including **23 focused runtime tests** and **10 focused RGB888 renderer tests**.
+- **Accepted diagnostic:** COMPLETE now enters `ACCEPTED_HOLD` and renders DART ACCEPTED plus the exact raw D-index/X/Y over the existing pin deck and locked curve/power HUD. It adds no ball, pinfall result, score, player/color mapping, or coordinate transformation.
+- **Continuous retry:** the completed snapshot and `ThrowSetup` remain preserved. Before the exact 1.5-second deadline, each step reads the clock once, polls no input, performs no reset, and resubmits the cached diagnostic once. At the deadline, one reset and one new coordinator begin a clean attempt in the selected style and submit one fresh frame.
+- **Unchanged paths:** FOUL retains its 1.5-second automatic retry. Early recovery retains its restart-only cached TOO SOON/REMOVE DART behavior without clock polling, reset, or `REARMED`.
+- **Evidence boundary:** the second screen remains unused. Local click evidence does not establish a connected physical board or cabinet parity. No physics, pinfall, scoring, secondary-display API, or parity claim is added.

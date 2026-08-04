@@ -4,7 +4,7 @@ from throw_a_strike.application.throw_control_presentation import (
     ThrowControlCurveIcon, ThrowControlPresentation, ThrowControlPrompt,
 )
 from throw_a_strike.application.throw_control_style_selection import ThrowControlStyleSelectionSnapshot
-from throw_a_strike.domain import ControlStyle
+from throw_a_strike.domain import ControlStyle, ThrowControlPhase
 
 EMULATOR_MAIN_WIDTH = 128
 EMULATOR_MAIN_HEIGHT = 128
@@ -83,6 +83,31 @@ def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
     power=f"{presentation.power_percent}%"; _text(buf,power,73,111,_WHITE)
+    _text(buf,presentation.power_feedback_label,72,121,_MUTED)
+    _text(buf,"Q" if presentation.control_style is ControlStyle.QUICK else "A",120,111,_CYAN)
+    return bytes(buf)
+
+def render_dart_accepted_rgb888(
+    presentation: ThrowControlPresentation, dart_index: int, x: int, y: int,
+) -> bytes:
+    """Render a completed throw with its unchanged input diagnostics."""
+    if type(presentation) is not ThrowControlPresentation:
+        raise TypeError("presentation must be exact ThrowControlPresentation")
+    if not presentation.terminal or presentation.phase is not ThrowControlPhase.COMPLETE:
+        raise ValueError("presentation must describe a completed throw")
+    if type(dart_index) is not int or dart_index < 0:
+        raise TypeError("dart_index must be an exact nonnegative integer")
+    if type(x) is not int or type(y) is not int:
+        raise TypeError("x and y must be exact integers")
+    diagnostic=f"D{dart_index} X{x} Y{y}"
+    if (len(diagnostic)*4-1) > EMULATOR_MAIN_WIDTH:
+        raise ValueError("diagnostic text must fit the framebuffer")
+    buf=_canvas(); _deck(buf); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
+    _center(buf,"DART ACCEPTED",91,_YELLOW)
+    _center(buf,diagnostic,98,_RED)
+    _arrow(buf,presentation.curve_icon,5,111)
+    _text(buf,presentation.curve_label,19,111,_WHITE)
+    _text(buf,f"{presentation.power_percent}%",73,111,_WHITE)
     _text(buf,presentation.power_feedback_label,72,121,_MUTED)
     _text(buf,"Q" if presentation.control_style is ControlStyle.QUICK else "A",120,111,_CYAN)
     return bytes(buf)

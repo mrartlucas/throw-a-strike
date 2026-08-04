@@ -10,7 +10,7 @@ from throw_a_strike.domain import (
 )
 from throw_a_strike.rendering import (
     EMULATOR_MAIN_HEIGHT, EMULATOR_MAIN_WIDTH, EMULATOR_RGB888_BYTE_LENGTH,
-    render_style_selection_rgb888, render_throw_control_rgb888,
+    render_dart_accepted_rgb888, render_style_selection_rgb888, render_throw_control_rgb888,
 )
 import throw_a_strike.rendering.throw_control_rgb888 as renderer
 
@@ -93,6 +93,28 @@ class RendererTests(unittest.TestCase):
             ThrowControlCommand(ThrowControlCommandKind.TICK, 60)))
         self.assertIsNone(complete.primary_prompt)
         self.assertNotEqual(render_throw_control_rgb888(foul), render_throw_control_rgb888(ready))
+
+    def test_dart_accepted_frame_has_exact_diagnostics_and_hud(self):
+        machine=ThrowControlMachine(ControlStyle.QUICK)
+        complete=build_throw_control_presentation(machine.apply(
+            ThrowControlCommand(ThrowControlCommandKind.DART_HIT,1,dart_index=7,x=88,y=99)))
+        captured=[]; original=renderer._text
+        with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
+                          (captured.append(t),original(b,t,x,y,c,scale))[1]):
+            frame=render_dart_accepted_rgb888(complete,7,88,99)
+        self.assertEqual(len(frame),49152)
+        self.assertIn("DART ACCEPTED",captured)
+        self.assertIn("D7 X88 Y99",captured)
+        self.assertIn("STR",captured); self.assertIn("70%",captured); self.assertIn("GOOD",captured)
+        self.assertNotIn("0 PINS",captured)
+
+    def test_dart_accepted_rejects_invalid_raw_values(self):
+        machine=ThrowControlMachine(ControlStyle.QUICK)
+        complete=build_throw_control_presentation(machine.apply(
+            ThrowControlCommand(ThrowControlCommandKind.DART_HIT,1,dart_index=0,x=0,y=0)))
+        for args in ((True,1,2),(-1,1,2),(0,True,2),(0,1,False),(0,1.0,2)):
+            with self.subTest(args=args), self.assertRaises((TypeError,ValueError)):
+                render_dart_accepted_rgb888(complete,*args)
 
     def test_ten_pin_deck_is_stable_upper_play_area(self):
         ready = build_throw_control_presentation(ThrowControlMachine(ControlStyle.QUICK).snapshot)
