@@ -1082,3 +1082,9 @@ The mapping is emulator evidence, not physical-board parity. Fixed DART 1 then D
 **Status: IMPLEMENTED - ROUND COMPLETE HOLD RETEST READY**
 
 The public runtime step now exposes an accepted setup only during `ACCEPTED_HOLD`; the retained diagnostic setup is not leaked after the transition to `ROUND_COMPLETE`. Regression coverage completes all four accepted/FOUL combinations and verifies five further sticky hold steps preserve the framebuffer and exactly two results without input polling, clock reads, blocking resets, terminal progression, or exceptions. This is a post-round sticky-state correction, not a gameplay-rule, timing, rendering, physics, scoring, multiplayer, coordinate, or secondary-display change.
+
+## Phase 0S.2b — straight-curve icon direction correction
+
+**Status: IMPLEMENTED - UPWARD STRAIGHT ICON RETEST READY**
+
+The STRAIGHT curve icon is now a compact vertical up-arrow whose tip points toward the pin deck. LEFT and RIGHT geometry, STR labeling, framebuffer dimensions, every display state, and all gameplay, timing, input, scoring, physics, multiplayer, coordinate, and secondary-screen behavior remain unchanged. This is a display-only icon correction.

@@ -68,7 +68,7 @@ def _deck(buf):
         _line(buf,x-2,y-1,x+2,y-1,_RED)
 def _arrow(buf,icon,x,y):
     if icon is ThrowControlCurveIcon.STRAIGHT:
-        _line(buf,x,y+6,x+10,y+6,_CYAN); _line(buf,x+7,y+3,x+10,y+6,_CYAN); _line(buf,x+7,y+9,x+10,y+6,_CYAN)
+        _line(buf,x+5,y+10,x+5,y+2,_CYAN); _line(buf,x+2,y+5,x+5,y+2,_CYAN); _line(buf,x+8,y+5,x+5,y+2,_CYAN)
     elif icon is ThrowControlCurveIcon.LEFT:
         _line(buf,x+10,y+9,x+5,y+9,_CYAN); _line(buf,x+5,y+9,x+1,y+4,_CYAN); _line(buf,x+1,y+4,x+1,y+8,_CYAN); _line(buf,x+1,y+4,x+5,y+4,_CYAN)
     else:
