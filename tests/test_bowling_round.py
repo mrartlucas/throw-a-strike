@@ -4,7 +4,6 @@ from dataclasses import FrozenInstanceError
 from throw_a_strike.domain import (
     BowlingRoundMachine, BowlingRoundSnapshot, BowlingThrowNumber, BowlingThrowResult,
     BowlingThrowResultKind, InvalidBowlingRoundValueError,
-    expected_emulator_dart_index, is_expected_emulator_dart,
 )
 
 RACK=tuple(range(1,11))
@@ -91,20 +90,5 @@ class RoundTests(unittest.TestCase):
         for rack in ([1],(True,)):
             with self.subTest(rack=rack),self.assertRaises(InvalidBowlingRoundValueError): BowlingRoundMachine(rack)
         with self.assertRaises(InvalidBowlingRoundValueError): BowlingRoundMachine().record_throw(object())
-
-class DartPolicyTests(unittest.TestCase):
-    def test_all_players_map_only_first_two_same_color_slots(self):
-        for player in range(1,5):
-            self.assertEqual(expected_emulator_dart_index(player,BowlingThrowNumber.THROW_ONE),player-1)
-            self.assertEqual(expected_emulator_dart_index(player,BowlingThrowNumber.THROW_TWO),player+3)
-            self.assertFalse(is_expected_emulator_dart(player,BowlingThrowNumber.THROW_TWO,player+7))
-
-    def test_invalid_values_and_nonmutation(self):
-        for player in (True,0,5,1.0):
-            with self.assertRaises(InvalidBowlingRoundValueError): expected_emulator_dart_index(player,BowlingThrowNumber.THROW_ONE)
-        for throw in (1,3,None):
-            with self.assertRaises(InvalidBowlingRoundValueError): expected_emulator_dart_index(1,throw)
-        marker=[8]
-        self.assertFalse(is_expected_emulator_dart(1,BowlingThrowNumber.THROW_TWO,marker[0])); self.assertEqual(marker,[8])
 
 if __name__ == "__main__": unittest.main()

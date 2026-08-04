@@ -6,12 +6,12 @@ from throw_a_strike.application import ThrowControlStyleSelector, build_throw_co
 from throw_a_strike.domain import (
     ControlStyle, CurveLevel, PowerFeedback, ThrowControlCommand,
     ThrowControlCommandKind, ThrowControlMachine, ThrowControlPhase,
-    ThrowControlSnapshot, THROW_FOUL_SECONDS, THROW_WARNING_SECONDS,
+    ThrowControlSnapshot, PlayerColor, THROW_FOUL_SECONDS, THROW_WARNING_SECONDS,
 )
 from throw_a_strike.rendering import (
     EMULATOR_MAIN_HEIGHT, EMULATOR_MAIN_WIDTH, EMULATOR_RGB888_BYTE_LENGTH,
     render_dart_accepted_rgb888, render_round_complete_rgb888, render_round_throw_rgb888,
-    render_style_selection_rgb888, render_throw_control_rgb888, render_wrong_dart_rgb888,
+    render_style_selection_rgb888, render_throw_control_rgb888, render_wrong_color_rgb888,
 )
 import throw_a_strike.rendering.throw_control_rgb888 as renderer
 
@@ -29,11 +29,11 @@ def power_presentation(power):
 
 
 class RendererTests(unittest.TestCase):
-    def assert_round_labels(self, presentation, expected, throw=1, dart=1):
+    def assert_round_labels(self, presentation, expected, throw=1):
         captured=[]; original=renderer._text
         with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                           (captured.append(t),original(b,t,x,y,c,scale))[1]):
-            frame=render_round_throw_rgb888(presentation,throw,dart)
+            frame=render_round_throw_rgb888(presentation,throw,1,PlayerColor.BLUE)
         self.assertEqual(len(frame),49152)
         for label in expected: self.assertIn(label,captured)
         return captured
@@ -41,24 +41,24 @@ class RendererTests(unittest.TestCase):
     def test_round_header_preserves_quick_ready_warning_and_locked_hud(self):
         machine=ThrowControlMachine(ControlStyle.QUICK)
         ready=build_throw_control_presentation(machine.snapshot)
-        labels=self.assert_round_labels(ready,("THROW 1","DART 1","THROW READY",
+        labels=self.assert_round_labels(ready,("THROW 1","P1 BLUE","THROW READY",
                                                 "STR","70%","GOOD","Q"))
         captured=[]; original=renderer._text
         with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                           (captured.append(t),original(b,t,x,y,c,scale))[1]):
-            render_round_throw_rgb888(ready,1,1,False)
+            render_round_throw_rgb888(ready,1,1,PlayerColor.BLUE,False)
         self.assertNotIn("THROW READY",captured)
-        for label in ("THROW 1","DART 1","STR","70%","GOOD","Q"):
+        for label in ("THROW 1","P1 BLUE","STR","70%","GOOD","Q"):
             self.assertIn(label,captured)
         warning=build_throw_control_presentation(machine.apply(
             ThrowControlCommand(ThrowControlCommandKind.TICK,THROW_WARNING_SECONDS)))
-        labels=self.assert_round_labels(warning,("THROW 1","DART 1","THROW READY","THROW NOW"))
+        labels=self.assert_round_labels(warning,("THROW 1","P1 BLUE","THROW READY","THROW NOW"))
         captured=[]; original=renderer._text
         with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                           (captured.append(t),original(b,t,x,y,c,scale))[1]):
-            render_round_throw_rgb888(warning,1,1,False)
+            render_round_throw_rgb888(warning,1,1,PlayerColor.BLUE,False)
         self.assertNotIn("THROW READY",captured); self.assertIn("THROW NOW",captured)
-        for label in ("THROW 1","DART 1","STR","70%","GOOD","Q"):
+        for label in ("THROW 1","P1 BLUE","STR","70%","GOOD","Q"):
             self.assertIn(label,captured)
 
     def test_round_header_preserves_advanced_setup_and_recovery_prompts(self):
@@ -68,8 +68,8 @@ class RendererTests(unittest.TestCase):
             captured=[]; original=renderer._text
             with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                               (captured.append(t),original(b,t,x,y,c,scale))[1]):
-                render_round_throw_rgb888(curve,1,1,blink)
-            for label in ("THROW 1","DART 1","SET CURVE","STR","70%","GOOD","A"):
+                render_round_throw_rgb888(curve,1,1,PlayerColor.BLUE,blink)
+            for label in ("THROW 1","P1 BLUE","SET CURVE","STR","70%","GOOD","A"):
                 self.assertIn(label,captured)
         power=build_throw_control_presentation(curve_machine.apply(
             ThrowControlCommand(ThrowControlCommandKind.CONFIRM,1)))
@@ -77,7 +77,7 @@ class RendererTests(unittest.TestCase):
             captured=[]; original=renderer._text
             with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                               (captured.append(t),original(b,t,x,y,c,scale))[1]):
-                render_round_throw_rgb888(power,1,1,blink)
+                render_round_throw_rgb888(power,1,1,PlayerColor.BLUE,blink)
             self.assertIn("SET POWER",captured)
         recovery_machine=ThrowControlMachine(ControlStyle.ADVANCED)
         recovery=build_throw_control_presentation(recovery_machine.apply(
@@ -85,27 +85,27 @@ class RendererTests(unittest.TestCase):
         self.assert_round_labels(recovery,("TOO SOON","REMOVE DART"))
         second_machine=ThrowControlMachine(ControlStyle.ADVANCED)
         self.assert_round_labels(build_throw_control_presentation(second_machine.snapshot),
-                                 ("THROW 2","DART 5","SET CURVE"),2,5)
+                                 ("THROW 2","P1 BLUE","SET CURVE"),2)
 
     def test_round_header_preserves_foul_and_zero_pins(self):
         machine=ThrowControlMachine(ControlStyle.QUICK)
         foul=build_throw_control_presentation(machine.apply(
             ThrowControlCommand(ThrowControlCommandKind.TICK,THROW_FOUL_SECONDS)))
-        self.assert_round_labels(foul,("THROW 1","DART 1","FOUL","0 PINS"))
+        self.assert_round_labels(foul,("THROW 1","P1 BLUE","FOUL","0 PINS"))
 
     def test_round_throw_wrong_dart_and_complete_labels(self):
         presentation=build_throw_control_presentation(ThrowControlMachine(ControlStyle.QUICK).snapshot)
         captured=[]; original=renderer._text
         with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                           (captured.append(t),original(b,t,x,y,c,scale))[1]):
-            active=render_round_throw_rgb888(presentation,2,5)
-            wrong=render_wrong_dart_rgb888(presentation,5)
+            active=render_round_throw_rgb888(presentation,2,1,PlayerColor.BLUE)
+            wrong=render_wrong_color_rgb888(presentation,2,1,PlayerColor.BLUE)
             complete_machine=ThrowControlMachine(ControlStyle.QUICK)
             terminal=build_throw_control_presentation(complete_machine.apply(
                 ThrowControlCommand(ThrowControlCommandKind.DART_HIT,1,dart_index=4,x=1,y=2)))
             finished=render_round_complete_rgb888(terminal)
         self.assertEqual({len(active),len(wrong),len(finished)},{49152})
-        for label in ("THROW 2","USE DART 5","WRONG DART","ROUND COMPLETE"):
+        for label in ("THROW 2","USE BLUE DART","WRONG COLOR","ROUND COMPLETE"):
             self.assertIn(label,captured)
 
     def test_constants_bytes_and_determinism(self):

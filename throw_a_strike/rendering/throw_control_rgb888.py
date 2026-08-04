@@ -4,7 +4,7 @@ from throw_a_strike.application.throw_control_presentation import (
     ThrowControlCurveIcon, ThrowControlPresentation, ThrowControlPrompt,
 )
 from throw_a_strike.application.throw_control_style_selection import ThrowControlStyleSelectionSnapshot
-from throw_a_strike.domain import ControlStyle, ThrowControlPhase
+from throw_a_strike.domain import ControlStyle, PlayerColor, ThrowControlPhase
 
 EMULATOR_MAIN_WIDTH = 128
 EMULATOR_MAIN_HEIGHT = 128
@@ -34,6 +34,7 @@ _FONT = {
 }
 _BG=(8,12,20); _LANE=(52,70,79); _HUD=(12,19,30); _WHITE=(238,244,236)
 _RED=(225,55,65); _CYAN=(55,220,225); _YELLOW=(250,210,55); _MUTED=(115,140,150)
+_BLUE=(70,135,255)
 
 def _canvas(): return bytearray(_BG * (EMULATOR_MAIN_WIDTH * EMULATOR_MAIN_HEIGHT))
 def _pixel(buf,x,y,c):
@@ -113,15 +114,18 @@ def render_dart_accepted_rgb888(
     return bytes(buf)
 
 def render_round_throw_rgb888(presentation: ThrowControlPresentation, throw_number: int,
-                              expected_dart_number: int, blink_on: bool=True) -> bytes:
-    """Render the active diagnostic throw and its expected displayed emulator dart."""
+                              player_number: int, player_color: PlayerColor,
+                              blink_on: bool=True) -> bytes:
+    """Render the active round throw with its player and color identity."""
     if type(throw_number) is not int or throw_number not in (1,2): raise TypeError("invalid throw number")
-    if type(expected_dart_number) is not int or expected_dart_number not in (1,5): raise TypeError("invalid dart number")
+    if type(player_number) is not int or not 1 <= player_number <= 4: raise TypeError("invalid player number")
+    if type(player_color) is not PlayerColor: raise TypeError("invalid player color")
     if type(presentation) is not ThrowControlPresentation or type(blink_on) is not bool:
         raise TypeError("invalid renderer argument")
     buf=_canvas(); _deck(buf); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
     _text(buf,f"THROW {throw_number}",2,90,_CYAN)
-    _text(buf,f"DART {expected_dart_number}",105,90,_CYAN)
+    color=_BLUE if player_color is PlayerColor.BLUE else _CYAN
+    _text(buf,f"P{player_number} {player_color.value.upper()}",99,90,color)
     primary=presentation.primary_prompt
     if primary is not None and not (
         primary is ThrowControlPrompt.THROW_READY and not blink_on
@@ -136,12 +140,12 @@ def render_round_throw_rgb888(presentation: ThrowControlPresentation, throw_numb
     _text(buf,"Q" if presentation.control_style is ControlStyle.QUICK else "A",120,111,_CYAN)
     return bytes(buf)
 
-def render_wrong_dart_rgb888(presentation: ThrowControlPresentation,
-                             expected_dart_number: int) -> bytes:
-    buf=bytearray(render_round_throw_rgb888(presentation,1 if expected_dart_number==1 else 2,
-                                            expected_dart_number))
-    _rect(buf,0,89,128,19,_HUD); _center(buf,"WRONG DART",91,_YELLOW)
-    _center(buf,f"USE DART {expected_dart_number}",99,_RED)
+def render_wrong_color_rgb888(presentation: ThrowControlPresentation, throw_number: int,
+                              player_number: int, player_color: PlayerColor) -> bytes:
+    buf=bytearray(render_round_throw_rgb888(
+        presentation,throw_number,player_number,player_color))
+    _rect(buf,0,89,128,19,_HUD); _center(buf,"WRONG COLOR",91,_YELLOW)
+    _center(buf,f"USE {player_color.value.upper()} DART",99,_RED)
     return bytes(buf)
 
 def render_round_complete_rgb888(presentation: ThrowControlPresentation) -> bytes:

@@ -10,7 +10,11 @@ from .bowling import (
 from .bowling_round import (
     InvalidBowlingRoundValueError, BowlingThrowNumber, BowlingThrowResultKind,
     BowlingThrowResult, BowlingRoundSnapshot, BowlingRoundMachine,
-    expected_emulator_dart_index, is_expected_emulator_dart,
+)
+from .player_darts import (
+    InvalidPlayerDartValueError, PlayerColor, player_color_for_number,
+    emulator_dart_color, emulator_dart_indices_for_color,
+    emulator_dart_indices_for_player, is_emulator_dart_for_player,
 )
 from .cumulative import (
     CumulativeFrameSnapshot,
@@ -26,7 +30,6 @@ from .match import (
     MatchCompleteError,
     MatchRollResult,
     MatchSnapshot,
-    PlayerColor,
     PlayerSnapshot,
     StandingSnapshot,
 )
@@ -70,7 +73,9 @@ from .schedule import (
 __all__ = [
     "InvalidBowlingRoundValueError", "BowlingThrowNumber", "BowlingThrowResultKind",
     "BowlingThrowResult", "BowlingRoundSnapshot", "BowlingRoundMachine",
-    "expected_emulator_dart_index", "is_expected_emulator_dart",
+    "InvalidPlayerDartValueError", "player_color_for_number", "emulator_dart_color",
+    "emulator_dart_indices_for_color", "emulator_dart_indices_for_player",
+    "is_emulator_dart_for_player",
     "BowlingGame",
     "BowlingSnapshot",
     "FrameSnapshot",
