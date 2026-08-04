@@ -36,11 +36,17 @@ from .cumulative_match import (
 )
 from .config import (
     BrandingSnapshot,
+    ControlStyle,
     InvalidMatchConfigError,
     LOCKED_BRANDING,
     MatchConfig,
     Mode,
     Theme,
+)
+from .throw_controls import (
+    CurveLevel, InvalidThrowControlError, PowerFeedback, ThrowControlCommand,
+    ThrowControlCommandKind, ThrowControlMachine, ThrowControlOutcome,
+    ThrowControlOutcomeKind, ThrowControlPhase, ThrowControlSnapshot, ThrowSetup,
 )
 from .schedule import (
     InvalidScheduleConfigurationError,
@@ -83,6 +89,18 @@ __all__ = [
     "CumulativeStandingSnapshot",
     "InvalidCumulativeMatchConfigurationError",
     "BrandingSnapshot",
+    "ControlStyle",
+    "InvalidThrowControlError",
+    "CurveLevel",
+    "PowerFeedback",
+    "ThrowControlPhase",
+    "ThrowControlCommandKind",
+    "ThrowControlCommand",
+    "ThrowSetup",
+    "ThrowControlOutcomeKind",
+    "ThrowControlOutcome",
+    "ThrowControlSnapshot",
+    "ThrowControlMachine",
     "InvalidMatchConfigError",
     "LOCKED_BRANDING",
     "MatchConfig",

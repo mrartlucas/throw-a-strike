@@ -233,3 +233,11 @@ gameplay command interpretation/dispatch, loop, rendering, or hardware access
 is introduced. The safe next boundary is Phase 0N: a pure emulator-targeted
 immutable 128×128 framebuffer model and deterministic RGB888 byte encoder,
 without SDK submission or physical-cabinet parity claims.
+
+### Phase 0N pure throw-control record
+
+Phase 0N adds match-level Quick Play and Advanced Play control styles. `MatchConfig` schema version 2 serializes the selected style, defaults to Quick Play, and migrates exact schema version 1 payloads to Quick Play; all four modes accept both styles.
+
+A pure one-attempt machine now models curve selection, a deterministic 0.150-second-step power meter, THROW READY, early-dart recovery, COMPLETE, and FOUL. The meter contains no randomness and 80 percent is only labelled PERFECT. Completed setups preserve raw dart index and x/y numbers without player/color mapping or coordinate transformation.
+
+The boundary adds no scoring, pinfall, physics, rendering, framebuffer submission, hardware or platform access, global clock, runtime loop, or automatic blocking reset. The safe next boundary is a pure Phase 0O `InputEvent`-to-semantic-command interpreter that preserves event time and raw dart values; runtime integration remains later.
