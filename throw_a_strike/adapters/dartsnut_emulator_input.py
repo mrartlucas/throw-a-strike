@@ -39,6 +39,14 @@ class DartsnutEmulatorInputPort:
     def capabilities(self) -> PortCapabilities:
         return PortCapabilities(self.__capabilities.available)
 
+    def observe_active_darts(self) -> tuple[RawDartHit, ...]:
+        """Observe removal state without consuming normal emulator input."""
+        active = self.__facade.read_active_darts()
+        self.__baseline = {
+            dart.dart_index: (dart.x, dart.y) for dart in active
+        }
+        return active
+
     def poll(self) -> tuple[InputEvent, ...]:
         if not self.__capabilities.available:
             raise PortUnavailableError("input is unavailable")

@@ -199,6 +199,20 @@ class RendererTests(unittest.TestCase):
         # Curve/power live below the flashing prompt rows and remain identical.
         self.assertEqual(shown[110*128*3:], hidden[110*128*3:])
 
+
+    def test_power_bar_has_seven_segments_and_exact_fill(self):
+        for power,filled in ((40,1),(70,4),(80,5),(100,7),(90,6),(50,2)):
+            with self.subTest(power=power):
+                calls=[]
+                original=renderer._rect
+                with patch.object(renderer,"_rect",side_effect=lambda b,x,y,w,h,c:
+                                  (calls.append((x,y,w,h,c)),original(b,x,y,w,h,c))[1]):
+                    frame=render_throw_control_rgb888(power_presentation(power))
+                segments=[call for call in calls if call[1:4] == (118,4,2)]
+                self.assertEqual(len(segments),7)
+                self.assertEqual(sum(call[4] == renderer._CYAN for call in segments),filled)
+                self.assertEqual(len(frame),EMULATOR_RGB888_BYTE_LENGTH)
+
     def test_warning_keeps_throw_now_during_ready_blink_off(self):
         machine = ThrowControlMachine(ControlStyle.QUICK)
         warning = machine.apply(ThrowControlCommand(

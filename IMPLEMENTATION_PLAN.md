@@ -1088,3 +1088,17 @@ The public runtime step now exposes an accepted setup only during `ACCEPTED_HOLD
 **Status: IMPLEMENTED - UPWARD STRAIGHT ICON RETEST READY**
 
 The STRAIGHT curve icon is now a compact vertical up-arrow whose tip points toward the pin deck. LEFT and RIGHT geometry, STR labeling, framebuffer dimensions, every display state, and all gameplay, timing, input, scoring, physics, multiplayer, coordinate, and secondary-screen behavior remain unchanged. This is a display-only icon correction.
+
+### Phase 0S.3 — Advanced manual skill-stop setup
+
+Advanced setup is deliberately manual: Curve waits indefinitely for A, then the
+Power meter waits indefinitely for A while cycling through
+`40, 50, 60, 70, 80, 90, 100, 90, 80, 70, 60, 50` in exact 0.200-second steps.
+The input event timestamp selects the locked value, and THROW READY alone begins
+the 30-second attempt timer. Emulator early-dart removal now synchronizes the
+active baseline and resumes Curve or restarts Power at 40 without consuming a
+bowling throw. This is emulator-only recovery, not physical-board parity. No
+trajectory, physics, pinfall, scoring integration, multiplayer rotation,
+coordinate transform, secondary-display, or audio work is included.
+
+**IMPLEMENTED - ADVANCED SKILL-STOP RETEST READY**

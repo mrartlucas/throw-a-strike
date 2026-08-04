@@ -74,6 +74,12 @@ def _arrow(buf,icon,x,y):
     else:
         _line(buf,x,y+9,x+5,y+9,_CYAN); _line(buf,x+5,y+9,x+9,y+4,_CYAN); _line(buf,x+9,y+4,x+9,y+8,_CYAN); _line(buf,x+9,y+4,x+5,y+4,_CYAN)
 
+def _power_bar(buf,power):
+    """Render seven fixed segments derived only from the displayed percentage."""
+    active=(power-30)//10
+    for index in range(7):
+        _rect(buf,72+index*6,118,4,2,_CYAN if index < active else _MUTED)
+
 def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on: bool=True) -> bytes:
     if type(presentation) is not ThrowControlPresentation or type(blink_on) is not bool: raise TypeError("invalid renderer argument")
     buf=_canvas(); _deck(buf); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
@@ -84,6 +90,7 @@ def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
     power=f"{presentation.power_percent}%"; _text(buf,power,73,111,_WHITE)
+    _power_bar(buf,presentation.power_percent)
     _text(buf,presentation.power_feedback_label,72,121,_MUTED)
     _text(buf,"Q" if presentation.control_style is ControlStyle.QUICK else "A",120,111,_CYAN)
     return bytes(buf)
@@ -109,6 +116,7 @@ def render_dart_accepted_rgb888(
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
     _text(buf,f"{presentation.power_percent}%",73,111,_WHITE)
+    _power_bar(buf,presentation.power_percent)
     _text(buf,presentation.power_feedback_label,72,121,_MUTED)
     _text(buf,"Q" if presentation.control_style is ControlStyle.QUICK else "A",120,111,_CYAN)
     return bytes(buf)
@@ -136,6 +144,7 @@ def render_round_throw_rgb888(presentation: ThrowControlPresentation, throw_numb
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
     _text(buf,f"{presentation.power_percent}%",73,111,_WHITE)
+    _power_bar(buf,presentation.power_percent)
     _text(buf,presentation.power_feedback_label,72,121,_MUTED)
     _text(buf,"Q" if presentation.control_style is ControlStyle.QUICK else "A",120,111,_CYAN)
     return bytes(buf)

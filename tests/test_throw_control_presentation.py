@@ -49,10 +49,10 @@ def advanced_snapshot(
         return machine.snapshot
     machine.apply(ThrowControlCommand(ThrowControlCommandKind.CONFIRM, timestamp))
     if phase is ThrowControlPhase.SET_POWER:
-        if power != 70:
-            machine.apply(ThrowControlCommand(ThrowControlCommandKind.TICK, {80: .15, 90: .3, 100: .45, 60: 1.05, 50: 1.2, 40: 1.35}[power]))
+        if power != 40:
+            machine.apply(ThrowControlCommand(ThrowControlCommandKind.TICK, {50: .2, 60: .4, 70: .6, 80: .8, 90: 1.0, 100: 1.2}[power]))
         return machine.snapshot
-    lock_time = {70: 0.0, 80: .15, 90: .3, 100: .45, 60: 1.05, 50: 1.2, 40: 1.35}[power]
+    lock_time = {40: 0.0, 50: .2, 60: .4, 70: .6, 80: .8, 90: 1.0, 100: 1.2}[power]
     machine.apply(ThrowControlCommand(ThrowControlCommandKind.CONFIRM, lock_time))
     if warning:
         machine.apply(ThrowControlCommand(

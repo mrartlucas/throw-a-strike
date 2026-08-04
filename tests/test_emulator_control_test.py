@@ -335,7 +335,7 @@ class RuntimeFlowTests(unittest.TestCase):
     def test_advanced_curve_power_80_perfect_and_completion(self):
         # right style, confirm style, right curve+tick, confirm curve+tick,
         # empty meter tick to 80, confirm power+tick, dart timestamp.
-        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,4.15,4.15,5,6)
+        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,4.8,4.8,5,6)
         runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.SELECT_STYLE)
         sdk.queue_button_events((DartsnutButtonId.A,)); initial=runtime.step()
@@ -429,18 +429,20 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertIsNone(runtime.coordinator.snapshot.outcome.setup)
 
     def test_early_curve_recovery_hold_has_no_poll_clock_reset_or_rearmed(self):
-        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,4); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
+        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,4,5); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
         sdk.queue_dart_hits((RawDartHit(0,2,3),)); recovery=runtime.step()
         self.assertEqual((recovery.presentation.primary_prompt_label,recovery.presentation.secondary_prompt_label),("TOO SOON","REMOVE DART"))
+        sdk.set_active_darts((RawDartHit(0,2,3),))
         sdk.queue_button_events((DartsnutButtonId.A,)); reads=clock.reads; input_calls=len(sdk.calls)
         runtime.step()
         self.assertEqual(clock.reads,reads); self.assertEqual(sdk.queued_button_batch_count,1)
         self.assertEqual(sdk.reset_blocking_count,0)
-        self.assertEqual(sdk.calls[input_calls:],(DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION,))
-        self.assertNotIn(ThrowControlCommandKind.REARMED,
-                         tuple(command.kind for command in []))
+        self.assertEqual(sdk.calls[input_calls:],(DartsnutSdkOperation.ACTIVE_DARTS,DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION))
+        sdk.set_active_darts(())
+        rearmed=runtime.step()
+        self.assertEqual((rearmed.phase,rearmed.presentation.phase),(EmulatorControlTestPhase.ATTEMPT,ThrowControlPhase.SET_CURVE))
 
     def test_early_power_recovery(self):
         sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4); runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)

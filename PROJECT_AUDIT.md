@@ -348,3 +348,21 @@ The mapping is emulator evidence, not physical-board parity. Fixed DART 1 then D
 **Status: IMPLEMENTED - UPWARD STRAIGHT ICON RETEST READY**
 
 The STRAIGHT curve artwork now points upward toward the pins with a centered vertical shaft and a two-sided arrowhead. Focused pixel coverage locks the new STRAIGHT geometry and the pre-existing LEFT and RIGHT geometry, while renderer size and determinism remain covered. This display-only correction changes no labels, selection behavior, other feedback or indicators, player colors, timing, accepted coordinates, wrong-color behavior, round hold, pin deck, framebuffer, game logic, or secondary-screen behavior.
+
+## Phase 0S.3 Advanced setup audit
+
+Advanced Curve and Power now require separate manual A confirmations. Neither
+setup phase has an automatic timeout. Power is the deterministic repeating
+0.200-second skill-stop sequence `40, 50, 60, 70, 80, 90, 100, 90, 80, 70, 60,
+50`, and confirmation locks the value derived at the input event timestamp. The
+30-second warning/foul clock begins only in THROW READY; Quick remains immediate
+STRAIGHT / 70.
+
+The emulator recovery path observes only active darts while holding the cached
+TOO SOON / REMOVE DART frame. Removal of the exact offending index synchronizes
+the emulator adapter baseline and explicitly rearms the interrupted setup, so a
+later replacement is fresh. This makes no claim about physical-board removal.
+No trajectory, physics, pinfall, scoring integration, multiplayer rotation,
+coordinate transform, secondary display, or audio was added.
+
+**IMPLEMENTED - ADVANCED SKILL-STOP RETEST READY**

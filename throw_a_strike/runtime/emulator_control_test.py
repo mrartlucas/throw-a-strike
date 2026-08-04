@@ -132,6 +132,7 @@ class EmulatorControlTestRuntime:
         self._phase=EmulatorControlTestPhase.SELECT_STYLE; self._cached=None; self._presentation=None
         self._foul_timestamp=None
         self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
+        self._recovery_dart_index=None
     @property
     def phase(self): return self._phase
     @property
@@ -161,7 +162,22 @@ class EmulatorControlTestRuntime:
         accepted=self._facade.submit_framebuffer(self._cached)
         return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
     def step(self):
-        if self._phase in (EmulatorControlTestPhase.RECOVERY_HOLD,EmulatorControlTestPhase.ROUND_COMPLETE,EmulatorControlTestPhase.TERMINAL):
+        if self._phase in (EmulatorControlTestPhase.ROUND_COMPLETE,EmulatorControlTestPhase.TERMINAL):
+            accepted=self._facade.submit_framebuffer(self._cached)
+            return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+        if self._phase is EmulatorControlTestPhase.RECOVERY_HOLD:
+            active=self._raw_input.observe_active_darts()
+            if any(dart.dart_index == self._recovery_dart_index for dart in active):
+                accepted=self._facade.submit_framebuffer(self._cached)
+                return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
+            now=self._clock.monotonic_seconds()
+            snapshot=self._coordinator.rearm(now)
+            self._recovery_dart_index=None
+            self._presentation=build_throw_control_presentation(snapshot)
+            self._cached=render_round_throw_rgb888(
+                self._presentation,int(self._round.snapshot.throw_number),
+                self.active_player_number,self.active_player_color)
+            self._phase=EmulatorControlTestPhase.ATTEMPT
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
         if self._phase is EmulatorControlTestPhase.WRONG_COLOR_HOLD:
@@ -218,7 +234,13 @@ class EmulatorControlTestRuntime:
         blink=True if result.tick_timestamp is None else int(result.tick_timestamp*2)%2==0
         self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
                                                 self.active_player_number,self.active_player_color,blink)
-        if self._presentation.phase is ThrowControlPhase.EARLY_DART_RECOVERY: self._phase=EmulatorControlTestPhase.RECOVERY_HOLD
+        if self._presentation.phase is ThrowControlPhase.EARLY_DART_RECOVERY:
+            dart_commands=tuple(command for command in result.commands
+                                if command.dart_index is not None)
+            if not dart_commands:
+                raise InvalidPortValueError("early recovery requires an offending dart")
+            self._recovery_dart_index=dart_commands[-1].dart_index
+            self._phase=EmulatorControlTestPhase.RECOVERY_HOLD
         elif self._presentation.phase is ThrowControlPhase.FOUL:
             rack=self._round.snapshot.standing_pins
             self._round.record_throw(BowlingThrowResult(BowlingThrowResultKind.FOUL,rack,(),rack,None,None,None))

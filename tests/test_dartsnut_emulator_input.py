@@ -60,4 +60,18 @@ class EmulatorInputTests(unittest.TestCase):
         self.assertEqual({e.timestamp for e in events},{5})
 
 
+    def test_observe_active_darts_is_side_effect_free_and_synchronizes(self):
+        self.sdk.set_active_darts((RawDartHit(0,11,12),))
+        before_calls=len(self.sdk.calls)
+        self.assertEqual(self.port.observe_active_darts(),(RawDartHit(0,11,12),))
+        self.assertEqual(self.clock.reads,0)
+        self.assertEqual(self.sdk.calls[before_calls:],(self.sdk.calls[-1],))
+        self.assertEqual(self.port.poll(),())
+        self.sdk.set_active_darts(())
+        self.port.observe_active_darts()
+        self.sdk.set_active_darts((RawDartHit(0,11,12),))
+        fresh,=self.port.poll()
+        self.assertEqual((fresh.sequence,fresh.dart_index,fresh.x,fresh.y),(10,0,11,12))
+
+
 if __name__ == "__main__": unittest.main()
