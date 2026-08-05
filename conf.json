@@ -3,9 +3,14 @@
   "type": "game",
   "name": "Throw a Strike",
   "author": "Throw A Way Games",
-  "version": "0.2.0",
-  "description": "Interactive Throw a Strike control test.",
-  "size": [128, 128],
+  "version": "0.3.0",
+  "description": "Playable single-player regulation 10-Pin game.",
+  "size": [
+    128,
+    128
+  ],
   "fields": [],
-  "preview": [""]
+  "preview": [
+    ""
+  ]
 }

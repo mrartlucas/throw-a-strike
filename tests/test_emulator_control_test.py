@@ -881,7 +881,7 @@ class EntryManifestTests(unittest.TestCase):
         self.assertNotIn("pydartsnut",sys.modules)
         source=Path("main.py").read_text()
         self.assertIn("    from pydartsnut import Dartsnut",source)
-        for name in ("DartsnutSdkFacade","SystemMonotonicClockPort","run_emulator_control_test"):
+        for name in ("DartsnutSdkFacade","SystemMonotonicClockPort","run_emulator_ten_pin"):
             self.assertIn(name,source)
     def test_manifest_and_unchanged_project_dependencies(self):
         config=json.loads(Path("conf.json").read_text())
