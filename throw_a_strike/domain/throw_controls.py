@@ -58,8 +58,9 @@ class PowerFeedback(str, Enum):
 
 
 class ThrowControlPhase(str, Enum):
+    SET_AIM = "set_aim"
+    SET_LANE_ARROW = "set_aim"  # Backward-compatible alias for older tests/docs.
     SET_CURVE = "set_curve"
-    SET_LANE_ARROW = "set_lane_arrow"
     SET_POWER = "set_power"
     THROW_READY = "throw_ready"
     EARLY_DART_RECOVERY = "early_dart_recovery"
@@ -218,7 +219,7 @@ class ThrowControlSnapshot:
         if self.warning_active and self.phase is not ThrowControlPhase.THROW_READY:
             raise InvalidThrowControlError("warning is valid only while THROW READY")
         if self.phase is ThrowControlPhase.EARLY_DART_RECOVERY:
-            if self.recovery_return_phase not in (ThrowControlPhase.SET_CURVE, ThrowControlPhase.SET_POWER) or self.outcome is not None:
+            if self.recovery_return_phase not in (ThrowControlPhase.SET_AIM, ThrowControlPhase.SET_CURVE, ThrowControlPhase.SET_POWER) or self.outcome is not None:
                 raise InvalidThrowControlError("recovery snapshot is inconsistent")
         elif self.recovery_return_phase is not None:
             raise InvalidThrowControlError("recovery return phase is invalid")
@@ -236,10 +237,10 @@ class ThrowControlSnapshot:
                 raise InvalidThrowControlError("foul snapshot requires a foul")
         elif self.outcome is not None:
             raise InvalidThrowControlError("nonterminal snapshot cannot have an outcome")
+        if self.phase is ThrowControlPhase.SET_AIM and (self.control_style is not ControlStyle.ADVANCED or self.locked_power_percent is not None or self.displayed_power_percent != 70 or self.warning_active):
+            raise InvalidThrowControlError("set-aim snapshot is inconsistent")
         if self.phase is ThrowControlPhase.SET_CURVE and (self.control_style is not ControlStyle.ADVANCED or self.locked_power_percent is not None or self.displayed_power_percent != 70 or self.warning_active):
             raise InvalidThrowControlError("set-curve snapshot is inconsistent")
-        if self.phase is ThrowControlPhase.SET_LANE_ARROW and (self.control_style is not ControlStyle.ADVANCED or self.locked_power_percent is not None or self.warning_active):
-            raise InvalidThrowControlError("set-lane-arrow snapshot is inconsistent")
         if self.phase is ThrowControlPhase.SET_POWER and (self.control_style is not ControlStyle.ADVANCED or self.locked_power_percent is not None or self.warning_active):
             raise InvalidThrowControlError("set-power snapshot is inconsistent")
         if self.phase is ThrowControlPhase.EARLY_DART_RECOVERY and (self.control_style is not ControlStyle.ADVANCED or self.locked_power_percent is not None or self.warning_active):
@@ -256,7 +257,7 @@ class ThrowControlMachine:
             raise InvalidThrowControlError("control_style must be a ControlStyle member")
         start = _timestamp(started_at, "started_at")
         self._style = control_style
-        self._phase = ThrowControlPhase.THROW_READY if control_style is ControlStyle.QUICK else ThrowControlPhase.SET_CURVE
+        self._phase = ThrowControlPhase.THROW_READY if control_style is ControlStyle.QUICK else ThrowControlPhase.SET_AIM
         self._curve = CurveLevel.STRAIGHT
         self._displayed = 70
         self._locked = 70 if control_style is ControlStyle.QUICK else None
@@ -297,7 +298,22 @@ class ThrowControlMachine:
                     40 if self._phase is ThrowControlPhase.SET_POWER else 70
                 )
             return self.snapshot
-        if self._phase is ThrowControlPhase.SET_CURVE:
+        if self._phase is ThrowControlPhase.SET_AIM:
+            arrows = list(LaneArrow)
+            index = arrows.index(self._lane_arrow)
+            if kind is ThrowControlCommandKind.LEFT:
+                self._lane_arrow = arrows[max(0, index - 1)]
+            elif kind is ThrowControlCommandKind.RIGHT:
+                self._lane_arrow = arrows[min(len(arrows) - 1, index + 1)]
+            elif kind is ThrowControlCommandKind.CONFIRM:
+                self._enter_curve(command.timestamp)
+            elif kind is ThrowControlCommandKind.BACK:
+                self._lane_arrow = LaneArrow.CENTER
+            elif kind is ThrowControlCommandKind.DART_HIT:
+                self._mark_early(command)
+            elif kind is ThrowControlCommandKind.REARMED:
+                self._stale_dart_index = None
+        elif self._phase is ThrowControlPhase.SET_CURVE:
             levels = list(CurveLevel)
             index = levels.index(self._curve)
             if kind is ThrowControlCommandKind.LEFT:
@@ -305,23 +321,9 @@ class ThrowControlMachine:
             elif kind is ThrowControlCommandKind.RIGHT:
                 self._curve = levels[min(len(levels) - 1, index + 1)]
             elif kind is ThrowControlCommandKind.BACK:
-                self._curve = CurveLevel.STRAIGHT
-            elif kind is ThrowControlCommandKind.CONFIRM:
-                self._enter_lane_arrow(command.timestamp)
-            elif kind is ThrowControlCommandKind.DART_HIT:
-                self._mark_early(command)
-            elif kind is ThrowControlCommandKind.REARMED:
-                self._stale_dart_index = None
-        elif self._phase is ThrowControlPhase.SET_LANE_ARROW:
-            arrows = list(LaneArrow); index = arrows.index(self._lane_arrow)
-            if kind is ThrowControlCommandKind.LEFT:
-                self._lane_arrow = arrows[max(0, index - 1)]
-            elif kind is ThrowControlCommandKind.RIGHT:
-                self._lane_arrow = arrows[min(len(arrows) - 1, index + 1)]
+                self._enter_aim(command.timestamp)
             elif kind is ThrowControlCommandKind.CONFIRM:
                 self._enter_power(command.timestamp)
-            elif kind is ThrowControlCommandKind.BACK:
-                self._phase = ThrowControlPhase.SET_CURVE; self._phase_started = command.timestamp
             elif kind is ThrowControlCommandKind.DART_HIT:
                 self._mark_early(command)
             elif kind is ThrowControlCommandKind.REARMED:
@@ -331,10 +333,7 @@ class ThrowControlMachine:
                 self._locked = self._displayed
                 self._enter_ready(command.timestamp)
             elif kind is ThrowControlCommandKind.BACK:
-                self._phase = ThrowControlPhase.SET_LANE_ARROW
-                self._locked = None
-                self._displayed = 70
-                self._phase_started = command.timestamp
+                self._enter_curve(command.timestamp)
             elif kind is ThrowControlCommandKind.DART_HIT:
                 self._mark_early(command)
             elif kind is ThrowControlCommandKind.REARMED:
@@ -354,11 +353,19 @@ class ThrowControlMachine:
                 self._enter_power(command.timestamp)
         return self.snapshot
 
-    def _enter_lane_arrow(self, timestamp: float) -> None:
-        self._phase = ThrowControlPhase.SET_LANE_ARROW
+    def _enter_aim(self, timestamp: float) -> None:
+        self._phase = ThrowControlPhase.SET_AIM
         self._phase_started = timestamp
         self._displayed = 70
         self._locked = None
+        self._warning = False
+
+    def _enter_curve(self, timestamp: float) -> None:
+        self._phase = ThrowControlPhase.SET_CURVE
+        self._phase_started = timestamp
+        self._displayed = 70
+        self._locked = None
+        self._warning = False
 
     def _enter_power(self, timestamp: float) -> None:
         self._phase = ThrowControlPhase.SET_POWER

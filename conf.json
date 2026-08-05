@@ -3,11 +3,11 @@
   "type": "game",
   "name": "Throw a Strike",
   "author": "Throw A Way Games",
-  "version": "0.3.0",
-  "description": "Playable single-player regulation 10-Pin game.",
+  "version": "0.4.0",
+  "description": "Playable single-player regulation 10-Pin game with dual-screen scoreboard.",
   "size": [
     128,
-    128
+    160
   ],
   "fields": [],
   "preview": [

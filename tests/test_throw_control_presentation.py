@@ -31,7 +31,7 @@ from throw_a_strike.domain import (
 
 
 def advanced_snapshot(
-    phase=ThrowControlPhase.SET_CURVE,
+    phase=ThrowControlPhase.SET_AIM,
     curve=CurveLevel.STRAIGHT,
     power=70,
     locked=None,
@@ -39,6 +39,9 @@ def advanced_snapshot(
 ):
     machine = ThrowControlMachine(ControlStyle.ADVANCED)
     timestamp = 0.0
+    if phase is ThrowControlPhase.SET_AIM:
+        return machine.snapshot
+    machine.apply(ThrowControlCommand(ThrowControlCommandKind.CONFIRM, timestamp))
     curve_index = list(CurveLevel).index(curve) - list(CurveLevel).index(CurveLevel.STRAIGHT)
     direction = ThrowControlCommandKind.RIGHT if curve_index > 0 else ThrowControlCommandKind.LEFT
     for _ in range(abs(curve_index)):
@@ -47,9 +50,6 @@ def advanced_snapshot(
         return machine.snapshot
     if phase is ThrowControlPhase.EARLY_DART_RECOVERY:
         machine.apply(ThrowControlCommand(ThrowControlCommandKind.DART_HIT, timestamp, 0, 1, 2))
-        return machine.snapshot
-    machine.apply(ThrowControlCommand(ThrowControlCommandKind.CONFIRM, timestamp))
-    if phase is ThrowControlPhase.SET_LANE_ARROW:
         return machine.snapshot
     machine.apply(ThrowControlCommand(ThrowControlCommandKind.CONFIRM, timestamp))
     if phase is ThrowControlPhase.SET_POWER:
@@ -78,8 +78,8 @@ def advanced_snapshot(
 def manual(**changes):
     values = dict(
         control_style=ControlStyle.ADVANCED,
-        phase=ThrowControlPhase.SET_CURVE,
-        primary_prompt=ThrowControlPrompt.SET_CURVE,
+        phase=ThrowControlPhase.SET_AIM,
+        primary_prompt=ThrowControlPrompt.SET_AIM,
         secondary_prompt=None,
         curve_level=CurveLevel.STRAIGHT,
         curve_icon=ThrowControlCurveIcon.STRAIGHT,
@@ -114,7 +114,7 @@ class PublicApiTests(unittest.TestCase):
 
     def test_enum_values_and_order_are_exact(self):
         self.assertEqual([item.value for item in ThrowControlPrompt], [
-            "set_curve", "set_lane_arrow", "set_power", "throw_ready", "too_soon", "remove_dart",
+            "set_aim", "set_curve", "set_power", "throw_ready", "too_soon", "remove_dart",
             "throw_now", "foul", "zero_pins",
         ])
         self.assertEqual([item.value for item in ThrowControlCurveIcon], [
@@ -123,7 +123,7 @@ class PublicApiTests(unittest.TestCase):
 
     def test_prompt_labels_are_locked_and_have_no_invented_completion(self):
         self.assertEqual([item.label for item in ThrowControlPrompt], [
-            "SET CURVE", "SET LANE ARROW", "SET POWER", "THROW READY", "TOO SOON", "REMOVE DART",
+            "SET AIM", "SET CURVE", "SET POWER", "THROW READY", "TOO SOON", "REMOVE DART",
             "THROW NOW", "FOUL", "0 PINS",
         ])
         labels = " ".join(item.label for item in ThrowControlPrompt)
@@ -137,7 +137,7 @@ class SemanticMappingTests(unittest.TestCase):
         expected = [ThrowControlCurveIcon.LEFT] * 3 + [ThrowControlCurveIcon.STRAIGHT] + [ThrowControlCurveIcon.RIGHT] * 3
         for curve, icon in zip(CurveLevel, expected):
             with self.subTest(curve=curve):
-                value = build_throw_control_presentation(advanced_snapshot(curve=curve))
+                value = build_throw_control_presentation(advanced_snapshot(phase=ThrowControlPhase.SET_CURVE, curve=curve))
                 self.assertIs(value.curve_icon, icon)
                 self.assertEqual(value.curve_label, curve.label)
                 self.assertEqual(value.curve_strength, curve.strength)
@@ -161,8 +161,8 @@ class SemanticMappingTests(unittest.TestCase):
 
     def test_phase_prompt_terminal_and_outcome_mapping(self):
         cases = (
+            (ThrowControlPhase.SET_AIM, ThrowControlPrompt.SET_AIM, None, False, None),
             (ThrowControlPhase.SET_CURVE, ThrowControlPrompt.SET_CURVE, None, False, None),
-            (ThrowControlPhase.SET_LANE_ARROW, ThrowControlPrompt.SET_LANE_ARROW, None, False, None),
             (ThrowControlPhase.SET_POWER, ThrowControlPrompt.SET_POWER, None, False, None),
             (ThrowControlPhase.THROW_READY, ThrowControlPrompt.THROW_READY, None, False, None),
             (ThrowControlPhase.EARLY_DART_RECOVERY, ThrowControlPrompt.SET_CURVE, None, False, None),
@@ -217,7 +217,7 @@ class StyleFlowTests(unittest.TestCase):
 
     def test_advanced_selection_ready_recovery_complete_and_foul(self):
         initial = build_throw_control_presentation(advanced_snapshot())
-        self.assertEqual((initial.primary_prompt_label, initial.power_locked), ("SET CURVE", False))
+        self.assertEqual((initial.primary_prompt_label, initial.power_locked), ("SET AIM", False))
         moving = build_throw_control_presentation(advanced_snapshot(phase=ThrowControlPhase.SET_POWER, curve=CurveLevel.RIGHT_2, power=90))
         self.assertEqual((moving.curve_level, moving.power_percent, moving.power_feedback, moving.power_locked),
                          (CurveLevel.RIGHT_2, 90, PowerFeedback.POWER, False))

@@ -81,26 +81,33 @@ def _strip(buf, bowling):
 
 def _prompt_label(presentation, blink_on):
     prompt = presentation.primary_prompt
+    if prompt is ThrowControlPrompt.THROW_READY and not presentation.ready_cue_visible:
+        return None
     return None if prompt is None else prompt.label
 
 
 def _status(buf, presentation, bowling, context, *, label=None, blink_on=True, diagnostic=None):
-    _text(buf, f"F{context.frame_number} R{context.roll_number}", 2, 90, _CYAN)
-    _text(buf, f"S{bowling.confirmed_score}", 92, 90, _CYAN)
+    """Screen 1 owns aiming and throw controls; score/frame status lives below."""
     if label is not None:
-        _center(buf, label, 96, _YELLOW)
+        _center(buf, label, 92, _YELLOW)
     else:
         primary = _prompt_label(presentation, blink_on)
         if primary is not None:
-            _center(buf, primary, 96, _YELLOW)
+            _center(buf, primary, 92, _YELLOW)
         if presentation.secondary_prompt is not None:
-            _center(buf, presentation.secondary_prompt.label, 102, _RED)
+            _center(buf, presentation.secondary_prompt.label, 99, _RED)
     if diagnostic is not None:
-        _center(buf, diagnostic, 102, _RED)
-    else:
-        _strip(buf, bowling)
-    _arrow(buf, presentation.curve_icon, 5, 115); _text(buf, presentation.curve_label, 19, 115, _WHITE)
-    _text(buf, f"{presentation.power_percent}%", 73, 115, _WHITE); _power_bar(buf, presentation.power_percent, y=121)
+        _center(buf, diagnostic, 99, _RED)
+    if presentation.phase is ThrowControlPhase.SET_AIM:
+        from .throw_control_rgb888 import _lane_arrow_selector
+        _lane_arrow_selector(buf, presentation.lane_arrow)
+        return
+    _arrow(buf, presentation.curve_icon, 5, 113)
+    _text(buf, presentation.curve_label, 19, 113, _WHITE)
+    from .throw_control_rgb888 import _lane_arrow_hud
+    _lane_arrow_hud(buf, presentation.lane_arrow, x=42, y=112)
+    _text(buf, f"{presentation.power_percent}%", 76, 113, _WHITE)
+    _power_bar(buf, presentation.power_percent, y=120)
     _text(buf, presentation.power_feedback_label, 72, 123, _MUTED)
 
 
@@ -167,8 +174,10 @@ def render_ten_pin_foul_rgb888(presentation: ThrowControlPresentation, bowling: 
 
 def render_ten_pin_game_over_rgb888(bowling: BowlingSnapshot) -> bytes:
     _require_bowling(bowling, complete=True)
-    buf = _canvas(); _center(buf, "THROW A STRIKE", 5, _CYAN); _center(buf, "GAME OVER", 18, _YELLOW); _center(buf, f"FINAL {bowling.confirmed_score}", 31, _WHITE)
-    for index, frame in enumerate(bowling.frames):
-        x = 2 + (index % 5) * 25; y = 50 if index < 5 else 83
-        _text(buf, f"F{frame.number}", x, y, _CYAN); _text(buf, "".join(frame.marks) or "-", x, y + 8, _YELLOW); _text(buf, "" if frame.cumulative_score is None else str(frame.cumulative_score), x, y + 16, _WHITE)
+    buf = _canvas()
+    _deck(buf, FULL_RACK)
+    _rect(buf, 0, 88, 128, 40, _HUD)
+    _line(buf, 0, 88, 127, 88, _CYAN)
+    _center(buf, "GAME OVER", 96, _YELLOW, scale=2)
+    _center(buf, "FINAL SCORE BELOW", 119, _WHITE)
     return bytes(buf)

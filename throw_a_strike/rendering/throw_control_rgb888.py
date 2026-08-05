@@ -81,19 +81,37 @@ def _arrow(buf,icon,x,y):
     else:
         _line(buf,x,y+9,x+5,y+9,_CYAN); _line(buf,x+5,y+9,x+9,y+4,_CYAN); _line(buf,x+9,y+4,x+9,y+8,_CYAN); _line(buf,x+9,y+4,x+5,y+4,_CYAN)
 
-def _lane_arrow_hud(buf, selected: LaneArrow, x=45, y=112):
+def _lane_arrow_hud(buf, selected: LaneArrow, x=43, y=112):
+    """Keep the chosen aim lane visible after the setup screen is confirmed."""
     arrows = list(LaneArrow)
     for i, arrow in enumerate(arrows):
-        c = _YELLOW if arrow is selected else _MUTED
-        ax = x + i * 5
-        _line(buf, ax+2, y, ax, y+4, c); _line(buf, ax+2, y, ax+4, y+4, c); _line(buf, ax+2, y, ax+2, y+7, c)
+        ax = x + i * 6
+        color = _YELLOW if arrow is selected else _MUTED
+        _line(buf, ax + 2, y, ax, y + 3, color)
+        _line(buf, ax + 2, y, ax + 4, y + 3, color)
+        _line(buf, ax + 2, y, ax + 2, y + 6, color)
+        if arrow is selected:
+            _line(buf, ax - 1, y + 8, ax + 5, y + 8, _CYAN)
+            _pixel(buf, ax + 2, y + 7, _WHITE)
+
 
 def _lane_arrow_selector(buf, selected: LaneArrow):
+    """Render five distinct aim positions with an unmistakable selected state."""
     arrows = list(LaneArrow)
     for i, arrow in enumerate(arrows):
-        x = 22 + i * 21; c = _YELLOW if arrow is selected else _MUTED
-        if arrow is selected: _rect(buf, x-3, 101, 13, 14, _CYAN)
-        _line(buf, x+3, 103, x-1, 111, c); _line(buf, x+3, 103, x+7, 111, c); _line(buf, x+3, 103, x+3, 116, c)
+        center_x = 14 + i * 25
+        selected_now = arrow is selected
+        color = _YELLOW if selected_now else _MUTED
+        if selected_now:
+            _line(buf, center_x - 7, 99, center_x + 7, 99, _CYAN)
+            _line(buf, center_x - 7, 99, center_x - 7, 112, _CYAN)
+            _line(buf, center_x + 7, 99, center_x + 7, 112, _CYAN)
+            _line(buf, center_x - 7, 112, center_x + 7, 112, _CYAN)
+        _line(buf, center_x, 101, center_x - 4, 106, color)
+        _line(buf, center_x, 101, center_x + 4, 106, color)
+        _line(buf, center_x, 101, center_x, 110, color)
+        if selected_now:
+            _rect(buf, center_x - 2, 114, 5, 2, _YELLOW)
 
 def _power_bar(buf,power,*,y=118):
     """Render seven fixed segments derived only from the displayed percentage."""

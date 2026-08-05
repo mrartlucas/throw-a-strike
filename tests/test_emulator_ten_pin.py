@@ -188,20 +188,22 @@ class TenPinRuntimeCorrectionTests(unittest.TestCase):
             s.submit_throw(pins); snap=s.acknowledge_result()
             if snap.phase is SessionPhase.FRAME_TRANSITION: s.continue_transition()
         self.assertEqual(s.snapshot().phase, SessionPhase.GAME_OVER); self.assertEqual(s.snapshot().match.players[0].bowling.confirmed_score, score)
-    def test_advanced_begins_in_set_curve(self):
+    def test_advanced_begins_in_set_aim(self):
         sdk,clock,rt,step=self.make_advanced_runtime()
-        self.assertEqual(step.presentation.primary_prompt.label, "SET CURVE")
+        self.assertEqual(step.presentation.primary_prompt.label, "SET AIM")
         self.assertEqual(step.presentation.curve_label, "STR")
     def test_advanced_left_right_controls_exact_curve_levels(self):
         sdk,clock,rt,step=self.make_advanced_runtime()
+        clock.advance(0.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
         labels=[]
         for button in (DartsnutButtonId.LEFT,DartsnutButtonId.LEFT,DartsnutButtonId.RIGHT,DartsnutButtonId.RIGHT,DartsnutButtonId.RIGHT):
             clock.advance(0.1); sdk.queue_button_events((button,)); labels.append(rt.step().presentation.curve_label)
         self.assertEqual(labels, ["L1","L2","L1","STR","R1"])
     def test_advanced_a_locks_selected_curve_and_power_begins_40(self):
-        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
-        self.assertEqual(step.presentation.primary_prompt.label, "SET LANE ARROW"
-        )
+        sdk,clock,rt,step=self.make_advanced_runtime()
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
+        self.assertEqual(step.presentation.primary_prompt.label, "SET CURVE")
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step()
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
         self.assertEqual(step.presentation.primary_prompt.label, "SET POWER"); self.assertEqual(step.presentation.curve_label, "R1"); self.assertEqual(step.presentation.power_percent,40)
     def test_advanced_power_meter_sequence(self):
@@ -211,7 +213,7 @@ class TenPinRuntimeCorrectionTests(unittest.TestCase):
             clock.set(base+elapsed); seen.append(rt.step().presentation.power_percent)
         self.assertEqual(seen, [40,40,60,60,70,80,90,90])
     def test_advanced_a_locks_power_then_throw_ready_timer_and_setup(self):
-        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.LEFT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.8); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
+        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.LEFT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.8); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
         self.assertEqual(step.presentation.primary_prompt.label, "THROW READY"); self.assertEqual(step.presentation.power_percent,80)
         clock.set(clock.t+29.9); self.assertEqual(rt.step().phase, EmulatorTenPinPhase.ATTEMPT)
         with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.GUTTER)):
@@ -247,7 +249,7 @@ class TenPinRuntimeCorrectionTests(unittest.TestCase):
         def capture(buf,text,x,y,c,scale=1): seen.append(text); return orig(buf,text,x,y,c,scale)
         sdk,clock,rt=self.make_runtime()
         with patch.object(r,'_text',capture): self.roll_to_result(rt,sdk,clock,10)
-        self.assertIn('F1 R1', seen)
+        self.assertNotIn('F1 R1', seen)
 
 class TenPinFoulDeadlineRegressionTests(unittest.TestCase):
     def make_runtime(self):

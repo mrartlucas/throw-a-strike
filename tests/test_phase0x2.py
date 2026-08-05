@@ -62,9 +62,7 @@ class Phase0X2Tests(unittest.TestCase):
 
     def test_advanced_arrow_flow_and_stale_dart(self):
         machine = ThrowControlMachine(ControlStyle.ADVANCED)
-        self.assertIs(machine.snapshot.phase, ThrowControlPhase.SET_CURVE)
-        machine.apply(command(ThrowControlCommandKind.CONFIRM, 0))
-        self.assertIs(machine.snapshot.phase, ThrowControlPhase.SET_LANE_ARROW)
+        self.assertIs(machine.snapshot.phase, ThrowControlPhase.SET_AIM)
         for timestamp in (0.1, 0.2, 0.3):
             machine.apply(command(ThrowControlCommandKind.LEFT, timestamp))
         self.assertIs(machine.snapshot.lane_arrow, LaneArrow.FAR_LEFT)
@@ -72,6 +70,8 @@ class Phase0X2Tests(unittest.TestCase):
         self.assertTrue(machine.snapshot.early_warning_active)
         machine.apply(command(ThrowControlCommandKind.RIGHT, 0.5))
         machine.apply(command(ThrowControlCommandKind.CONFIRM, 0.6))
+        self.assertIs(machine.snapshot.phase, ThrowControlPhase.SET_CURVE)
+        machine.apply(command(ThrowControlCommandKind.CONFIRM, 0.7))
         machine.apply(command(ThrowControlCommandKind.CONFIRM, 1.4))
         self.assertIsNone(machine.apply(command(ThrowControlCommandKind.DART_HIT, 1.5, dart_index=0, x=64, y=64)).outcome)
         machine.apply(command(ThrowControlCommandKind.REARMED, 1.6))

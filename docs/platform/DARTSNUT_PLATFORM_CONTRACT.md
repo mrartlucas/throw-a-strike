@@ -211,3 +211,8 @@ python tools/inspect_pydartsnut_wheel.py \
   --expected-sha256 a207168cf36ba04352d3710933e159a1311948363be18c4bbd81ce4ae5916f4f \
   --check docs/platform/evidence/pydartsnut-1.2.1-contract.json
 ```
+## 19. Official emulator full-frame display mapping addendum
+
+A later official Dartsnut emulator display-mapping document resolves the launcher-level image layout that the inspected `pydartsnut` wheel itself did not encode. Full-size games submit one **128×160 RGB888 framebuffer** through the existing `update_frame_buffer` method. Image pixels `x=0..127, y=0..127` map to the physical 128×128 main display. Image pixels `x=0..63, y=128..159` map to the physical 64×32 secondary display; the unused lower-right 64×32 image area must remain clipped/background.
+
+This addendum does not change the static package-source finding that no separate secondary-display method exists in `pydartsnut` 1.2.1. Instead, it explains why no separate method is needed for full-size games: both physical screens are encoded in one framebuffer. The game manifest must declare `[128, 160]`, and dart-interactive controls must remain on the main 128×128 region because the secondary panel is not dart-sensitive.

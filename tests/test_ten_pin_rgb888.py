@@ -4,14 +4,13 @@ from throw_a_strike.rendering.ten_pin_rgb888 import render_ten_pin_game_over_rgb
 from throw_a_strike.rendering import EMULATOR_RGB888_BYTE_LENGTH
 from throw_a_strike.domain import BowlingGame
 class TenPinRendererTests(unittest.TestCase):
-    def test_game_over_framebuffer_size_and_no_deck_pins(self):
+    def test_game_over_framebuffer_size_and_deck_remains_on_main_screen(self):
         game=BowlingGame()
         for _ in range(12): game.roll(10)
         frame=render_ten_pin_game_over_rgb888(game.snapshot())
         self.assertEqual(len(frame), EMULATOR_RGB888_BYTE_LENGTH)
-        # A deck pin-center pixel remains background because game over has no pins.
         i=(72*128+64)*3
-        self.assertEqual(tuple(frame[i:i+3]), (8,12,20))
+        self.assertEqual(tuple(frame[i:i+3]), (238,244,236))
 
 from throw_a_strike.application import ThrowControlStyleSelector, InputEvent, InputEventKind, build_throw_control_presentation
 from throw_a_strike.domain import ControlStyle
@@ -85,15 +84,19 @@ class TenPinRendererCorrectionTests(unittest.TestCase):
         for bad in (True,'1',float('nan'),float('inf'),float('-inf'),-0.1):
             with self.assertRaises(InvalidPortValueError): render_ten_pin_pinfall_rgb888(p,setup,PlayerColor.BLUE,sample,res,bad,b)
         self.assertEqual(len(render_ten_pin_pinfall_rgb888(p,setup,PlayerColor.BLUE,sample,res,0,b)),49152)
-    def test_result_and_game_over_text_calls_include_required_labels(self):
+    def test_main_game_over_moves_final_score_and_frame_grid_to_screen_two(self):
         import throw_a_strike.rendering.ten_pin_rgb888 as r
-        seen=[]; orig_text=r._text; orig_center=r._center
-        def cap_text(buf,text,x,y,c,scale=1): seen.append(text); return orig_text(buf,text,x,y,c,scale)
-        def cap_center(buf,text,y,c,scale=1): seen.append(text); return orig_center(buf,text,y,c,scale)
-        with patch.object(r,'_text',cap_text), patch.object(r,'_center',cap_center):
-            for rolls,score in (([0,0]*10,0),([9,0]*10,90),([5,5]*10+[5],150),([10,7,3,9,0,10,0,8,8,2,0,6,10,10,10,8,1],167),([10]*12,300)):
-                g=BowlingGame(); [g.roll(v) for v in rolls]; render_ten_pin_game_over_rgb888(g.snapshot()); self.assertIn(f'FINAL {score}', seen)
-                for n in range(1,11): self.assertIn(f'F{n}', seen)
+        for rolls in ([0,0]*10, [10]*12):
+            seen=[]; orig_text=r._text; orig_center=r._center
+            def cap_text(buf,text,x,y,c,scale=1): seen.append(text); return orig_text(buf,text,x,y,c,scale)
+            def cap_center(buf,text,y,c,scale=1): seen.append(text); return orig_center(buf,text,y,c,scale)
+            g=BowlingGame(); [g.roll(v) for v in rolls]
+            with patch.object(r,'_text',cap_text), patch.object(r,'_center',cap_center):
+                render_ten_pin_game_over_rgb888(g.snapshot())
+            self.assertIn('GAME OVER', seen)
+            self.assertIn('FINAL SCORE BELOW', seen)
+            self.assertFalse(any(label.startswith('FINAL ') and label != 'FINAL SCORE BELOW' for label in seen))
+            self.assertFalse(any(label.startswith('F') and label[1:].isdigit() for label in seen))
     def test_result_labels_and_raw_diagnostic_are_drawn_exactly(self):
         import throw_a_strike.rendering.ten_pin_rgb888 as r
         from throw_a_strike.application import ThrowControlPresentation, ThrowControlCurveIcon
@@ -113,16 +116,11 @@ class TenPinRendererCorrectionTests(unittest.TestCase):
                 render_ten_pin_result_rgb888(p,setup,PlayerColor.BLUE,sample,res,self.game(),label,context=TenPinRenderContext(1,1))
         for label in labels: self.assertIn(label, seen)
         self.assertIn('D0 X64 Y72', seen)
-    def test_game_over_draws_exact_marks_for_spare_fixtures(self):
+    def test_game_over_main_screen_does_not_duplicate_scoreboard_marks(self):
         import throw_a_strike.rendering.ten_pin_rgb888 as r
-        fixtures=(([7,3]+[0,0]*9,('7/',)),([0,10]+[0,0]*9,('-/',)),([10,7,3]+[0,0]*8,('X','7/')),([7,3,10]+[0,0]*8,('7/','X')))
-        for rolls,marks in fixtures:
-            seen=[]; orig=r._text
-            def cap(buf,text,x,y,c,scale=1): seen.append(text); return orig(buf,text,x,y,c,scale)
-            g=BowlingGame(); [g.roll(v) for v in rolls]
-            with patch.object(r,'_text',cap): render_ten_pin_game_over_rgb888(g.snapshot())
-            for mark in marks: self.assertIn(mark, seen)
-            for frame in g.snapshot().frames:
-                self.assertIn(f'F{frame.number}', seen)
-                if frame.marks: self.assertIn(''.join(frame.marks), seen)
-                if frame.cumulative_score is not None: self.assertIn(str(frame.cumulative_score), seen)
+        g=BowlingGame(); [g.roll(v) for v in ([7,3]+[0,0]*9)]
+        seen=[]; orig=r._text
+        def cap(buf,text,x,y,c,scale=1): seen.append(text); return orig(buf,text,x,y,c,scale)
+        with patch.object(r,'_text',cap): render_ten_pin_game_over_rgb888(g.snapshot())
+        self.assertNotIn('7/', seen)
+        self.assertFalse(any(label.startswith('F') and label[1:].isdigit() for label in seen))

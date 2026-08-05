@@ -16,6 +16,7 @@ from throw_a_strike.application import (
 from throw_a_strike.domain import (
     ControlStyle,
     CurveLevel,
+    LaneArrow,
     PowerFeedback,
     ThrowControlCommand,
     ThrowControlCommandKind,
@@ -90,7 +91,7 @@ class CoordinatorTests(unittest.TestCase):
         quick, quick_input, quick_clock = self.make(started=12)
         advanced, advanced_input, advanced_clock = self.make(ControlStyle.ADVANCED, started=12)
         self.assertIs(quick.snapshot.phase, ThrowControlPhase.THROW_READY)
-        self.assertIs(advanced.snapshot.phase, ThrowControlPhase.SET_CURVE)
+        self.assertIs(advanced.snapshot.phase, ThrowControlPhase.SET_AIM)
         self.assertEqual((quick_input.calls, quick_clock.calls), (0, 0))
         self.assertEqual((advanced_input.calls, advanced_clock.calls), (0, 0))
         self.assertFalse(hasattr(quick, "machine"))
@@ -148,7 +149,7 @@ class CoordinatorTests(unittest.TestCase):
 
     def test_advanced_flow_and_input_before_tick(self):
         batches = (
-            (control("btn_right", sequence=9), control("btn_a", sequence=1)),
+            (control("btn_a", sequence=1), control("btn_right", sequence=9)),
             (control("btn_a", sequence=2),),
             (control("btn_a", 0.800),),
             (dart(2, index=3, x=11, y=99),),
@@ -158,9 +159,9 @@ class CoordinatorTests(unittest.TestCase):
         )
         first = coordinator.step()
         self.assertEqual([c.kind for c in first.commands], [
-            ThrowControlCommandKind.RIGHT, ThrowControlCommandKind.CONFIRM
+            ThrowControlCommandKind.CONFIRM, ThrowControlCommandKind.RIGHT
         ])
-        self.assertIs(first.snapshot.phase, ThrowControlPhase.SET_LANE_ARROW)
+        self.assertIs(first.snapshot.phase, ThrowControlPhase.SET_CURVE)
         self.assertEqual(first.tick_timestamp, 0.0)
         second = coordinator.step()
         self.assertIs(second.snapshot.phase, ThrowControlPhase.SET_POWER)
@@ -198,7 +199,7 @@ class CoordinatorTests(unittest.TestCase):
             ThrowControlCommandKind.CONFIRM,
         ])
         self.assertEqual(error.applied_command_count, 2)
-        self.assertIs(error.snapshot.curve_level, CurveLevel.RIGHT_2)
+        self.assertIs(error.snapshot.lane_arrow, LaneArrow.FAR_RIGHT)
         self.assertEqual(clock.calls, 0)
         self.assertIs(error.__cause__, error.cause)
 
@@ -267,7 +268,7 @@ class CoordinatorTests(unittest.TestCase):
             self.assertIs(error.stage, stage)
             self.assertEqual(error.applied_command_count, 1)
             self.assertEqual(error.tick_timestamp, attempted)
-            self.assertIs(error.snapshot.curve_level, CurveLevel.RIGHT_1)
+            self.assertIs(error.snapshot.lane_arrow, LaneArrow.RIGHT)
 
     def test_result_contract_is_frozen_and_validated(self):
         coordinator, _, _ = self.make(batches=((dart(),),))
@@ -305,7 +306,7 @@ class CoordinatorTests(unittest.TestCase):
         advanced, _, _ = self.make(
             ControlStyle.ADVANCED,
             (
-                (control("btn_right"), control("btn_a")),
+                (control("btn_a"), control("btn_right")),
                 (control("btn_a"),),
                 (control("btn_a", 0.800),),
                 (dart(2),),
@@ -387,10 +388,10 @@ class CoordinatorTests(unittest.TestCase):
             clocks=(1,),
         )
         recovery=coordinator.step().snapshot
-        self.assertIs(recovery.phase,ThrowControlPhase.SET_CURVE)
+        self.assertIs(recovery.phase,ThrowControlPhase.SET_AIM)
         calls=(input_port.calls,clock.calls)
         rearmed=coordinator.rearm(2)
-        self.assertIs(rearmed.phase,ThrowControlPhase.SET_CURVE)
+        self.assertIs(rearmed.phase,ThrowControlPhase.SET_AIM)
         self.assertEqual((input_port.calls,clock.calls),calls)
         self.assertIsNone(rearmed.stale_dart_index)
 
@@ -403,7 +404,7 @@ class CoordinatorTests(unittest.TestCase):
         coordinator.step()
         with self.assertRaises(InvalidThrowControlCoordinatorValueError):
             coordinator.rearm(1)
-        self.assertIs(coordinator.snapshot.phase,ThrowControlPhase.SET_CURVE)
+        self.assertIs(coordinator.snapshot.phase,ThrowControlPhase.SET_AIM)
 
 
 if __name__ == "__main__":
