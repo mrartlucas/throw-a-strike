@@ -8,7 +8,7 @@ from numbers import Real
 
 from .ports import InvalidPortValueError
 from .session import SessionSnapshot, SessionPhase
-from ..domain.bowling_round import BowlingThrowResultKind
+from ..domain.bowling_round import BowlingThrowResultKind, FULL_RACK
 from ..domain.pinfall import PIN_CENTERS
 
 THROW_READY_HOLD_SECONDS = 1.5
@@ -66,6 +66,8 @@ def _opt_int(value: object, name: str) -> int | None:
 def is_split_leave(pins_after: tuple[int, ...], pins_before: tuple[int, ...]) -> bool:
     if type(pins_after) is not tuple or type(pins_before) is not tuple:
         raise InvalidPortValueError("split rack values must be exact tuples")
+    if any(type(pin) is not int or pin not in PIN_CENTERS for pin in pins_after + pins_before):
+        raise InvalidPortValueError("split rack values must contain exact pin numbers")
     if 1 in pins_after or 1 not in pins_before or len(pins_after) < 2:
         return False
     remaining = set(pins_after)
@@ -175,20 +177,25 @@ class RegulationPresentationTimeline:
             event_kind = RegulationPresentationEventKind.FOUL
         elif kind is BowlingThrowResultKind.MISS:
             event_kind = RegulationPresentationEventKind.MISS
-        elif kind is BowlingThrowResultKind.PIN_HIT and throw.throw_number == 1 and is_split_leave(pins_after, pins_before):
+        elif kind is BowlingThrowResultKind.PIN_HIT and pins_before == FULL_RACK and is_split_leave(pins_after, pins_before):
             event_kind = RegulationPresentationEventKind.SPLIT
+        events = []
+        if event_kind is not None:
+            key = (throw.frame_number, throw.throw_number, event_kind.value)
+            if key in self._ack_keys:
+                return ()
+            self._ack_keys.add(key)
         if event_kind is RegulationPresentationEventKind.SPLIT:
             self._pending_split_frames.add(throw.frame_number)
         elif throw.available_after == 0 or throw.turn_ended:
             self._pending_split_frames.discard(throw.frame_number)
-        events = []
         if event_kind is not None:
-            key = (throw.frame_number, throw.throw_number, event_kind.value)
-            if key not in self._ack_keys:
-                self._ack_keys.add(key)
-                label = event_label(event_kind)
-                event = RegulationPresentationEvent(event_kind, started_at, started_at + RESULT_HOLD_SECONDS, throw.frame_number, throw.throw_number, label, snapshot.match.players[0].bowling.confirmed_score)
-                self._events.append(event); events.append(event)
+            label = event_label(event_kind)
+            deadline = started_at + RESULT_HOLD_SECONDS
+            if event_kind is RegulationPresentationEventKind.STRIKE and self._strike_streak == 2:
+                deadline = started_at + RESULT_HOLD_SECONDS / 2
+            event = RegulationPresentationEvent(event_kind, started_at, deadline, throw.frame_number, throw.throw_number, label, snapshot.match.players[0].bowling.confirmed_score)
+            self._events.append(event); events.append(event)
         if event_kind is RegulationPresentationEventKind.STRIKE:
             self._strike_streak += 1
         else:
@@ -197,8 +204,8 @@ class RegulationPresentationTimeline:
             key = (throw.frame_number, throw.throw_number, RegulationPresentationEventKind.TURKEY.value)
             if key not in self._ack_keys:
                 self._ack_keys.add(key)
-                turkey_started_at = started_at + RESULT_HOLD_SECONDS
-                turkey = RegulationPresentationEvent(RegulationPresentationEventKind.TURKEY, turkey_started_at, turkey_started_at + RESULT_HOLD_SECONDS, throw.frame_number, throw.throw_number, event_label(RegulationPresentationEventKind.TURKEY), snapshot.match.players[0].bowling.confirmed_score)
+                turkey_started_at = started_at + RESULT_HOLD_SECONDS / 2
+                turkey = RegulationPresentationEvent(RegulationPresentationEventKind.TURKEY, turkey_started_at, started_at + RESULT_HOLD_SECONDS, throw.frame_number, throw.throw_number, event_label(RegulationPresentationEventKind.TURKEY), snapshot.match.players[0].bowling.confirmed_score)
                 self._events.append(turkey); events.append(turkey)
         self.cancel_throw_ready()
         return tuple(events)

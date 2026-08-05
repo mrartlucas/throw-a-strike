@@ -17,7 +17,7 @@ from throw_a_strike.domain import BowlingThrowResultKind, PINFALL_DURATION_SECON
 from throw_a_strike.domain.bowling_round import FULL_RACK
 from throw_a_strike.platform import DartsnutButtonId, RawDartHit, FakeDartsnutSdk, DartsnutSdkFacade
 from throw_a_strike.runtime import EmulatorTenPinRuntime, EmulatorTenPinPhase
-from throw_a_strike.application import PortCapabilities
+from throw_a_strike.application import InvalidPortValueError, PortCapabilities
 from throw_a_strike.domain import PinfallResolution, PinImpactBias
 
 
@@ -92,6 +92,28 @@ class RegulationPresentationTimelineTests(unittest.TestCase):
         self.assertTrue(is_split_leave((4, 6, 7, 10), FULL_RACK))
         self.assertFalse(is_split_leave((2, 3), FULL_RACK))
         self.assertFalse(is_split_leave((7, 10), (2, 3, 4, 5, 6, 7, 8, 9, 10)))
+        with self.assertRaises(InvalidPortValueError):
+            is_split_leave((0, 7), FULL_RACK)
+
+    def test_duplicate_first_strike_acknowledgement_has_zero_side_effects(self):
+        from throw_a_strike.application.session import GameSession, SessionPhase
+        from throw_a_strike.domain import MatchConfig, Mode, Theme, ControlStyle
+        session=GameSession(); session.configure(MatchConfig(Mode.TEN_PIN,Theme.REGULAR,1,10,0,ControlStyle.QUICK)); session.start()
+        timeline=RegulationPresentationTimeline()
+        snapshots=[]
+        for _ in range(3):
+            session.submit_throw(10); snapshots.append(session.snapshot())
+            snap=session.acknowledge_result()
+            if snap.phase is SessionPhase.FRAME_TRANSITION:
+                session.continue_transition()
+        first=timeline.acknowledge_result(snapshots[0], BowlingThrowResultKind.PIN_HIT, 1, pins_before=FULL_RACK, pins_after=())
+        duplicate=timeline.acknowledge_result(snapshots[0], BowlingThrowResultKind.PIN_HIT, 1, pins_before=FULL_RACK, pins_after=())
+        second=timeline.acknowledge_result(snapshots[1], BowlingThrowResultKind.PIN_HIT, 3, pins_before=FULL_RACK, pins_after=())
+        third=timeline.acknowledge_result(snapshots[2], BowlingThrowResultKind.PIN_HIT, 5, pins_before=FULL_RACK, pins_after=())
+        self.assertEqual([event.kind for event in first], [RegulationPresentationEventKind.STRIKE])
+        self.assertEqual(duplicate, ())
+        self.assertEqual([event.kind for event in second], [RegulationPresentationEventKind.STRIKE])
+        self.assertEqual([event.kind for event in third], [RegulationPresentationEventKind.STRIKE, RegulationPresentationEventKind.TURKEY])
 
 
 class RuntimePresentationEventTests(unittest.TestCase):
@@ -182,9 +204,34 @@ class RuntimePresentationEventTests(unittest.TestCase):
         third=self.special_events(rt)[-3]
         turkey=self.special_events(rt)[-2]
         self.assertEqual((third.frame_number, third.roll_number, third.label), (3, 1, "STRIKE"))
-        self.assertEqual((third.deadline, turkey.started_at, turkey.deadline), (third.started_at + 1.5, third.deadline, third.deadline + 1.5))
+        self.assertEqual((third.deadline, turkey.started_at, turkey.deadline), (third.started_at + 0.75, third.started_at + 0.75, third.started_at + 1.5))
         self.assertEqual(rt.presentation_timeline.view_model(third.started_at).label, "STRIKE")
         self.assertEqual(rt.presentation_timeline.view_model(turkey.started_at).label, "TURKEY")
+
+    def test_throw_ready_is_visible_after_third_runtime_strike_hold(self):
+        sdk,clock,rt,step=self.make_runtime()
+        for _ in range(3):
+            self.roll_to_result(rt,sdk,clock,resolution(BowlingThrowResultKind.PIN_HIT,FULL_RACK,FULL_RACK))
+            clock.set(rt.result_started_at+1.5); rt.step()
+        view=rt.presentation_timeline.view_model(clock.t)
+        self.assertEqual((view.kind, view.label), (RegulationPresentationEventKind.THROW_READY, "THROW READY"))
+
+    def test_tenth_frame_bonus_rack_split_and_conversion(self):
+        sdk,clock,rt,step=self.make_runtime()
+        for _ in range(18):
+            self.roll_to_result(rt,sdk,clock,resolution(BowlingThrowResultKind.GUTTER))
+            clock.set(rt.result_started_at+1.5); rt.step()
+        self.assertEqual(rt.current_frame_number, 10)
+        self.roll_to_result(rt,sdk,clock,resolution(BowlingThrowResultKind.PIN_HIT,FULL_RACK,FULL_RACK))
+        clock.set(rt.result_started_at+1.5); rt.step()
+        leave=(7,10); knocked=tuple(pin for pin in FULL_RACK if pin not in leave)
+        self.roll_to_result(rt,sdk,clock,resolution(BowlingThrowResultKind.PIN_HIT,FULL_RACK,knocked))
+        split=self.special_events(rt)[-1]
+        self.assertEqual((split.kind, split.frame_number, split.roll_number), (RegulationPresentationEventKind.SPLIT, 10, 2))
+        clock.set(rt.result_started_at+1.5); rt.step()
+        self.roll_to_result(rt,sdk,clock,resolution(BowlingThrowResultKind.PIN_HIT,leave,leave))
+        converted=self.special_events(rt)[-1]
+        self.assertEqual((converted.kind, converted.frame_number, converted.roll_number), (RegulationPresentationEventKind.SPLIT_CONVERTED, 10, 3))
 
     def test_miss_gutter_foul_spare_and_game_over_are_visible_once(self):
         sdk,clock,rt,step=self.make_runtime()
