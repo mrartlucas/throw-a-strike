@@ -27,7 +27,7 @@ def render_regulation_event_rgb888(event: RegulationPresentationEvent | None, no
 def render_regulation_event_view_model_rgb888(view_model: RegulationPresentationViewModel) -> bytes:
     if type(view_model) is not RegulationPresentationViewModel:
         raise InvalidPortValueError("view_model must be exact RegulationPresentationViewModel")
-    event = None if not view_model.visible or view_model.kind is None else RegulationPresentationEvent(view_model.kind, 0, 1.5, result_label=view_model.label or event_label(view_model.kind))
+    event = None if not view_model.visible or view_model.kind is None else RegulationPresentationEvent(view_model.kind, 0, 1.5, view_model.frame_number, view_model.roll_number, view_model.label or event_label(view_model.kind), view_model.score)
     frame = render_regulation_event_rgb888(event, 0)
     if len(frame) != EMULATOR_RGB888_BYTE_LENGTH:
         raise RuntimeError("secondary event renderer emitted an invalid frame")
