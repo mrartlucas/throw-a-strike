@@ -15,12 +15,13 @@ from throw_a_strike.domain import (BallTrajectory, BowlingSnapshot, BowlingThrow
     build_ball_trajectory, resolve_ball_pinfall, sample_ball_roll, PINFALL_DURATION_SECONDS)
 from throw_a_strike.domain.bowling_round import FULL_RACK
 from throw_a_strike.platform import DartsnutSdkFacade
-from throw_a_strike.rendering import EMULATOR_RGB888_BYTE_LENGTH, render_style_selection_rgb888
+from throw_a_strike.rendering import EMULATOR_RGB888_BYTE_LENGTH, render_regulation_event_view_model_rgb888, render_style_selection_rgb888
 from throw_a_strike.rendering.ten_pin_rgb888 import (render_ten_pin_attempt_rgb888,
     render_ten_pin_ball_roll_rgb888, render_ten_pin_pinfall_rgb888, render_ten_pin_result_rgb888,
     render_ten_pin_wrong_color_rgb888, render_ten_pin_foul_rgb888, render_ten_pin_game_over_rgb888, TenPinRenderContext)
 from throw_a_strike.runtime.emulator_common import PlayerColorInputPort, nonnegative, update_throw_ready_started_at
 from throw_a_strike.runtime.emulator_control_test import WRONG_COLOR_HOLD_SECONDS
+from throw_a_strike.runtime.secondary_display import MemorySecondaryDisplayPort
 RESULT_HOLD_SECONDS = 1.5
 FOUL_HOLD_SECONDS = 1.5
 
@@ -66,12 +67,13 @@ class EmulatorTenPinStep:
     def terminal(self): return self.phase is EmulatorTenPinPhase.GAME_OVER
 
 class EmulatorTenPinRuntime:
-    def __init__(self, facade: DartsnutSdkFacade, clock: ClockPort, started_at: float):
+    def __init__(self, facade: DartsnutSdkFacade, clock: ClockPort, started_at: float, secondary_display: MemorySecondaryDisplayPort | None = None):
         if type(facade) is not DartsnutSdkFacade: raise InvalidPortValueError("facade must be exact DartsnutSdkFacade")
         if clock is None or isinstance(clock,type) or not isinstance(clock,ClockPort): raise InvalidPortValueError("clock must satisfy ClockPort")
         if type(clock.capabilities) is not PortCapabilities: raise InvalidPortValueError("clock capabilities must be exact")
         start=nonnegative(started_at,"started_at")
-        self._facade=facade; self._clock=clock; self._raw_input=DartsnutEmulatorInputPort(facade,clock)
+        if secondary_display is not None and not isinstance(secondary_display, MemorySecondaryDisplayPort): raise InvalidPortValueError("secondary_display must be a memory secondary display port or None")
+        self._facade=facade; self._clock=clock; self._secondary_display=secondary_display; self._raw_input=DartsnutEmulatorInputPort(facade,clock)
         self._input=PlayerColorInputPort(self._raw_input,1); self._selector=ThrowControlStyleSelector(start); self._coordinator=None
         self._session=GameSession(); self._presentation_timeline=RegulationPresentationTimeline(); self._standing_pins=FULL_RACK; self._phase=EmulatorTenPinPhase.SELECT_STYLE
         self._cached=None; self._presentation=None; self._wrong_timestamp=None; self._foul_timestamp=None; self._result_started_at=None
@@ -145,7 +147,12 @@ class EmulatorTenPinRuntime:
         self._cached=render_ten_pin_attempt_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins)
         self._phase=EmulatorTenPinPhase.ATTEMPT
         return self._step_obj(self._facade.submit_framebuffer(self._cached))
-    def _step_obj(self, accepted): return EmulatorTenPinStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,self._accepted_setup)
+    def _publish_secondary(self):
+        if self._secondary_display is not None:
+            self._secondary_display.present(render_regulation_event_view_model_rgb888(self.secondary_event_view_model()))
+    def _step_obj(self, accepted):
+        self._publish_secondary()
+        return EmulatorTenPinStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted,self._accepted_setup)
     def _label(self, pins, kind):
         marks=self.bowling_snapshot.frames[self.session_snapshot.last_throw.frame_number-1].marks
         mark=marks[-1] if marks else ""
@@ -243,13 +250,16 @@ class EmulatorTenPinRuntime:
             blink=True if result.tick_timestamp is None else int(result.tick_timestamp*2)%2==0; self._cached=render_ten_pin_attempt_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins,blink)
         return self._step_obj(self._facade.submit_framebuffer(self._cached))
 
-def run_emulator_ten_pin(facade: DartsnutSdkFacade, clock: ClockPort, started_at: float, *, frame_seconds: float=1/30, sleeper: Callable[[float],object]=time.sleep, max_iterations: int|None=None) -> None:
+def run_emulator_ten_pin(facade: DartsnutSdkFacade, clock: ClockPort, started_at: float, *, frame_seconds: float=1/30, sleeper: Callable[[float],object]=time.sleep, max_iterations: int|None=None, secondary_display: MemorySecondaryDisplayPort | None = None) -> None:
     if type(facade) is not DartsnutSdkFacade:
         raise InvalidPortValueError("facade must be exact DartsnutSdkFacade")
     try:
         delay=nonnegative(frame_seconds,"frame_seconds")
         if not callable(sleeper): raise InvalidPortValueError("sleeper must be callable")
         if max_iterations is not None and (type(max_iterations) is not int or max_iterations<0): raise InvalidPortValueError("max_iterations must be nonnegative or None")
-        runtime=EmulatorTenPinRuntime(facade,clock,started_at); count=0
+        runtime=EmulatorTenPinRuntime(facade,clock,started_at,secondary_display); count=0
         while (max_iterations is None or count<max_iterations) and facade.is_running(): runtime.step(); count+=1; sleeper(delay)
-    finally: facade.close()
+    finally:
+        if secondary_display is not None:
+            secondary_display.close()
+        facade.close()
