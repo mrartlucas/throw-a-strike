@@ -4,7 +4,7 @@ from throw_a_strike.application import PortCapabilities
 from throw_a_strike.platform import DartsnutSdkFacade, FakeDartsnutSdk, DartsnutButtonId, RawDartHit, DartsnutSdkOperation
 from throw_a_strike.runtime import EmulatorTenPinRuntime, EmulatorTenPinPhase
 from throw_a_strike.application.session import SessionPhase
-from throw_a_strike.domain import ControlStyle, Mode, Theme, BowlingThrowResultKind, PINFALL_DURATION_SECONDS, PinfallResolution, PinImpactBias
+from throw_a_strike.domain import ControlStyle, CurveLevel, Mode, Theme, BowlingThrowResultKind, PINFALL_DURATION_SECONDS, PinfallResolution, PinImpactBias
 from throw_a_strike.domain.bowling_round import FULL_RACK
 
 class Clock:
@@ -77,10 +77,29 @@ class TenPinRuntimeTests(unittest.TestCase):
         rt.step(); self.assertEqual(clock.reads, reads); self.assertEqual(len(sdk.submitted_framebuffers), frames+1)
         self.assertNotIn(DartsnutSdkOperation.DART_HITS, sdk.calls[calls:])
 
-class TenPinRuntimeCorrectionTests(TenPinRuntimeTests):
+class TenPinRuntimeCorrectionTests(unittest.TestCase):
+
+    def make_runtime(self):
+        sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
+        sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        return sdk,clock,rt
+    def make_advanced_runtime(self):
+        sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
+        sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step()
+        clock.advance(0.1); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
+        return sdk,clock,rt,step
+    def roll_with(self, rt, sdk, clock, res):
+        self.assertEqual(rt.standing_pins, tuple(range(1, rt.session_snapshot.current_available + 1)) if rt.session_snapshot.current_available == 10 else rt.standing_pins)
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=res):
+            sdk.queue_dart_hits((RawDartHit(0,64,72),)); step=rt.step(); self.assertEqual(step.phase, EmulatorTenPinPhase.BALL_ROLL)
+        clock.set(rt.ball_started_at + rt.ball_trajectory.duration_seconds); step=rt.step()
+        if step.phase is EmulatorTenPinPhase.PINFALL:
+            clock.set(rt.pinfall_started_at + PINFALL_DURATION_SECONDS); step=rt.step()
+        self.assertEqual(step.phase, EmulatorTenPinPhase.RESULT_HOLD)
+        clock.set(rt.result_started_at + 1.5); return rt.step()
     def test_quick_starts_straight_70(self):
         sdk,clock,rt=self.make_runtime(); self.assertEqual(rt.phase, EmulatorTenPinPhase.ATTEMPT)
-        self.assertEqual(rt._presentation.curve_label, "STR"); self.assertEqual(rt._presentation.power_percent, 70)
+        self.assertEqual(rt.presentation.curve_label, "STR"); self.assertEqual(rt.presentation.power_percent, 70)
     def test_legal_blue_dart_enters_ball_roll(self):
         sdk,clock,rt=self.make_runtime()
         with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.GUTTER)):
@@ -169,3 +188,60 @@ class TenPinRuntimeCorrectionTests(TenPinRuntimeTests):
             s.submit_throw(pins); snap=s.acknowledge_result()
             if snap.phase is SessionPhase.FRAME_TRANSITION: s.continue_transition()
         self.assertEqual(s.snapshot().phase, SessionPhase.GAME_OVER); self.assertEqual(s.snapshot().match.players[0].bowling.confirmed_score, score)
+    def test_advanced_begins_in_set_curve(self):
+        sdk,clock,rt,step=self.make_advanced_runtime()
+        self.assertEqual(step.presentation.primary_prompt.label, "SET CURVE")
+        self.assertEqual(step.presentation.curve_label, "STR")
+    def test_advanced_left_right_controls_exact_curve_levels(self):
+        sdk,clock,rt,step=self.make_advanced_runtime()
+        labels=[]
+        for button in (DartsnutButtonId.LEFT,DartsnutButtonId.LEFT,DartsnutButtonId.RIGHT,DartsnutButtonId.RIGHT,DartsnutButtonId.RIGHT):
+            clock.advance(0.1); sdk.queue_button_events((button,)); labels.append(rt.step().presentation.curve_label)
+        self.assertEqual(labels, ["L1","L2","L1","STR","R1"])
+    def test_advanced_a_locks_selected_curve_and_power_begins_40(self):
+        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
+        self.assertEqual(step.presentation.primary_prompt.label, "SET POWER"); self.assertEqual(step.presentation.curve_label, "R1"); self.assertEqual(step.presentation.power_percent,40)
+    def test_advanced_power_meter_sequence(self):
+        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        seen=[]; base=clock.t
+        for elapsed in (0,.2,.4,.6,.8,1.0,1.2,1.400001):
+            clock.set(base+elapsed); seen.append(rt.step().presentation.power_percent)
+        self.assertEqual(seen, [40,50,60,70,80,90,100,90])
+    def test_advanced_a_locks_power_then_throw_ready_timer_and_setup(self):
+        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.LEFT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.8); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
+        self.assertEqual(step.presentation.primary_prompt.label, "THROW READY"); self.assertEqual(step.presentation.power_percent,70)
+        clock.set(clock.t+29.9); self.assertEqual(rt.step().phase, EmulatorTenPinPhase.ATTEMPT)
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.GUTTER)):
+            sdk.queue_dart_hits((RawDartHit(0,64,84),)); rt.step()
+        self.assertEqual((rt.accepted_setup.curve_level, rt.accepted_setup.power_percent), (CurveLevel.LEFT_1,70))
+    def test_public_result_context_frame_one_strike_spare_open(self):
+        for first, second, expected in ((10,None,(1,1)), (7,3,(1,2)), (7,2,(1,2))):
+            sdk,clock,rt=self.make_runtime(); self.roll_to_result(rt,sdk,clock,first);
+            if second is not None:
+                clock.set(rt.result_started_at+1.5); rt.step(); self.roll_to_result(rt,sdk,clock,second)
+            self.assertEqual((rt.current_frame_number, rt.current_roll_number), expected); self.assertNotEqual(rt.current_roll_number,0)
+    def roll_to_result(self, rt, sdk, clock, pins):
+        before=rt.standing_pins; knocked=before[:pins]
+        kind=BowlingThrowResultKind.PIN_HIT if pins else BowlingThrowResultKind.GUTTER
+        res=resolution(kind,before,knocked) if pins else resolution(kind,before,())
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=res): sdk.queue_dart_hits((RawDartHit(0,64,72),)); rt.step()
+        clock.set(rt.ball_started_at+rt.ball_trajectory.duration_seconds); step=rt.step()
+        if step.phase is EmulatorTenPinPhase.PINFALL: clock.set(rt.pinfall_started_at+PINFALL_DURATION_SECONDS); step=rt.step()
+        self.assertEqual(step.phase, EmulatorTenPinPhase.RESULT_HOLD); return step
+    def test_runtime_tenth_frame_rack_sequences(self):
+        sequences=[([0,0]*9+[7,3,10], None), ([0,0]*9+[10,10,10], None), ([0,0]*9+[10,7,3], None), ([0,0]*9+[10,7,2], None), ([0,0]*9+[0,10,10], None)]
+        for rolls,_ in sequences:
+            sdk,clock,rt=self.make_runtime()
+            for pins in rolls:
+                self.assertEqual(len(rt.standing_pins), rt.session_snapshot.current_available)
+                self.roll_to_result(rt,sdk,clock,pins); last=rt.session_snapshot.last_throw
+                if last.match_complete: clock.set(rt.result_started_at+1.5); rt.step(); break
+                clock.set(rt.result_started_at+1.5); rt.step()
+            self.assertEqual(rt.phase, EmulatorTenPinPhase.GAME_OVER)
+    def test_result_renderer_text_calls_include_exact_contexts(self):
+        import throw_a_strike.rendering.ten_pin_rgb888 as r
+        seen=[]; orig=r._text
+        def capture(buf,text,x,y,c,scale=1): seen.append(text); return orig(buf,text,x,y,c,scale)
+        sdk,clock,rt=self.make_runtime()
+        with patch.object(r,'_text',capture): self.roll_to_result(rt,sdk,clock,10)
+        self.assertIn('F1 R1', seen)

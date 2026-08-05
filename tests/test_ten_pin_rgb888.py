@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from throw_a_strike.rendering.ten_pin_rgb888 import render_ten_pin_game_over_rgb888
 from throw_a_strike.rendering import EMULATOR_RGB888_BYTE_LENGTH
 from throw_a_strike.domain import BowlingGame
@@ -55,3 +56,41 @@ class TenPinRendererCorrectionTests(unittest.TestCase):
     def test_invalid_context_rejected(self):
         from throw_a_strike.application import InvalidPortValueError
         with self.assertRaises(InvalidPortValueError): TenPinRenderContext(1,0)
+    def test_text_call_masks_are_disjoint_for_attempt_warning_and_foul(self):
+        import throw_a_strike.rendering.ten_pin_rgb888 as r
+        calls=[]; orig_text=r._text; orig_center=r._center
+        def cap_text(buf,text,x,y,c,scale=1): calls.append((text,x,y)); return orig_text(buf,text,x,y,c,scale)
+        def cap_center(buf,text,y,c,scale=1): calls.append((text,(128-(len(text)*4-1)*scale)//2,y)); return orig_center(buf,text,y,c,scale)
+        p=self.presentation(); b=self.game((7,3,1))
+        with patch.object(r,'_text',cap_text), patch.object(r,'_center',cap_center): render_ten_pin_attempt_rgb888(p,b)
+        boxes=[]
+        for text,x,y in calls:
+            boxes.append((text,x,y,x+(len(text)*4-1),y+4))
+        for i,a in enumerate(boxes):
+            for b2 in boxes[i+1:]:
+                overlap=not (a[3] < b2[1] or b2[3] < a[1] or a[4] < b2[2] or b2[4] < a[2])
+                self.assertFalse(overlap, (a,b2))
+    def test_context_rejects_bool_and_ordinary_third_roll(self):
+        from throw_a_strike.application import InvalidPortValueError
+        for args in ((True,1),(1,True),(1,3)):
+            with self.assertRaises(InvalidPortValueError): TenPinRenderContext(*args)
+        self.assertEqual(TenPinRenderContext(10,3).roll_number,3)
+    def test_pinfall_elapsed_validation(self):
+        from throw_a_strike.application import InvalidPortValueError, ThrowControlPresentation, ThrowControlCurveIcon
+        from throw_a_strike.domain import PlayerColor, ThrowSetup, ControlStyle, CurveLevel, BowlingThrowResultKind, PinfallResolution, PinImpactBias, BallTrajectorySample, ThrowControlPhase, PowerFeedback, ThrowControlOutcomeKind
+        from throw_a_strike.rendering.ten_pin_rgb888 import render_ten_pin_pinfall_rgb888
+        p=ThrowControlPresentation(ControlStyle.QUICK,ThrowControlPhase.COMPLETE,None,None,CurveLevel.STRAIGHT,ThrowControlCurveIcon.STRAIGHT,70,PowerFeedback.GOOD,True,False,True,ThrowControlOutcomeKind.THROW)
+        setup=ThrowSetup(ControlStyle.QUICK,0,64,72,CurveLevel.STRAIGHT,70); sample=BallTrajectorySample(0.5,64,72); res=PinfallResolution(BowlingThrowResultKind.GUTTER,(1,2,3,4,5,6,7,8,9,10),None,1.0,64,10,0.0,-1.0,PinImpactBias.CENTER,(),(),(1,2,3,4,5,6,7,8,9,10))
+        b=self.game()
+        for bad in (True,'1',float('nan'),float('inf'),float('-inf'),-0.1):
+            with self.assertRaises(InvalidPortValueError): render_ten_pin_pinfall_rgb888(p,setup,PlayerColor.BLUE,sample,res,bad,b)
+        self.assertEqual(len(render_ten_pin_pinfall_rgb888(p,setup,PlayerColor.BLUE,sample,res,0,b)),49152)
+    def test_result_and_game_over_text_calls_include_required_labels(self):
+        import throw_a_strike.rendering.ten_pin_rgb888 as r
+        seen=[]; orig_text=r._text; orig_center=r._center
+        def cap_text(buf,text,x,y,c,scale=1): seen.append(text); return orig_text(buf,text,x,y,c,scale)
+        def cap_center(buf,text,y,c,scale=1): seen.append(text); return orig_center(buf,text,y,c,scale)
+        with patch.object(r,'_text',cap_text), patch.object(r,'_center',cap_center):
+            for rolls,score in (([0,0]*10,0),([9,0]*10,90),([5,5]*10+[5],150),([10,7,3,9,0,10,0,8,8,2,0,6,10,10,10,8,1],167),([10]*12,300)):
+                g=BowlingGame(); [g.roll(v) for v in rolls]; render_ten_pin_game_over_rgb888(g.snapshot()); self.assertIn(f'FINAL {score}', seen)
+                for n in range(1,11): self.assertIn(f'F{n}', seen)

@@ -1,5 +1,7 @@
 """RGB888 scoring HUD renderers for the single-player ten-pin emulator."""
 from dataclasses import dataclass
+from math import isfinite
+from numbers import Real
 
 from throw_a_strike.application import InvalidPortValueError, ThrowControlPresentation, ThrowControlPrompt
 from throw_a_strike.domain import BowlingSnapshot, FrameSnapshot, PlayerColor, ThrowSetup, ThrowControlPhase
@@ -20,8 +22,9 @@ class TenPinRenderContext:
     def __post_init__(self):
         if type(self.frame_number) is not int or not 1 <= self.frame_number <= 10:
             raise InvalidPortValueError("frame_number must be an exact int from 1 through 10")
-        if type(self.roll_number) is not int or not 1 <= self.roll_number <= 3:
-            raise InvalidPortValueError("roll_number must be an exact int from 1 through 3")
+        max_roll = 3 if self.frame_number == 10 else 2
+        if type(self.roll_number) is not int or not 1 <= self.roll_number <= max_roll:
+            raise InvalidPortValueError("roll_number is invalid for frame")
 
 
 def _require_presentation(presentation, *, terminal=None, complete=None):
@@ -73,7 +76,7 @@ def _frame_text(frame: FrameSnapshot):
 def _strip(buf, bowling):
     started = [f for f in bowling.frames if f.rolls or f.number == bowling.current_frame]
     for index, frame in enumerate(started[-3:]):
-        _text(buf, _frame_text(frame)[:10], 2 + index * 42, 104, _WHITE)
+        _text(buf, _frame_text(frame)[:10], 2 + index * 42, 108, _WHITE)
 
 
 def _prompt_label(presentation, blink_on):
@@ -130,7 +133,12 @@ def render_ten_pin_pinfall_rgb888(presentation: ThrowControlPresentation, setup:
     context = context_from_bowling(bowling) if context is None else context
     _require_context(context)
     _require_bowling(bowling, complete=False)
-    standing, falling = _standing_during(resolution, max(0.0, float(elapsed_seconds)))
+    if isinstance(elapsed_seconds, bool) or not isinstance(elapsed_seconds, Real):
+        raise InvalidPortValueError("elapsed_seconds must be finite nonnegative")
+    elapsed = float(elapsed_seconds)
+    if not isfinite(elapsed) or elapsed < 0:
+        raise InvalidPortValueError("elapsed_seconds must be finite nonnegative")
+    standing, falling = _standing_during(resolution, elapsed)
     buf = _hud_base(standing); _status(buf, presentation, bowling, context)
     buf = bytearray(buf)
     for pin, progress in falling:
@@ -150,7 +158,7 @@ def render_ten_pin_result_rgb888(presentation: ThrowControlPresentation, setup: 
 
 def render_ten_pin_wrong_color_rgb888(presentation: ThrowControlPresentation, bowling: BowlingSnapshot, standing_pins=FULL_RACK) -> bytes:
     frame = render_ten_pin_attempt_rgb888(presentation, bowling, standing_pins, blink_on=True)
-    buf = bytearray(frame); _rect(buf, 0, 94, 128, 14, _HUD); _center(buf, "WRONG COLOR", 94, _YELLOW); _center(buf, "USE BLUE DART", 102, _RED); return bytes(buf)
+    buf = bytearray(frame); _rect(buf, 0, 94, 128, 20, _HUD); _center(buf, "WRONG COLOR", 94, _YELLOW); _center(buf, "USE BLUE DART", 102, _RED); return bytes(buf)
 
 
 def render_ten_pin_foul_rgb888(presentation: ThrowControlPresentation, bowling: BowlingSnapshot, standing_pins=FULL_RACK, *, context: TenPinRenderContext) -> bytes:

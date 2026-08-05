@@ -45,15 +45,17 @@ class EmulatorTenPinStep:
         if self.phase is EmulatorTenPinPhase.SELECT_STYLE:
             valid = not self.selection.confirmed and self.presentation is None and self.accepted_setup is None
         elif self.phase is EmulatorTenPinPhase.ATTEMPT:
-            valid = self.selection.confirmed and self.presentation is not None and not self.presentation.terminal and self.accepted_setup is None
+            valid = self.selection.confirmed and self.presentation is not None and not self.presentation.terminal and self.presentation.phase is not ThrowControlPhase.EARLY_DART_RECOVERY and self.accepted_setup is None
         elif self.phase in (EmulatorTenPinPhase.BALL_ROLL, EmulatorTenPinPhase.PINFALL):
             valid = self.selection.confirmed and self.presentation is not None and self.presentation.terminal and self.presentation.phase is ThrowControlPhase.COMPLETE and self.accepted_setup is not None
         elif self.phase is EmulatorTenPinPhase.RESULT_HOLD:
             valid = self.selection.confirmed and self.presentation is not None and self.presentation.terminal and self.presentation.phase is ThrowControlPhase.COMPLETE and self.accepted_setup is not None
         elif self.phase is EmulatorTenPinPhase.FOUL_HOLD:
             valid = self.selection.confirmed and self.presentation is not None and self.presentation.terminal and self.presentation.phase is ThrowControlPhase.FOUL and self.accepted_setup is None
-        elif self.phase in (EmulatorTenPinPhase.RECOVERY_HOLD, EmulatorTenPinPhase.WRONG_COLOR_HOLD):
-            valid = self.selection.confirmed and self.presentation is not None and not self.presentation.terminal and self.accepted_setup is None
+        elif self.phase is EmulatorTenPinPhase.RECOVERY_HOLD:
+            valid = self.selection.confirmed and self.presentation is not None and not self.presentation.terminal and self.presentation.phase is ThrowControlPhase.EARLY_DART_RECOVERY and self.accepted_setup is None
+        elif self.phase is EmulatorTenPinPhase.WRONG_COLOR_HOLD:
+            valid = self.selection.confirmed and self.presentation is not None and not self.presentation.terminal and self.presentation.phase is not ThrowControlPhase.EARLY_DART_RECOVERY and self.accepted_setup is None
         elif self.phase is EmulatorTenPinPhase.GAME_OVER:
             valid = self.selection.confirmed and self.presentation is None and self.accepted_setup is None
         else:
@@ -79,6 +81,8 @@ class EmulatorTenPinRuntime:
     @property
     def selected_style(self): return self._selector.snapshot.selected_style if self._selector.snapshot.confirmed else None
     @property
+    def presentation(self): return self._presentation
+    @property
     def session_snapshot(self): return self._session.snapshot()
     @property
     def bowling_snapshot(self):
@@ -101,9 +105,17 @@ class EmulatorTenPinRuntime:
     @property
     def result_started_at(self): return self._result_started_at
     @property
-    def current_frame_number(self): return self.session_snapshot.current_frame_number
+    def current_frame_number(self):
+        snap=self.session_snapshot
+        if self._phase is not EmulatorTenPinPhase.GAME_OVER and snap.last_throw is not None and snap.phase is SessionPhase.SHOWING_RESULT:
+            return snap.last_throw.frame_number
+        return snap.current_frame_number
     @property
-    def current_roll_number(self): return self.session_snapshot.current_throw_number
+    def current_roll_number(self):
+        snap=self.session_snapshot
+        if self._phase is not EmulatorTenPinPhase.GAME_OVER and snap.last_throw is not None and snap.phase is SessionPhase.SHOWING_RESULT:
+            return snap.last_throw.throw_number
+        return snap.current_throw_number
     @property
     def confirmed_score(self):
         b=self.bowling_snapshot; return 0 if b is None else b.confirmed_score
