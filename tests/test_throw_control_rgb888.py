@@ -117,23 +117,23 @@ class RendererTests(unittest.TestCase):
             with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                               (captured.append(t),original(b,t,x,y,c,scale))[1]):
                 render_round_throw_rgb888(curve,1,1,PlayerColor.BLUE,blink)
-            for label in ("THROW 1","P1 BLUE","SET CURVE","STR","70%","PERFECT","A"):
+            for label in ("THROW 1","P1 BLUE","SET AIM","STR","70%","PERFECT","A"):
                 self.assertIn(label,captured)
-        power=build_throw_control_presentation(curve_machine.apply(
+        curve=build_throw_control_presentation(curve_machine.apply(
             ThrowControlCommand(ThrowControlCommandKind.CONFIRM,1)))
         for blink in (True,False):
             captured=[]; original=renderer._text
             with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                               (captured.append(t),original(b,t,x,y,c,scale))[1]):
-                render_round_throw_rgb888(power,1,1,PlayerColor.BLUE,blink)
-            self.assertIn("SET LANE ARROW",captured)
+                render_round_throw_rgb888(curve,1,1,PlayerColor.BLUE,blink)
+            self.assertIn("SET CURVE",captured)
         recovery_machine=ThrowControlMachine(ControlStyle.ADVANCED)
         recovery=build_throw_control_presentation(recovery_machine.apply(
             ThrowControlCommand(ThrowControlCommandKind.DART_HIT,1,dart_index=0,x=1,y=2)))
         self.assert_round_labels(recovery,("TOO SOON","REMOVE DART"))
         second_machine=ThrowControlMachine(ControlStyle.ADVANCED)
         self.assert_round_labels(build_throw_control_presentation(second_machine.snapshot),
-                                 ("THROW 2","P1 BLUE","SET CURVE"),2)
+                                 ("THROW 2","P1 BLUE","SET AIM"),2)
 
     def test_round_header_preserves_foul_and_zero_pins(self):
         machine=ThrowControlMachine(ControlStyle.QUICK)

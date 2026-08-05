@@ -16,11 +16,11 @@ A legal Blue dart builds one immutable ball trajectory and resolves one immutabl
 
 The scoring engine owns the count of available pins. The emulator additionally retains the exact standing pin tuple for rendering and collision. Strike and spare progression resets to the full rack when the session reports ten available pins; otherwise survivor pins carry into the next roll. This includes tenth-frame bonus rack behavior.
 
-## HUD and game over
+## Dual-screen HUD and game over
 
-The HUD shows frame, roll, confirmed cumulative score, recent frame marks, Curve, Power, and prompts. Result screens show STRIKE, SPARE, pin-count, MISS, GUTTER, or FOUL labels, while retaining raw dart diagnostics. Pending bonuses remain unresolved until the existing scoring engine confirms them.
+The submitted framebuffer is now 128×160 RGB888. Screen 1 occupies the top 128×128 region and keeps the close pin-deck gameplay view plus a bottom-only Aim, Curve, Power, and player HUD. Frame, roll, and score information no longer competes with the dart target area.
 
-Game over is terminal and stable. It displays `THROW A STRIKE`, `GAME OVER`, `FINAL <score>`, and all ten frames in two rows, with no ball or standing pins.
+The physical 64×32 second screen is rendered into the lower-left image region `x=0..63`, `y=128..159`. Before a throw it shows the current player, frame, roll, and confirmed score. During the throw it changes to a simplified level-view ball-roll and pin-impact camera. Result cards show STRIKE, SPARE, pin count, MISS, GUTTER, or FOUL, then the display returns to the live scoreboard. Game over keeps Screen 1 simple and places the final score/winner card on Screen 2. Pending bonuses remain unresolved until the scoring engine confirms them.
 
 ## Preserved diagnostic runtime
 
@@ -28,13 +28,13 @@ The existing two-throw emulator control-test runtime remains importable and test
 
 ## Locked out of scope
 
-This runtime intentionally adds no multiplayer rotation, Red/Green/Yellow active turns, 100-Pin, Remix, Party, Blacklight, audio, secondary display, persistent saves, online behavior, physical-board calibration, or physical `DartsnutInputPort` changes.
+This runtime intentionally adds no multiplayer rotation, Red/Green/Yellow active turns, 100-Pin, Remix, Party, Blacklight, audio, persistent saves, online behavior, physical-board calibration, or physical `DartsnutInputPort` changes. The second screen is now populated through the verified 128×160 full-frame mapping, but final production artwork and collision tuning remain future passes.
 
 ## Regulation presentation events
 
 The ten-pin emulator now maintains a pure regulation presentation timeline alongside the existing Screen 1 gameplay framebuffer. The timeline emits `THROW_READY` once for each genuine ready transition, with a fixed 1.5-second logical deadline. The cue is static, expires without drift even when observed late, and is cancelled immediately when play leaves the ready state.
 
-Result events are acknowledged from the existing session result snapshot, including the producing frame and roll. Physical secondary-display hookup is intentionally not implemented in this phase because no verified cabinet Screen 2 API is assumed here; the new RGB888/view-model renderer is the deterministic adapter boundary for future integration.
+Result events are acknowledged from the existing session result snapshot, including the producing frame and roll. The earlier separate-adapter preview remains available for event-gallery development, while normal gameplay now uses Dartsnut's verified full-frame display mapping: one 128×160 framebuffer contains both the 128×128 main screen and the 64×32 lower display.
 
 ## Phase 0X secondary-display emulator preview
 
@@ -56,7 +56,7 @@ python -m throw_a_strike.runtime.secondary_display_gallery
 
 The gallery is an emulator development tool only. It cycles through the real renderer labels for THROW READY, STRIKE, SPARE, SPLIT, SPLIT CONVERTED, FIELD GOAL, GUTTER, MISS, FOUL, TURKEY, and GAME OVER. Headless tests use the same adapter boundary with `MemorySecondaryDisplayPort`, so no desktop window is required in automation.
 
-No physical Screen 2 SDK, physical secondary-display API assumption, physical Dartsnut adapter change, scoring change, pinfall change, timing change, control change, or presentation-event reclassification is introduced.
+The preview gallery still changes no scoring, pinfall, timing, controls, or presentation-event classification. Normal gameplay no longer needs a separate Screen 2 SDK call because the lower display is part of the same submitted 128×160 framebuffer.
 
 Phase 0X review follow-up keeps Screen 2 disabled during normal gameplay unless `--screen2-window` is supplied. The preview port stores only a bounded history by default, pumps pygame events, exits visible playback on QUIT, and closes pygame through the runtime/gallery lifecycle. The headless gallery still renders instantly for tests, while the visible gallery holds each event for a readable duration in the documented order before exiting or responding to user close.
 
@@ -70,7 +70,7 @@ Phase 0X.1 review follow-up: THROW READY is static on Screen 1 and Screen 2. The
 
 Quick Play remains a one-dart path: select Quick Play, throw, roll, score. It implicitly uses the center lane arrow, straight curve, and 70% PERFECT power. Raw dart coordinates are first resolved into semantic aim intent: localized bullseye strike intent, direct pin center/contact bands, ordinary miss, or gutter. The bullseye zone is rounded and forgiving around the dartboard center, not an entire vertical strike corridor.
 
-Advanced Play setup order is SET CURVE, SET LANE ARROW, SET POWER, THROW READY, then dart. LaneArrow values are FAR_LEFT, LEFT, CENTER, RIGHT, and FAR_RIGHT. Their initial emulator start-X constants are 36, 50, 64, 78, and 92, symmetric around center; BALL_START_Y is unchanged. The selector renders five upward lane-position markers, and the compact HUD uses five small upward markers with the chosen one highlighted.
+Advanced Play setup order is SET AIM, SET CURVE, SET POWER, THROW READY, then dart. The internal `LaneArrow` values remain FAR_LEFT, LEFT, CENTER, RIGHT, and FAR_RIGHT, with start-X constants 36, 50, 64, 78, and 92 symmetric around center; BALL_START_Y is unchanged. The SET AIM screen gives the selected position a distinct outline and pointer, and the chosen aim marker remains visible in the compact HUD after confirmation.
 
 Pinfall is deterministic and data-driven for arcade skill shots. 7-10 conversions use reusable recipes keyed by control style, standing rack, targeted pin, contact band, optional arrow/curve, power range, and added pin sequence. Green-zone Quick/Advanced contact can kick pin 7 to 10 or pin 10 to 7 on the correct side. Advanced 90-100% can unlock narrower opposite-side Power Rebound recipes with the correct lane arrow, curve, and entry; unrelated racks do not trigger those recipes.
 

@@ -467,7 +467,7 @@ class RuntimeFlowTests(unittest.TestCase):
 
     def test_confirmation_only_consumes_batch_and_retained_dart_does_not_replay(self):
         for buttons, expected in (((DartsnutButtonId.A,),ThrowControlPhase.THROW_READY),
-                                  ((DartsnutButtonId.RIGHT,DartsnutButtonId.A),ThrowControlPhase.SET_CURVE)):
+                                  ((DartsnutButtonId.RIGHT,DartsnutButtonId.A),ThrowControlPhase.SET_AIM)):
             with self.subTest(expected=expected):
                 sdk=RetainedDartSdk()
                 for button in buttons: sdk.queue_button_events((button,))
@@ -533,12 +533,12 @@ class RuntimeFlowTests(unittest.TestCase):
         runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.SELECT_STYLE)
         sdk.queue_button_events((DartsnutButtonId.A,)); initial=runtime.step()
-        self.assertEqual(initial.presentation.phase,ThrowControlPhase.SET_CURVE)
+        self.assertEqual(initial.presentation.phase,ThrowControlPhase.SET_AIM)
         coordinator_id=id(runtime.coordinator)
+        sdk.queue_button_events((DartsnutButtonId.A,)); curve=runtime.step()
+        self.assertEqual(curve.presentation.phase,ThrowControlPhase.SET_CURVE)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); curved=runtime.step()
         self.assertEqual(curved.presentation.curve_level,CurveLevel.RIGHT_1)
-        sdk.queue_button_events((DartsnutButtonId.A,)); lane=runtime.step()
-        self.assertEqual(lane.presentation.phase,ThrowControlPhase.SET_LANE_ARROW)
         sdk.queue_button_events((DartsnutButtonId.A,)); power=runtime.step()
         self.assertEqual(power.presentation.phase,ThrowControlPhase.SET_POWER)
         moving=runtime.step(); self.assertEqual(moving.presentation.power_percent,50)
@@ -582,7 +582,7 @@ class RuntimeFlowTests(unittest.TestCase):
                 old=id(runtime.coordinator); frames=len(sdk.submitted_framebuffers)
                 fresh=expire_accepted_hold(runtime,clock)
                 expected=(ThrowControlPhase.THROW_READY if style is ControlStyle.QUICK
-                          else ThrowControlPhase.SET_CURVE)
+                          else ThrowControlPhase.SET_AIM)
                 self.assertEqual((fresh.phase,fresh.selection.selected_style,
                                   fresh.presentation.phase,fresh.presentation.curve_label,
                                   fresh.presentation.power_percent),
@@ -638,7 +638,7 @@ class RuntimeFlowTests(unittest.TestCase):
         sdk.queue_dart_hits((RawDartHit(0,2,3),)); recovery=runtime.step()
         self.assertEqual((recovery.presentation.primary_prompt_label,
                           recovery.presentation.early_warning_active),
-                         ("SET CURVE", True))
+                         ("SET AIM", True))
 
         sdk.set_active_darts((RawDartHit(0,2,3),))
         sdk.queue_button_events((DartsnutButtonId.A,))
@@ -654,11 +654,11 @@ class RuntimeFlowTests(unittest.TestCase):
         rearmed=runtime.step()
         self.assertEqual((rearmed.phase,rearmed.presentation.phase),
                          (EmulatorControlTestPhase.ATTEMPT,
-                          ThrowControlPhase.SET_LANE_ARROW))
+                          ThrowControlPhase.SET_CURVE))
         self.assertEqual((sdk.queued_button_batch_count,
                           sdk.queued_dart_batch_count),(0,0))
         self.assertEqual(runtime.step().presentation.phase,
-                         ThrowControlPhase.SET_LANE_ARROW)
+                         ThrowControlPhase.SET_CURVE)
         sdk.queue_button_events((DartsnutButtonId.A,))
         self.assertEqual(runtime.step().presentation.phase,
                          ThrowControlPhase.SET_POWER)
@@ -676,7 +676,7 @@ class RuntimeFlowTests(unittest.TestCase):
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,))
         self.assertEqual(runtime.step().presentation.phase,
-                         ThrowControlPhase.SET_LANE_ARROW)
+                         ThrowControlPhase.SET_CURVE)
         sdk.queue_button_events((DartsnutButtonId.A,))
         self.assertEqual(runtime.step().presentation.phase,
                          ThrowControlPhase.SET_POWER)
@@ -740,13 +740,14 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertEqual(len(sdk.submitted_framebuffers),frame_count+1)
 
     def test_foul_retry_preserves_advanced_style_and_starts_clean(self):
-        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,4.15,4.15,5,25,35,36.5)
+        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,5,5,5.8,5.8,25.8,35.8,37.3,38.8,40.3)
         runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
-        sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
-        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()  # lock curve
-        runtime.step()  # moving power
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()  # center aim -> curve
+        sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()  # R1 curve
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()  # curve -> power
+        runtime.step()  # moving power to 80
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()  # lock power
         runtime.step()  # warning
         foul=runtime.step()
@@ -754,8 +755,9 @@ class RuntimeFlowTests(unittest.TestCase):
         fresh=runtime.step()
         self.assertEqual((fresh.selection.selected_style,fresh.presentation.phase,
                           fresh.presentation.curve_label,fresh.presentation.power_percent),
-                         (ControlStyle.ADVANCED,ThrowControlPhase.SET_POWER,"R1",90))
+                         (ControlStyle.ADVANCED,ThrowControlPhase.SET_AIM,"STR",70))
         self.assertIsNone(runtime.coordinator.snapshot.outcome)
+
 
 
 class StepConsistencyTests(unittest.TestCase):
@@ -894,7 +896,7 @@ class EntryManifestTests(unittest.TestCase):
     def test_manifest_and_unchanged_project_dependencies(self):
         config=json.loads(Path("conf.json").read_text())
         self.assertEqual((config["id"],config["name"],config["author"],config["size"]),
-                         ("throw-a-strike","Throw a Strike","Throw A Way Games",[128,128]))
+                         ("throw-a-strike","Throw a Strike","Throw A Way Games",[128,160]))
 
 class DiagnosticFoulDeadlineRegressionTests(unittest.TestCase):
     def test_blue_dart_at_exact_foul_deadline_records_foul_not_type_error(self):

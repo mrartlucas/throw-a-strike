@@ -415,3 +415,10 @@ The regulation emulator now has semantic Quick Play aim/contact resolution, five
 ### Phase 0X.2 stabilization results
 
 Stabilization fixed the prior Phase 0X.2 compatibility breakages: lane-arrow trajectory geometry now derives midpoint and control point from the selected start arrow; setup `REARMED` clears stale darts in every non-blocking Advanced setup phase; and Advanced bullseye shots require deterministic arrow/curve/power alignment instead of receiving the Quick Play automatic bullseye strike. Existing tests were reconciled only where Phase 0X.2 intentionally replaced the old SET_CURVE -> SET_POWER flow and the old 70/80 feedback labels. The final validation run completed `PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v` with 669 tests, zero failures, and zero errors.
+### Phase 0X.3 playtest display and control-flow correction
+
+**Status: IMPLEMENTED LOCALLY - CABINET RETEST PENDING**
+
+The connected-board playtest established the official Dartsnut full-frame mapping: normal games declare and submit 128×160 RGB888, with Screen 1 at image `x=0..127, y=0..127` and the physical 64×32 Screen 2 at `x=0..63, y=128..159`. The regulation runtime now composes both surfaces into the single existing framebuffer submission. Screen 1 keeps the close pin-deck target and bottom-only controls; frame, roll, score, result celebrations, a simplified level-view ball/pin action camera, and game-over score move to Screen 2.
+
+Advanced controls are now player-facing `SET AIM -> SET CURVE -> SET POWER -> THROW READY -> dart`. The selected aim receives a clear setup highlight and remains visible in the compact HUD. The THROW READY label is rendered only during its existing 1.5-second cue and then disappears without ending the logical ready state. Scoring, pinfall recipes, collision rules, and physical input behavior are unchanged. Final artwork and collision tuning remain playtest follow-ups.

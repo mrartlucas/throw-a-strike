@@ -31,8 +31,9 @@ class InvalidThrowControlPresentationValueError(ValueError):
 
 
 class ThrowControlPrompt(str, Enum):
+    SET_AIM = "set_aim"
+    SET_LANE_ARROW = "set_aim"  # Backward-compatible alias.
     SET_CURVE = "set_curve"
-    SET_LANE_ARROW = "set_lane_arrow"
     SET_POWER = "set_power"
     THROW_READY = "throw_ready"
     TOO_SOON = "too_soon"
@@ -58,7 +59,7 @@ class ThrowControlCurveIcon(str, Enum):
 
 _PROMPT_LABELS = {
     ThrowControlPrompt.SET_CURVE: "SET CURVE",
-    ThrowControlPrompt.SET_LANE_ARROW: "SET LANE ARROW",
+    ThrowControlPrompt.SET_AIM: "SET AIM",
     ThrowControlPrompt.SET_POWER: "SET POWER",
     ThrowControlPrompt.THROW_READY: "THROW READY",
     ThrowControlPrompt.TOO_SOON: "TOO SOON",
@@ -90,10 +91,10 @@ _POWER_FEEDBACK = {
 def _prompts(
     phase: ThrowControlPhase, warning_active: bool
 ) -> tuple[ThrowControlPrompt | None, ThrowControlPrompt | None]:
+    if phase is ThrowControlPhase.SET_AIM:
+        return ThrowControlPrompt.SET_AIM, None
     if phase is ThrowControlPhase.SET_CURVE:
         return ThrowControlPrompt.SET_CURVE, None
-    if phase is ThrowControlPhase.SET_LANE_ARROW:
-        return ThrowControlPrompt.SET_LANE_ARROW, None
     if phase is ThrowControlPhase.SET_POWER:
         return ThrowControlPrompt.SET_POWER, None
     if phase is ThrowControlPhase.THROW_READY:

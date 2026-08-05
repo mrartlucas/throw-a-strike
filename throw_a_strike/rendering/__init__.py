@@ -8,9 +8,25 @@ from .throw_control_rgb888 import (
 from .ball_animation_rgb888 import render_ball_roll_rgb888, render_ball_arrival_rgb888
 from .pinfall_animation_rgb888 import render_pinfall_rgb888, render_throw_result_rgb888
 from .regulation_event_rgb888 import render_regulation_event_rgb888, render_regulation_event_view_model_rgb888
+from .dual_screen_rgb888 import (
+    MAIN_WIDTH, MAIN_HEIGHT, MAIN_RGB888_BYTE_LENGTH,
+    SECONDARY_WIDTH, SECONDARY_HEIGHT, SECONDARY_RGB888_BYTE_LENGTH,
+    FULL_FRAME_WIDTH, FULL_FRAME_HEIGHT, FULL_FRAME_RGB888_BYTE_LENGTH,
+    compose_dartsnut_full_frame, render_secondary_waiting_rgb888,
+    render_secondary_scoreboard_rgb888, render_secondary_ball_roll_rgb888,
+    render_secondary_pinfall_rgb888, render_secondary_result_rgb888,
+    render_secondary_game_over_rgb888,
+)
 from .ten_pin_rgb888 import (render_ten_pin_attempt_rgb888, render_ten_pin_ball_roll_rgb888, render_ten_pin_pinfall_rgb888, render_ten_pin_result_rgb888, render_ten_pin_wrong_color_rgb888, render_ten_pin_foul_rgb888, render_ten_pin_game_over_rgb888)
 
 __all__ = ("EMULATOR_MAIN_WIDTH", "EMULATOR_MAIN_HEIGHT", "EMULATOR_RGB888_BYTE_LENGTH",
+           "MAIN_WIDTH", "MAIN_HEIGHT", "MAIN_RGB888_BYTE_LENGTH",
+           "SECONDARY_WIDTH", "SECONDARY_HEIGHT", "SECONDARY_RGB888_BYTE_LENGTH",
+           "FULL_FRAME_WIDTH", "FULL_FRAME_HEIGHT", "FULL_FRAME_RGB888_BYTE_LENGTH",
+           "compose_dartsnut_full_frame", "render_secondary_waiting_rgb888",
+           "render_secondary_scoreboard_rgb888", "render_secondary_ball_roll_rgb888",
+           "render_secondary_pinfall_rgb888", "render_secondary_result_rgb888",
+           "render_secondary_game_over_rgb888",
            "render_throw_control_rgb888", "render_style_selection_rgb888",
            "render_dart_accepted_rgb888", "render_round_throw_rgb888",
            "render_wrong_color_rgb888", "render_round_complete_rgb888",
