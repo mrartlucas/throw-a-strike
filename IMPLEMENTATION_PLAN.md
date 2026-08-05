@@ -1125,3 +1125,10 @@ IMPLEMENTED - SINGLE-PLAYER 10-PIN RETEST READY
 - Added a ten-pin scoring HUD and game-over renderer for the Regular emulator theme.
 - Preserved the two-throw diagnostic emulator runtime for regression testing.
 - Scope remains locked: no multiplayer, additional modes, audio, calibration, physical input changes, or secondary display features were added.
+
+## Phase 0W - Regulation event presentation foundation
+
+- Added a deterministic, hardware-independent regulation presentation timeline for single-player ten-pin events.
+- `THROW_READY` is modeled as a one-shot 1.5-second logical cue that is cancelled by legal throws, Back transitions, result submission, foul, and game-over transitions.
+- Result callouts are derived from the existing `GameSession`/`BowlingGame` snapshots and pinfall result kind, preserving the existing scoring source.
+- Physical Screen 2 integration remains a later adapter task; this phase exposes pure event/view-model and RGB888 rendering boundaries only.

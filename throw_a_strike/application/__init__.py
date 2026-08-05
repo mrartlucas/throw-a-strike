@@ -59,6 +59,15 @@ from .publisher import (
     SecondaryPresentationPort,
 )
 from .publisher_fakes import FakeMainPresentationPort, FakeSecondaryPresentationPort
+
+from .regulation_presentation import (
+    RegulationPresentationEventKind,
+    RegulationPresentationEvent,
+    RegulationPresentationTimeline,
+    RegulationPresentationViewModel,
+    THROW_READY_HOLD_SECONDS,
+    event_label as regulation_presentation_event_label,
+)
 from .controller import (
     AcknowledgeResultCommand,
     ApplicationCommandKind,
@@ -154,6 +163,12 @@ __all__ = (
     "PresentationPublishError",
     "FakeMainPresentationPort",
     "FakeSecondaryPresentationPort",
+    "RegulationPresentationEventKind",
+    "RegulationPresentationEvent",
+    "RegulationPresentationTimeline",
+    "RegulationPresentationViewModel",
+    "THROW_READY_HOLD_SECONDS",
+    "regulation_presentation_event_label",
     "ApplicationCommandKind",
     "ConfigureCommand",
     "StartCommand",

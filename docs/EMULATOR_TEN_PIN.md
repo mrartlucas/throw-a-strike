@@ -29,3 +29,9 @@ The existing two-throw emulator control-test runtime remains importable and test
 ## Locked out of scope
 
 This runtime intentionally adds no multiplayer rotation, Red/Green/Yellow active turns, 100-Pin, Remix, Party, Blacklight, audio, secondary display, persistent saves, online behavior, physical-board calibration, or physical `DartsnutInputPort` changes.
+
+## Regulation presentation events
+
+The ten-pin emulator now maintains a pure regulation presentation timeline alongside the existing Screen 1 gameplay framebuffer. The timeline emits `THROW_READY` once for each genuine ready transition, with a fixed 1.5-second logical deadline. The cue is static, expires without drift even when observed late, and is cancelled immediately when play leaves the ready state.
+
+Result events are acknowledged from the existing session result snapshot, including the producing frame and roll. Physical secondary-display hookup is intentionally not implemented in this phase because no verified cabinet Screen 2 API is assumed here; the new RGB888/view-model renderer is the deterministic adapter boundary for future integration.

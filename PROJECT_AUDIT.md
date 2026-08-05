@@ -384,3 +384,10 @@ Survivor racks are persisted after partial hits and rendered from the domain pin
 Status: IMPLEMENTED - SINGLE-PLAYER 10-PIN RETEST READY
 
 The playable emulator uses the existing regulation scoring/session stack as the sole source of truth. The runtime only tracks exact survivor pin identities for rendering/collision and submits pin counts into `GameSession`. The diagnostic control-test runtime remains present and covered by tests. The physical `DartsnutInputPort` was not changed.
+
+## Phase 0W audit notes
+
+- Scoring remains owned by `BowlingGame`, `BowlingMatch`, and `GameSession`; no alternate scoring, bonuses, recipes, or multiplayer behavior were added.
+- The physical `DartsnutInputPort` adapter was not modified.
+- The secondary-display foundation is hardware-independent and does not assume an unverified Dartsnut Screen 2 API.
+- Screen 1 ten-pin rendering remains unchanged except for consuming the same runtime state while presentation events are tracked separately.
