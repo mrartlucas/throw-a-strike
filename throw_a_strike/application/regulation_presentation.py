@@ -66,14 +66,6 @@ def _opt_int(value: object, name: str) -> int | None:
 def is_split_leave(pins_after: tuple[int, ...], pins_before: tuple[int, ...]) -> bool:
     if type(pins_after) is not tuple or type(pins_before) is not tuple:
         raise InvalidPortValueError("split rack values must be exact tuples")
-    if any(type(pin) is not int or pin not in PIN_CENTERS for pin in pins_after + pins_before):
-        raise InvalidPortValueError("split rack values must contain exact pin numbers")
-    if pins_after != tuple(sorted(pins_after)) or pins_before != tuple(sorted(pins_before)):
-        raise InvalidPortValueError("split rack values must be ascending")
-    if len(set(pins_after)) != len(pins_after) or len(set(pins_before)) != len(pins_before):
-        raise InvalidPortValueError("split rack values must not contain duplicates")
-    if any(pin not in pins_before for pin in pins_after):
-        raise InvalidPortValueError("split leave pins must have been standing before the throw")
     if 1 in pins_after or 1 not in pins_before or len(pins_after) < 2:
         return False
     remaining = set(pins_after)
@@ -124,9 +116,6 @@ class RegulationPresentationViewModel:
     label: str | None
     visible: bool
     kind: RegulationPresentationEventKind | None = None
-    frame_number: int | None = None
-    roll_number: int | None = None
-    score: int | None = None
 
 class RegulationPresentationTimeline:
     def __init__(self) -> None:
@@ -154,9 +143,7 @@ class RegulationPresentationTimeline:
 
     def view_model(self, now: float) -> RegulationPresentationViewModel:
         event = self.active_event(now)
-        if event is None:
-            return RegulationPresentationViewModel(None, False)
-        return RegulationPresentationViewModel(event.label, True, event.kind, event.frame_number, event.roll_number, event.score)
+        return RegulationPresentationViewModel(None, False) if event is None else RegulationPresentationViewModel(event.label, True, event.kind)
 
     def throw_ready(self, started_at: float, *, frame_number: int | None = None, roll_number: int | None = None) -> RegulationPresentationEvent:
         started_at = _time(started_at, "started_at")
