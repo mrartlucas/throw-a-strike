@@ -897,3 +897,12 @@ class DiagnosticFoulDeadlineRegressionTests(unittest.TestCase):
         sdk.queue_dart_hits((RawDartHit(0,64,72),)); step=runtime.step()
         self.assertEqual(step.phase, EmulatorControlTestPhase.FOUL_HOLD)
         self.assertEqual(runtime.round_snapshot.first_result.kind, BowlingThrowResultKind.FOUL)
+
+class DiagnosticReadyTimestampRegressionTests(unittest.TestCase):
+    def test_quick_ignored_control_does_not_extend_foul_deadline(self):
+        sdk=FakeDartsnutSdk(); clock=Clock(0,29,30,31.5)
+        runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk), clock, 0)
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        sdk.queue_button_events((DartsnutButtonId.RIGHT,)); step=runtime.step()
+        self.assertEqual(step.phase, EmulatorControlTestPhase.FOUL_HOLD)
+        self.assertEqual(runtime.round_snapshot.first_result.kind, BowlingThrowResultKind.FOUL)

@@ -94,3 +94,35 @@ class TenPinRendererCorrectionTests(unittest.TestCase):
             for rolls,score in (([0,0]*10,0),([9,0]*10,90),([5,5]*10+[5],150),([10,7,3,9,0,10,0,8,8,2,0,6,10,10,10,8,1],167),([10]*12,300)):
                 g=BowlingGame(); [g.roll(v) for v in rolls]; render_ten_pin_game_over_rgb888(g.snapshot()); self.assertIn(f'FINAL {score}', seen)
                 for n in range(1,11): self.assertIn(f'F{n}', seen)
+    def test_result_labels_and_raw_diagnostic_are_drawn_exactly(self):
+        import throw_a_strike.rendering.ten_pin_rgb888 as r
+        from throw_a_strike.application import ThrowControlPresentation, ThrowControlCurveIcon
+        from throw_a_strike.domain import PlayerColor, ThrowSetup, ControlStyle, CurveLevel, BowlingThrowResultKind, PinfallResolution, PinImpactBias, BallTrajectorySample, ThrowControlPhase, PowerFeedback, ThrowControlOutcomeKind
+        from throw_a_strike.rendering.ten_pin_rgb888 import render_ten_pin_result_rgb888, TenPinRenderContext
+        p=ThrowControlPresentation(ControlStyle.QUICK,ThrowControlPhase.COMPLETE,None,None,CurveLevel.STRAIGHT,ThrowControlCurveIcon.STRAIGHT,70,PowerFeedback.GOOD,True,False,True,ThrowControlOutcomeKind.THROW)
+        setup=ThrowSetup(ControlStyle.QUICK,0,64,72,CurveLevel.STRAIGHT,70); sample=BallTrajectorySample(0.5,64,72); before=(1,2,3,4,5,6,7,8,9,10)
+        labels=("STRIKE","SPARE","1 PINS","10 PINS","MISS","GUTTER","FOUL")
+        seen=[]; orig=r._center
+        def cap(buf,text,y,c,scale=1): seen.append(text); return orig(buf,text,y,c,scale)
+        with patch.object(r,'_center',cap):
+            for label in labels:
+                kind=BowlingThrowResultKind.GUTTER if label=="GUTTER" else BowlingThrowResultKind.MISS if label in ("MISS","FOUL") else BowlingThrowResultKind.PIN_HIT
+                knocked=() if kind is not BowlingThrowResultKind.PIN_HIT else (1,) if label=="1 PINS" else before
+                waves=() if not knocked else ((1,), tuple(knocked[1:])) if len(knocked)>1 else ((1,),)
+                res=PinfallResolution(kind,before,1 if knocked else None,0.5 if knocked else 1.0,64,72 if knocked else 10,0.0,-1.0,PinImpactBias.CENTER,waves,knocked,tuple(p for p in before if p not in knocked))
+                render_ten_pin_result_rgb888(p,setup,PlayerColor.BLUE,sample,res,self.game(),label,context=TenPinRenderContext(1,1))
+        for label in labels: self.assertIn(label, seen)
+        self.assertIn('D0 X64 Y72', seen)
+    def test_game_over_draws_exact_marks_for_spare_fixtures(self):
+        import throw_a_strike.rendering.ten_pin_rgb888 as r
+        fixtures=(([7,3]+[0,0]*9,('7/',)),([0,10]+[0,0]*9,('-/',)),([10,7,3]+[0,0]*8,('X','7/')),([7,3,10]+[0,0]*8,('7/','X')))
+        for rolls,marks in fixtures:
+            seen=[]; orig=r._text
+            def cap(buf,text,x,y,c,scale=1): seen.append(text); return orig(buf,text,x,y,c,scale)
+            g=BowlingGame(); [g.roll(v) for v in rolls]
+            with patch.object(r,'_text',cap): render_ten_pin_game_over_rgb888(g.snapshot())
+            for mark in marks: self.assertIn(mark, seen)
+            for frame in g.snapshot().frames:
+                self.assertIn(f'F{frame.number}', seen)
+                if frame.marks: self.assertIn(''.join(frame.marks), seen)
+                if frame.cumulative_score is not None: self.assertIn(str(frame.cumulative_score), seen)

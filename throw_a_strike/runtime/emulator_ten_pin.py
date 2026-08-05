@@ -18,7 +18,7 @@ from throw_a_strike.rendering import EMULATOR_RGB888_BYTE_LENGTH, render_style_s
 from throw_a_strike.rendering.ten_pin_rgb888 import (render_ten_pin_attempt_rgb888,
     render_ten_pin_ball_roll_rgb888, render_ten_pin_pinfall_rgb888, render_ten_pin_result_rgb888,
     render_ten_pin_wrong_color_rgb888, render_ten_pin_foul_rgb888, render_ten_pin_game_over_rgb888, TenPinRenderContext)
-from throw_a_strike.runtime.emulator_common import PlayerColorInputPort, nonnegative
+from throw_a_strike.runtime.emulator_common import PlayerColorInputPort, nonnegative, update_throw_ready_started_at
 from throw_a_strike.runtime.emulator_control_test import WRONG_COLOR_HOLD_SECONDS
 RESULT_HOLD_SECONDS = 1.5
 FOUL_HOLD_SECONDS = 1.5
@@ -205,12 +205,9 @@ class EmulatorTenPinRuntime:
             if now>=self._wrong_timestamp+WRONG_COLOR_HOLD_SECONDS:
                 self._phase=EmulatorTenPinPhase.ATTEMPT; self._cached=render_ten_pin_attempt_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins)
             return self._step_obj(self._facade.submit_framebuffer(self._cached))
+        before_phase=self._coordinator.snapshot.phase
         result=self._coordinator.step(); self._presentation=build_throw_control_step_presentation(result)
-        ready_events=tuple(e for e in result.events if e.kind is InputEventKind.CONTROL)
-        if self._presentation.phase is ThrowControlPhase.THROW_READY and ready_events:
-            self._throw_ready_started_at=ready_events[-1].timestamp
-        elif self._presentation.phase is ThrowControlPhase.SET_POWER:
-            self._throw_ready_started_at=None
+        self._throw_ready_started_at=update_throw_ready_started_at(self._selector.snapshot.selected_style,before_phase,result.commands,self._throw_ready_started_at)
         if self._input.wrong_event is not None and not self._presentation.terminal:
             self._wrong_timestamp=self._input.wrong_event.timestamp; self._phase=EmulatorTenPinPhase.WRONG_COLOR_HOLD; self._cached=render_ten_pin_wrong_color_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins)
         elif self._presentation.phase is ThrowControlPhase.EARLY_DART_RECOVERY:

@@ -283,3 +283,24 @@ class TenPinFoulDeadlineRegressionTests(unittest.TestCase):
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); first=rt.throw_ready_started_at
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.B,)); rt.step(); self.assertIsNone(rt.throw_ready_started_at)
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); self.assertGreater(rt.throw_ready_started_at, first)
+    def test_quick_ignored_controls_do_not_reset_ready_timestamp(self):
+        for button in (DartsnutButtonId.A,DartsnutButtonId.LEFT,DartsnutButtonId.RIGHT):
+            sdk,clock,rt=self.make_runtime(); clock.set(29.0); sdk.queue_button_events((button,)); rt.step()
+            self.assertEqual(rt.throw_ready_started_at,0.0); clock.set(30.0); self.assertEqual(rt.step().phase, EmulatorTenPinPhase.FOUL_HOLD); self.assertEqual(rt.result_started_at,30.0)
+    def test_quick_multiple_ignored_controls_then_deadline_dart_fouls_once(self):
+        sdk,clock,rt=self.make_runtime()
+        for t,button in ((20.0,DartsnutButtonId.A),(25.0,DartsnutButtonId.LEFT),(29.9,DartsnutButtonId.RIGHT)):
+            clock.set(t); sdk.queue_button_events((button,)); rt.step(); self.assertEqual(rt.throw_ready_started_at,0.0)
+        clock.set(30.0); sdk.queue_dart_hits((RawDartHit(0,64,72),)); rt.step(); hist=rt.bowling_snapshot.roll_history[0]
+        clock.set(31.49); rt.step(); self.assertEqual(rt.bowling_snapshot.roll_history[0], hist)
+    def test_advanced_ignored_ready_controls_do_not_reset_timestamp(self):
+        for button in (DartsnutButtonId.A,DartsnutButtonId.LEFT,DartsnutButtonId.RIGHT):
+            sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
+            sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); ready=rt.throw_ready_started_at
+            clock.advance(1); sdk.queue_button_events((button,)); rt.step(); self.assertEqual(rt.throw_ready_started_at, ready)
+    def test_advanced_multi_event_batch_preserves_true_ready_transition_timestamp(self):
+        sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
+        sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,DartsnutButtonId.LEFT,DartsnutButtonId.RIGHT)); rt.step()
+        self.assertEqual(rt.throw_ready_started_at, clock.t)
