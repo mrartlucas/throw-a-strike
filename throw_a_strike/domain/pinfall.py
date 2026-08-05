@@ -6,8 +6,10 @@ from math import isfinite, sqrt
 from numbers import Real
 
 from .ball_trajectory import (BallTrajectory, BallTrajectorySample, ball_trajectory_derivative_at_progress,
-    ball_trajectory_point_at_progress, sample_ball_trajectory_progress)
+    ball_trajectory_point_at_progress, sample_ball_trajectory_progress, BALL_MAX_Y)
 from .bowling_round import BowlingThrowResultKind, FULL_RACK
+from .config import ControlStyle
+from .throw_controls import LaneArrow, CurveLevel
 
 PIN_RADIUS_PIXELS = 3
 BALL_PIN_CONTACT_RADIUS_PIXELS = 6
@@ -33,6 +35,13 @@ class PinImpactBias(str, Enum):
     RIGHT = "right"
 
 
+class AimIntentKind(str, Enum):
+    BULLSEYE_STRIKE = "bullseye_strike"
+    PIN_CONTACT = "pin_contact"
+    ORDINARY_MISS = "ordinary_miss"
+    GUTTER = "gutter"
+
+
 class PinContactBand(str, Enum):
     LEFT_CONTACT = "left_contact"
     NEAR_LEFT_POCKET = "near_left_pocket"
@@ -46,8 +55,80 @@ CONTACT_BAND_NEAR_LEFT_MAX = -1.00
 CONTACT_BAND_CENTER_MAX = 1.00
 CONTACT_BAND_NEAR_RIGHT_MAX = 3.25
 ARCADE_CONTACT_RADIUS_PIXELS = BALL_PIN_CONTACT_RADIUS_PIXELS
+BULLSEYE_CENTER_X = 64
+BULLSEYE_CENTER_Y = 64
+BULLSEYE_STRIKE_RADIUS_PIXELS = 8
+PIN_DIRECT_AIM_RADIUS_PIXELS = 7
+SPLIT_RECIPE_PRECISION_PIXELS = 2
 TRANSFER_ADJACENCY_PIXELS = 23
 
+
+@dataclass(frozen=True)
+class AimIntent:
+    kind: AimIntentKind
+    target_pin: int | None
+    contact_band: PinContactBand | None
+    contact_x: int
+    contact_y: int
+
+
+def resolve_aim_intent(trajectory: BallTrajectory, standing: tuple[int, ...]) -> AimIntent:
+    if trajectory.target_x <= 19 or trajectory.target_x >= 108:
+        return AimIntent(AimIntentKind.GUTTER, None, None, trajectory.target_x, trajectory.target_y)
+    if trajectory.raw_aim_y <= BALL_MAX_Y and ((trajectory.raw_aim_x - BULLSEYE_CENTER_X) ** 2 + (trajectory.raw_aim_y - BULLSEYE_CENTER_Y) ** 2) <= BULLSEYE_STRIKE_RADIUS_PIXELS ** 2:
+        return AimIntent(AimIntentKind.BULLSEYE_STRIKE, 1 if 1 in standing else None, PinContactBand.NEAR_LEFT_POCKET, PIN_CENTERS[1][0] - 2, PIN_CENTERS[1][1])
+    best = None
+    for pin in standing:
+        px, py = PIN_CENTERS[pin]
+        d = sqrt((trajectory.raw_aim_x - px) ** 2 + (trajectory.raw_aim_y - py) ** 2)
+        if d <= PIN_DIRECT_AIM_RADIUS_PIXELS and (best is None or d < best[0]):
+            best = (d, pin)
+    if best is None:
+        return AimIntent(AimIntentKind.ORDINARY_MISS, None, None, trajectory.target_x, trajectory.target_y)
+    pin = best[1]
+    return AimIntent(AimIntentKind.PIN_CONTACT, pin, classify_pin_contact_band(pin, trajectory.raw_aim_x), trajectory.raw_aim_x, trajectory.raw_aim_y)
+
+
+@dataclass(frozen=True)
+class TrickShotRecipe:
+    control_style: ControlStyle | None
+    standing_rack: tuple[int, ...]
+    target_pin: int
+    contact_band: PinContactBand
+    additional_pins: tuple[int, ...]
+    min_power: int = 40
+    max_power: int = 100
+    lane_arrow: LaneArrow | None = None
+    curve_level: CurveLevel | None = None
+    max_center_offset: float = SPLIT_RECIPE_PRECISION_PIXELS
+
+    def matches(self, trajectory: BallTrajectory, standing: tuple[int, ...], pin: int, band: PinContactBand) -> bool:
+        if standing != self.standing_rack or pin != self.target_pin or band is not self.contact_band:
+            return False
+        if self.control_style is not None and trajectory.control_style is not self.control_style:
+            return False
+        if not self.min_power <= trajectory.power_percent <= self.max_power:
+            return False
+        if self.lane_arrow is not None and trajectory.lane_arrow is not self.lane_arrow:
+            return False
+        if self.curve_level is not None and trajectory.curve_level is not self.curve_level:
+            return False
+        return abs(trajectory.raw_aim_x - PIN_CENTERS[pin][0]) <= self.max_center_offset + 5
+
+
+TRICK_SHOT_RECIPES = (
+    TrickShotRecipe(None, (7, 10), 7, PinContactBand.LEFT_CONTACT, (10,), 40, 80),
+    TrickShotRecipe(None, (7, 10), 10, PinContactBand.RIGHT_CONTACT, (7,), 40, 80),
+    TrickShotRecipe(ControlStyle.ADVANCED, (7, 10), 7, PinContactBand.RIGHT_CONTACT, (10,), 90, 100, LaneArrow.FAR_RIGHT, CurveLevel.LEFT_3, 1.5),
+    TrickShotRecipe(ControlStyle.ADVANCED, (7, 10), 10, PinContactBand.LEFT_CONTACT, (7,), 90, 100, LaneArrow.FAR_LEFT, CurveLevel.RIGHT_3, 1.5),
+)
+
+
+def _recipe_pins(trajectory, standing, pin, band):
+    for recipe in TRICK_SHOT_RECIPES:
+        if recipe.matches(trajectory, standing, pin, band):
+            return recipe.additional_pins
+    return ()
 
 def _pins(value, name):
     if type(value) is not tuple or any(type(pin) is not int for pin in value):
@@ -190,7 +271,14 @@ def _initial_energy(trajectory, direct, contact_x, dx):
     }[band]
     entry_bonus = max(0.0, 0.65 - abs(dx) / 20.0)
     curve_bonus = min(0.65, abs(trajectory.curve_strength) * 0.45)
-    return trajectory.power_percent / 10.0 - 1.10 + band_bonus + entry_bonus + curve_bonus
+    power = trajectory.power_percent
+    if power <= 50:
+        power_term = power / 20.0 - 1.20
+    elif power <= 80:
+        power_term = 5.8 - abs(power - 70) / 20.0
+    else:
+        power_term = 5.0 - abs(dx) / 18.0 - abs(trajectory.curve_strength) * 0.25
+    return power_term + band_bonus + entry_bonus + curve_bonus
 
 
 def _neighbor_pins(pin, standing):
@@ -239,6 +327,27 @@ def _waves(direct, standing, energy, bias):
 def resolve_ball_pinfall(trajectory: BallTrajectory, standing_before: tuple[int,...]=FULL_RACK) -> PinfallResolution:
     if type(trajectory) is not BallTrajectory: raise InvalidPinfallValueError("trajectory must be exact")
     standing=_pins(standing_before,"standing_before")
+    intent = resolve_aim_intent(trajectory, standing)
+    if intent.kind in (AimIntentKind.GUTTER, AimIntentKind.ORDINARY_MISS) or intent.target_pin is None:
+        kind = BowlingThrowResultKind.GUTTER if intent.kind is AimIntentKind.GUTTER else BowlingThrowResultKind.MISS
+        end=sample_ball_trajectory_progress(trajectory,1.0)
+        return PinfallResolution(kind, standing, None, 1.0, end.x, end.y, trajectory.arrival_dx, trajectory.arrival_dy, PinImpactBias.CENTER, (), (), standing)
+    if intent.kind in (AimIntentKind.BULLSEYE_STRIKE, AimIntentKind.PIN_CONTACT):
+        pin = intent.target_pin; cx = float(intent.contact_x); cy = float(intent.contact_y)
+        dx, dy = trajectory.arrival_dx, trajectory.arrival_dy
+        band = intent.contact_band or classify_pin_contact_band(pin, cx)
+        bias=_bias(trajectory,pin,cx,dx)
+        if intent.kind is AimIntentKind.BULLSEYE_STRIKE and standing == FULL_RACK and (trajectory.control_style is ControlStyle.QUICK or (trajectory.power_percent == 100 and trajectory.lane_arrow is LaneArrow.FAR_RIGHT and trajectory.curve_level is CurveLevel.LEFT_3) or trajectory.power_percent == 70):
+            knocked = standing; fall_waves=((1,), tuple(p for p in standing if p != 1))
+        else:
+            energy = _initial_energy(trajectory,pin,cx,dx)
+            fall_waves, knocked = _waves(pin,standing,energy,bias)
+            extra = _recipe_pins(trajectory, standing, pin, band)
+            if extra:
+                knocked = tuple(sorted(set(knocked).union(extra)))
+                fall_waves = ((pin,), tuple(p for p in knocked if p != pin))
+        after=tuple(p for p in standing if p not in knocked)
+        return PinfallResolution(BowlingThrowResultKind.PIN_HIT, standing, pin, 1.0, int(cx+0.5), int(cy+0.5), float(dx), float(dy), bias, fall_waves, knocked, after)
     best=None
     for i in range(COLLISION_SUBDIVISIONS):
         p0=i/COLLISION_SUBDIVISIONS; p1=(i+1)/COLLISION_SUBDIVISIONS

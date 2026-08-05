@@ -4,7 +4,7 @@ from throw_a_strike.application.throw_control_presentation import (
     ThrowControlCurveIcon, ThrowControlPresentation, ThrowControlPrompt,
 )
 from throw_a_strike.application.throw_control_style_selection import ThrowControlStyleSelectionSnapshot
-from throw_a_strike.domain import ControlStyle, PlayerColor, ThrowControlPhase
+from throw_a_strike.domain import ControlStyle, LaneArrow, PlayerColor, ThrowControlPhase
 from throw_a_strike.domain.bowling_round import FULL_RACK
 from throw_a_strike.domain.pinfall import PIN_CENTERS
 
@@ -81,6 +81,20 @@ def _arrow(buf,icon,x,y):
     else:
         _line(buf,x,y+9,x+5,y+9,_CYAN); _line(buf,x+5,y+9,x+9,y+4,_CYAN); _line(buf,x+9,y+4,x+9,y+8,_CYAN); _line(buf,x+9,y+4,x+5,y+4,_CYAN)
 
+def _lane_arrow_hud(buf, selected: LaneArrow, x=45, y=112):
+    arrows = list(LaneArrow)
+    for i, arrow in enumerate(arrows):
+        c = _YELLOW if arrow is selected else _MUTED
+        ax = x + i * 5
+        _line(buf, ax+2, y, ax, y+4, c); _line(buf, ax+2, y, ax+4, y+4, c); _line(buf, ax+2, y, ax+2, y+7, c)
+
+def _lane_arrow_selector(buf, selected: LaneArrow):
+    arrows = list(LaneArrow)
+    for i, arrow in enumerate(arrows):
+        x = 22 + i * 21; c = _YELLOW if arrow is selected else _MUTED
+        if arrow is selected: _rect(buf, x-3, 101, 13, 14, _CYAN)
+        _line(buf, x+3, 103, x-1, 111, c); _line(buf, x+3, 103, x+7, 111, c); _line(buf, x+3, 103, x+3, 116, c)
+
 def _power_bar(buf,power,*,y=118):
     """Render seven fixed segments derived only from the displayed percentage."""
     active=(power-30)//10
@@ -91,11 +105,16 @@ def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on
     if type(presentation) is not ThrowControlPresentation or type(blink_on) is not bool: raise TypeError("invalid renderer argument")
     buf=_canvas(); _deck(buf, standing_pins); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
     primary=presentation.primary_prompt
+    if primary is ThrowControlPrompt.THROW_READY and not presentation.ready_cue_visible:
+        primary = None
     if primary is not None:
         _center(buf,primary.label,91,_YELLOW)
     if presentation.secondary_prompt is not None: _center(buf,presentation.secondary_prompt.label,98,_RED)
+    if presentation.phase is ThrowControlPhase.SET_LANE_ARROW:
+        _lane_arrow_selector(buf, presentation.lane_arrow)
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
+    _lane_arrow_hud(buf, presentation.lane_arrow)
     power=f"{presentation.power_percent}%"; _text(buf,power,73,111,_WHITE)
     _power_bar(buf,presentation.power_percent)
     _text(buf,presentation.power_feedback_label,72,121,_MUTED)
@@ -121,8 +140,11 @@ def render_dart_accepted_rgb888(
     buf=_canvas(); _deck(buf, standing_pins); _rect(buf,0,88,128,40,_HUD); _line(buf,0,88,127,88,_CYAN)
     _center(buf,result_label,91,_YELLOW)
     _center(buf,diagnostic,98,_RED)
+    if presentation.phase is ThrowControlPhase.SET_LANE_ARROW:
+        _lane_arrow_selector(buf, presentation.lane_arrow)
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
+    _lane_arrow_hud(buf, presentation.lane_arrow)
     _text(buf,f"{presentation.power_percent}%",73,111,_WHITE)
     _power_bar(buf,presentation.power_percent)
     _text(buf,presentation.power_feedback_label,72,121,_MUTED)
@@ -143,12 +165,19 @@ def render_round_throw_rgb888(presentation: ThrowControlPresentation, throw_numb
     color=_BLUE if player_color is PlayerColor.BLUE else _CYAN
     _text(buf,f"P{player_number} {player_color.value.upper()}",99,90,color)
     primary=presentation.primary_prompt
+    if primary is ThrowControlPrompt.THROW_READY and not presentation.ready_cue_visible:
+        primary = None
     if primary is not None:
         _center(buf,primary.label,96,_YELLOW)
-    if presentation.secondary_prompt is not None:
+    if presentation.early_warning_active:
+        _center(buf,"TOO SOON",96,_YELLOW); _center(buf,"REMOVE DART",102,_RED)
+    elif presentation.secondary_prompt is not None:
         _center(buf,presentation.secondary_prompt.label,102,_RED)
+    if presentation.phase is ThrowControlPhase.SET_LANE_ARROW:
+        _lane_arrow_selector(buf, presentation.lane_arrow)
     _arrow(buf,presentation.curve_icon,5,111)
     _text(buf,presentation.curve_label,19,111,_WHITE)
+    _lane_arrow_hud(buf, presentation.lane_arrow)
     _text(buf,f"{presentation.power_percent}%",73,111,_WHITE)
     _power_bar(buf,presentation.power_percent)
     _text(buf,presentation.power_feedback_label,72,121,_MUTED)
