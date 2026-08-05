@@ -34,9 +34,9 @@ YELLOW = (250, 210, 55)
 
 class PinfallAnimationTests(unittest.TestCase):
     def setUp(self):
-        self.setup = ThrowSetup(ControlStyle.QUICK, 0, 64, 72, CurveLevel.STRAIGHT, 70)
+        self.setup = ThrowSetup(ControlStyle.QUICK, 0, 62, 72, CurveLevel.STRAIGHT, 70)
         machine = ThrowControlMachine(ControlStyle.QUICK, 0)
-        machine.apply(ThrowControlCommand(ThrowControlCommandKind.DART_HIT, 1, 0, 64, 72))
+        machine.apply(ThrowControlCommand(ThrowControlCommandKind.DART_HIT, 1, 0, 62, 72))
         self.presentation = build_throw_control_presentation(machine.snapshot)
         self.trajectory = build_ball_trajectory(self.setup)
         self.resolution = resolve_ball_pinfall(self.trajectory)
@@ -119,7 +119,7 @@ class PinfallAnimationTests(unittest.TestCase):
         with patch.object(deck_renderer, "_text", side_effect=lambda b, t, x, y, c, scale=1: (labels.append(t), original(b, t, x, y, c, scale))[1]):
             render_throw_result_rgb888(self.presentation, self.setup, PlayerColor.BLUE, self.sample, self.resolution)
         self.assertIn("6 PINS", labels)
-        self.assertIn("D0 X64 Y72", labels)
+        self.assertIn("D0 X62 Y72", labels)
         self.assertIn("STR", labels)
         self.assertIn("70%", labels)
         self.assertIn("GOOD", labels)

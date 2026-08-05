@@ -95,7 +95,7 @@ class RendererTests(unittest.TestCase):
         with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                           (captured.append(t),original(b,t,x,y,c,scale))[1]):
             render_round_throw_rgb888(ready,1,1,PlayerColor.BLUE,False)
-        self.assertNotIn("THROW READY",captured)
+        self.assertIn("THROW READY",captured)
         for label in ("THROW 1","P1 BLUE","STR","70%","GOOD","Q"):
             self.assertIn(label,captured)
         warning=build_throw_control_presentation(machine.apply(
@@ -105,7 +105,7 @@ class RendererTests(unittest.TestCase):
         with patch.object(renderer,"_text",side_effect=lambda b,t,x,y,c,scale=1:
                           (captured.append(t),original(b,t,x,y,c,scale))[1]):
             render_round_throw_rgb888(warning,1,1,PlayerColor.BLUE,False)
-        self.assertNotIn("THROW READY",captured); self.assertIn("THROW NOW",captured)
+        self.assertIn("THROW READY",captured); self.assertIn("THROW NOW",captured)
         for label in ("THROW 1","P1 BLUE","STR","70%","GOOD","Q"):
             self.assertIn(label,captured)
 
@@ -189,15 +189,11 @@ class RendererTests(unittest.TestCase):
             frames.append(render_throw_control_rgb888(build_throw_control_presentation(snapshot)))
         self.assertEqual(len(set(frames)), 7)
 
-    def test_ready_blink_changes_only_lower_hud_and_preserves_curve_power(self):
+    def test_ready_prompt_is_static_across_blink_ticks(self):
         presentation = build_throw_control_presentation(ThrowControlMachine(ControlStyle.QUICK).snapshot)
         shown = render_throw_control_rgb888(presentation, True)
         hidden = render_throw_control_rgb888(presentation, False)
-        split = 88 * 128 * 3
-        self.assertNotEqual(shown, hidden)
-        self.assertEqual(shown[:split], hidden[:split])
-        # Curve/power live below the flashing prompt rows and remain identical.
-        self.assertEqual(shown[110*128*3:], hidden[110*128*3:])
+        self.assertEqual(shown, hidden)
 
 
     def test_power_bar_has_seven_segments_and_exact_fill(self):
@@ -225,7 +221,7 @@ class RendererTests(unittest.TestCase):
         with patch.object(renderer, "_text", side_effect=lambda b,t,x,y,c,scale=1:
                           (captured.append(t), original(b,t,x,y,c,scale))[1]):
             render_throw_control_rgb888(presentation, False)
-        self.assertNotIn("THROW READY", captured)
+        self.assertIn("THROW READY", captured)
         self.assertIn("THROW NOW", captured)
 
     def test_complete_has_no_invented_prompt_and_foul_differs(self):

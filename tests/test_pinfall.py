@@ -15,7 +15,9 @@ from throw_a_strike.domain import (
     CurveLevel,
     InvalidPinfallValueError,
     PinImpactBias,
+    PinContactBand,
     PinfallResolution,
+    classify_pin_contact_band,
     ThrowSetup,
     ball_trajectory_derivative_at_progress,
     ball_trajectory_point_at_progress,
@@ -62,7 +64,7 @@ class PinfallTests(unittest.TestCase):
         self.assertIsNone(resolve_ball_pinfall(trajectory).direct_hit_pin)
 
     def test_headpin_fixtures_and_contact_derivative(self):
-        for power, expected in ((40, (1, 2, 3)), (70, (1, 2, 3, 4, 5, 6)), (100, tuple(range(1, 11)))):
+        for power, expected in ((40, (1, 2, 3)), (70, tuple(range(1, 11))), (100, tuple(range(1, 11)))):
             with self.subTest(power=power):
                 r = self.resolution(power=power)
                 self.assertEqual(r.direct_hit_pin, 1)
@@ -70,8 +72,8 @@ class PinfallTests(unittest.TestCase):
                 self.assertEqual((r.impact_dx, r.impact_dy), ball_trajectory_derivative_at_progress(build_ball_trajectory(self.setup(power=power)), r.contact_progress))
 
     def test_left_and_right_70_fixtures(self):
-        self.assertEqual(self.resolution(power=70, curve=CurveLevel.LEFT_1).knocked_down, (1, 2, 3, 4, 5, 7))
-        self.assertEqual(self.resolution(power=70, curve=CurveLevel.RIGHT_1).knocked_down, (1, 2, 3, 5, 6, 10))
+        self.assertEqual(self.resolution(power=70, curve=CurveLevel.LEFT_1).knocked_down, (1, 2, 3, 4, 5, 6, 9, 10))
+        self.assertEqual(self.resolution(power=70, curve=CurveLevel.RIGHT_1).knocked_down, (1, 2, 3, 4, 5, 6, 7, 8))
 
     def test_gutter_boundaries_and_ordinary_miss(self):
         self.assertEqual(self.resolution(x=0, y=4).result_kind, BowlingThrowResultKind.GUTTER)
@@ -83,7 +85,7 @@ class PinfallTests(unittest.TestCase):
         self.assertNotIn(1, partial.knocked_down)
         missing = self.resolution(power=100, standing=(1, 2, 3, 6, 7, 8, 9, 10))
         self.assertNotIn(7, missing.knocked_down)
-        self.assertNotIn(8, missing.knocked_down)
+        self.assertIn(8, missing.knocked_down)
         duplicate = self.resolution(power=100)
         self.assertIn(9, duplicate.knocked_down)
         self.assertEqual(duplicate.fall_waves[-1], (7, 8, 9, 10))
@@ -96,6 +98,52 @@ class PinfallTests(unittest.TestCase):
         again = self.resolution(x=64, y=40, power=100, standing=(4, 5, 6))
         self.assertEqual(tied, again)
         self.assertTrue(0.0 <= tied.contact_progress <= 1.0)
+
+    def test_arcade_contact_bands_and_generous_seventy_percent_strike_region(self):
+        self.assertIs(classify_pin_contact_band(1, 60.0), PinContactBand.LEFT_CONTACT)
+        self.assertIs(classify_pin_contact_band(1, 62.0), PinContactBand.NEAR_LEFT_POCKET)
+        self.assertIs(classify_pin_contact_band(1, 64.0), PinContactBand.CENTER_CONTACT)
+        self.assertIs(classify_pin_contact_band(1, 66.0), PinContactBand.NEAR_RIGHT_POCKET)
+        self.assertIs(classify_pin_contact_band(1, 68.0), PinContactBand.RIGHT_CONTACT)
+        for x in (63, 64, 65):
+            with self.subTest(x=x):
+                self.assertEqual(self.resolution(x=x, y=72, power=70).knocked_down, tuple(range(1, 11)))
+
+    def test_contact_side_biases_transfer_across_the_headpin(self):
+        left_contact = self.resolution(x=58, y=72, power=70)
+        right_contact = self.resolution(x=70, y=72, power=70)
+        self.assertIs(left_contact.impact_bias, PinImpactBias.RIGHT)
+        self.assertIs(right_contact.impact_bias, PinImpactBias.LEFT)
+        self.assertIn(10, left_contact.knocked_down)
+        self.assertNotIn(7, left_contact.knocked_down)
+        self.assertIn(7, right_contact.knocked_down)
+        self.assertNotIn(10, right_contact.knocked_down)
+
+    def test_power_broadens_propagation_without_auto_striking_bad_aim(self):
+        low = self.resolution(x=64, y=72, power=40)
+        green_low = self.resolution(x=64, y=72, power=60)
+        sweet = self.resolution(x=64, y=72, power=70)
+        strong = self.resolution(x=58, y=72, power=80)
+        poor = self.resolution(x=64, y=84, power=100)
+        self.assertLess(len(low.knocked_down), len(green_low.knocked_down))
+        self.assertLess(len(green_low.knocked_down), len(sweet.knocked_down))
+        self.assertEqual(sweet.knocked_down, tuple(range(1, 11)))
+        self.assertGreater(len(strong.knocked_down), len(self.resolution(x=58, y=72, power=70).knocked_down))
+        self.assertNotEqual(poor.result_kind, BowlingThrowResultKind.PIN_HIT)
+
+    def test_nearby_coordinates_can_be_equivalent_and_identical_repeats_match(self):
+        outcomes = [self.resolution(x=x, y=72, power=70).knocked_down for x in (63, 64, 65)]
+        self.assertEqual(outcomes, [tuple(range(1, 11)), tuple(range(1, 11)), tuple(range(1, 11))])
+        first = self.resolution(x=60, y=72, power=70, curve=CurveLevel.LEFT_1)
+        second = self.resolution(x=60, y=72, power=70, curve=CurveLevel.LEFT_1)
+        self.assertEqual(first, second)
+
+    def test_partial_rear_racks_convert_but_seven_ten_stays_difficult(self):
+        self.assertEqual(self.resolution(x=54, y=23, power=70, standing=(7, 8, 9)).standing_after, ())
+        self.assertEqual(self.resolution(x=74, y=23, power=70, standing=(8, 9, 10)).standing_after, ())
+        self.assertEqual(self.resolution(x=34, y=23, power=100, standing=(7, 10)).standing_after, (10,))
+        self.assertEqual(self.resolution(x=94, y=23, power=100, standing=(7, 10)).standing_after, (7,))
+        self.assertEqual(self.resolution(x=64, y=23, power=100, standing=(7, 10)).standing_after, (7, 10))
 
 
     def test_constructor_rejects_corrupted_public_fields_and_relationships(self):

@@ -33,6 +33,22 @@ class PinImpactBias(str, Enum):
     RIGHT = "right"
 
 
+class PinContactBand(str, Enum):
+    LEFT_CONTACT = "left_contact"
+    NEAR_LEFT_POCKET = "near_left_pocket"
+    CENTER_CONTACT = "center_contact"
+    NEAR_RIGHT_POCKET = "near_right_pocket"
+    RIGHT_CONTACT = "right_contact"
+
+
+CONTACT_BAND_LEFT_MAX = -3.25
+CONTACT_BAND_NEAR_LEFT_MAX = -1.00
+CONTACT_BAND_CENTER_MAX = 1.00
+CONTACT_BAND_NEAR_RIGHT_MAX = 3.25
+ARCADE_CONTACT_RADIUS_PIXELS = BALL_PIN_CONTACT_RADIUS_PIXELS
+TRANSFER_ADJACENCY_PIXELS = 23
+
+
 def _pins(value, name):
     if type(value) is not tuple or any(type(pin) is not int for pin in value):
         raise InvalidPinfallValueError(f"{name} must be an exact tuple of exact ints")
@@ -91,8 +107,8 @@ class PinfallResolution:
                 seen.add(pin)
                 flattened.append(pin)
         flattened = tuple(flattened)
-        if flattened != knocked:
-            raise InvalidPinfallValueError("fall_waves must flatten to knocked_down")
+        if tuple(sorted(flattened)) != knocked:
+            raise InvalidPinfallValueError("fall_waves must cover knocked_down exactly")
         if any(pin not in before for pin in knocked):
             raise InvalidPinfallValueError("knocked pins must have been standing")
         if after != tuple(pin for pin in before if pin not in knocked):
@@ -131,29 +147,94 @@ def _segment_circle_t(x1,y1,x2,y2,cx,cy,r):
     hits=[v for v in vals if 0.0 <= v <= 1.0]
     return min(hits) if hits else None
 
-def _bias(trajectory, dx):
-    if trajectory.curve_strength < 0: return PinImpactBias.LEFT
-    if trajectory.curve_strength > 0: return PinImpactBias.RIGHT
-    if dx < -0.25: return PinImpactBias.LEFT
-    if dx > 0.25: return PinImpactBias.RIGHT
+def classify_pin_contact_band(pin: int, contact_x: Real) -> PinContactBand:
+    if type(pin) is not int or pin not in PIN_CENTERS:
+        raise InvalidPinfallValueError("pin must be an exact pin number")
+    if isinstance(contact_x, bool) or not isinstance(contact_x, Real):
+        raise InvalidPinfallValueError("contact_x must be a finite real")
+    offset = float(contact_x) - PIN_CENTERS[pin][0]
+    if not isfinite(offset):
+        raise InvalidPinfallValueError("contact_x must be finite")
+    if offset <= CONTACT_BAND_LEFT_MAX:
+        return PinContactBand.LEFT_CONTACT
+    if offset <= CONTACT_BAND_NEAR_LEFT_MAX:
+        return PinContactBand.NEAR_LEFT_POCKET
+    if offset <= CONTACT_BAND_CENTER_MAX:
+        return PinContactBand.CENTER_CONTACT
+    if offset <= CONTACT_BAND_NEAR_RIGHT_MAX:
+        return PinContactBand.NEAR_RIGHT_POCKET
+    return PinContactBand.RIGHT_CONTACT
+
+
+def _bias(trajectory, direct, contact_x, dx):
+    offset = contact_x - PIN_CENTERS[direct][0]
+    # Positive transfer points toward larger-x pins. A left-side hit therefore
+    # sends energy right; a right-side hit sends it left. Curve and entry angle
+    # can help or hurt that authored contact-side tendency.
+    transfer = (-offset / ARCADE_CONTACT_RADIUS_PIXELS) * 1.40 + trajectory.curve_strength * 0.55 + (dx / 32.0) * 0.35
+    if transfer < -0.30:
+        return PinImpactBias.LEFT
+    if transfer > 0.30:
+        return PinImpactBias.RIGHT
     return PinImpactBias.CENTER
 
-def _costs(bias):
-    return {PinImpactBias.CENTER:(3,3), PinImpactBias.LEFT:(2,4), PinImpactBias.RIGHT:(4,2)}[bias]
+
+def _initial_energy(trajectory, direct, contact_x, dx):
+    band = classify_pin_contact_band(direct, contact_x)
+    band_bonus = {
+        PinContactBand.LEFT_CONTACT: 0.15,
+        PinContactBand.NEAR_LEFT_POCKET: 0.85,
+        PinContactBand.CENTER_CONTACT: 1.15,
+        PinContactBand.NEAR_RIGHT_POCKET: 0.85,
+        PinContactBand.RIGHT_CONTACT: 0.15,
+    }[band]
+    entry_bonus = max(0.0, 0.65 - abs(dx) / 20.0)
+    curve_bonus = min(0.65, abs(trajectory.curve_strength) * 0.45)
+    return trajectory.power_percent / 10.0 - 1.10 + band_bonus + entry_bonus + curve_bonus
+
+
+def _neighbor_pins(pin, standing):
+    x, y = PIN_CENTERS[pin]
+    neighbors = []
+    for other in standing:
+        if other == pin:
+            continue
+        ox, oy = PIN_CENTERS[other]
+        distance = sqrt((ox - x) ** 2 + (oy - y) ** 2)
+        if distance <= TRANSFER_ADJACENCY_PIXELS:
+            neighbors.append((other, ox - x, oy - y, distance))
+    return neighbors
+
+
+def _transfer_cost(dx, dy, distance, bias):
+    # Rearward transfers are easier than flat side-to-side nudges, while the
+    # selected contact bias discounts the matching side of the rack.
+    rear_discount = max(0.0, -dy) / 28.0
+    side_penalty = abs(dx) / 34.0
+    if bias is PinImpactBias.RIGHT:
+        bias_adjust = -0.65 if dx > 0 else (0.55 if dx < 0 else 0.0)
+    elif bias is PinImpactBias.LEFT:
+        bias_adjust = -0.65 if dx < 0 else (0.55 if dx > 0 else 0.0)
+    else:
+        bias_adjust = -0.20 if abs(dx) <= 2 else 0.0
+    return 1.70 + distance / 24.0 + side_penalty - rear_discount + bias_adjust
+
 
 def _waves(direct, standing, energy, bias):
-    standing=set(standing); knocked={direct: energy}; waves=[(direct,)]; frontier={direct: energy}; lc,rc=_costs(bias)
+    standing=set(standing); knocked={direct: energy}; waves=[(direct,)]; frontier={direct: energy}
     while frontier:
         received={}
         for pin,e in frontier.items():
-            for child,cost in zip(PIN_CHILDREN[pin], (lc, rc)):
-                ne=e-cost
-                if child in standing and child not in knocked and ne >= 1:
-                    received[child]=max(received.get(child,0), ne)
+            for child, dx, dy, distance in _neighbor_pins(pin, standing):
+                if child in knocked:
+                    continue
+                ne=e-_transfer_cost(dx, dy, distance, bias)
+                if ne >= 0.70:
+                    received[child]=max(received.get(child,0.0), ne)
         if not received: break
         wave=tuple(sorted(received))
         waves.append(wave); knocked.update(received); frontier={pin: received[pin] for pin in wave}
-    return tuple(waves), tuple(pin for wave in waves for pin in wave)
+    return tuple(waves), tuple(sorted(pin for wave in waves for pin in wave))
 
 def resolve_ball_pinfall(trajectory: BallTrajectory, standing_before: tuple[int,...]=FULL_RACK) -> PinfallResolution:
     if type(trajectory) is not BallTrajectory: raise InvalidPinfallValueError("trajectory must be exact")
@@ -164,7 +245,7 @@ def resolve_ball_pinfall(trajectory: BallTrajectory, standing_before: tuple[int,
         x1,y1=_point(trajectory,p0); x2,y2=_point(trajectory,p1)
         for pin in standing:
             cx,cy=PIN_CENTERS[pin]
-            local=_segment_circle_t(x1,y1,x2,y2,cx,cy,BALL_PIN_CONTACT_RADIUS_PIXELS)
+            local=_segment_circle_t(x1,y1,x2,y2,cx,cy,ARCADE_CONTACT_RADIUS_PIXELS)
             if local is None: continue
             progress=p0+(p1-p0)*local
             dx, dy = ball_trajectory_derivative_at_progress(trajectory, progress)
@@ -174,7 +255,7 @@ def resolve_ball_pinfall(trajectory: BallTrajectory, standing_before: tuple[int,
         kind = BowlingThrowResultKind.GUTTER if trajectory.target_x <= 19 or trajectory.target_x >= 108 else BowlingThrowResultKind.MISS
         end=sample_ball_trajectory_progress(trajectory,1.0)
         return PinfallResolution(kind, standing, None, 1.0, end.x, end.y, trajectory.arrival_dx, trajectory.arrival_dy, PinImpactBias.CENTER, (), (), standing)
-    progress,pin,cx,cy,dx,dy=best; bias=_bias(trajectory,dx); fall_waves, knocked=_waves(pin,standing,trajectory.power_percent//10,bias)
+    progress,pin,cx,cy,dx,dy=best; bias=_bias(trajectory,pin,cx,dx); fall_waves, knocked=_waves(pin,standing,_initial_energy(trajectory,pin,cx,dx),bias)
     after=tuple(p for p in standing if p not in knocked)
     return PinfallResolution(BowlingThrowResultKind.PIN_HIT, standing, pin, float(progress), int(cx+0.5), int(cy+0.5), float(dx), float(dy), bias, fall_waves, knocked, after)
 

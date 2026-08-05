@@ -59,3 +59,9 @@ The gallery is an emulator development tool only. It cycles through the real ren
 No physical Screen 2 SDK, physical secondary-display API assumption, physical Dartsnut adapter change, scoring change, pinfall change, timing change, control change, or presentation-event reclassification is introduced.
 
 Phase 0X review follow-up keeps Screen 2 disabled during normal gameplay unless `--screen2-window` is supplied. The preview port stores only a bounded history by default, pumps pygame events, exits visible playback on QUIT, and closes pygame through the runtime/gallery lifecycle. The headless gallery still renders instantly for tests, while the visible gallery holds each event for a readable duration in the documented order before exiting or responding to user close.
+
+## Arcade pin-transfer model
+
+Pinfall is deterministic and authored rather than random or full rigid-body physics. The resolver classifies the impact into centralized contact bands (`left_contact`, `near_left_pocket`, `center_contact`, `near_right_pocket`, `right_contact`) and transfers energy through adjacent standing pins using the contacted pin, contact side, incoming direction, curve, power, and current rack. Left-side headpin contact biases transfer toward the right side of the rack; right-side contact biases left; center contact spreads more evenly. The 60-80% green zone is strike-capable but not automatic, and partial racks support adjacent survivor transfer while difficult splits such as 7-10 stay difficult.
+
+Phase 0X.1 review follow-up: THROW READY is static on Screen 1 and Screen 2. The main entry point accepts local preview flags while ignoring unknown Dartsnut Agent launch flags such as `--params`, `--shm`, and `--data-store`.

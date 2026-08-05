@@ -401,3 +401,9 @@ The preview and gallery visibly cover THROW READY, STRIKE, SPARE, SPLIT, SPLIT C
 This is emulator-only evidence. It does not identify, assume, or implement a physical Screen 2 SDK; it does not alter `DartsnutInputPort`, scoring, pinfall, controls, Screen 1 rendering, or the presentation-event rules.
 
 Phase 0X review follow-up closes the preview lifecycle gap: Screen 2 remains disabled by default in normal gameplay, runtime framebuffer history is bounded instead of accumulating 30 FPS frames indefinitely, visible pygame previews pump QUIT events, and both gameplay preview and gallery paths close their emulator-only pygame resources. These changes remain outside physical Dartsnut integration and preserve Phase 0W event classification/timing.
+
+### Pin impact arcade transfer audit note
+
+The pinfall resolver remains pure and deterministic, with no random or rigid-body physics. It now records centralized contact-band tolerances and applies authored adjacent-pin energy transfer based on contacted pin, contact side, incoming trajectory, curve, power, and standing rack. This makes near-center 70% headpin hits strike-capable across a generous arcade region, lets side contact bias the opposite side of the rack, supports common partial-rack conversions, and keeps 7-10 resistant to unrelated distant impacts. Scoring and input adapters remain unchanged.
+
+Phase 0X.1 review follow-up confirms no Screen 1 THROW READY blink path remains in the ten-pin runtime/renderer or the diagnostic throw-control renderer. Main entry-point parsing is Dartsnut Agent tolerant through `parse_known_args()`, preserving launch compatibility with injected `--params`, `--shm`, and `--data-store` arguments.
