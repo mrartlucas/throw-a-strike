@@ -112,7 +112,8 @@ class Phase0XSecondaryDisplayTests(unittest.TestCase):
             captured["secondary"] = kwargs.get("secondary_display", "missing")
 
         fake_module = types.SimpleNamespace(Dartsnut=FakeDartsnut)
-        with patch.dict(sys.modules, {"pydartsnut": fake_module}), patch.object(sys, "argv", ["main.py"]), patch.object(entry, "run_emulator_ten_pin", fake_run):
+        agent_args = ["main.py", "--params", "{}", "--shm", "pdishm", "--data-store", "/tmp/dartsnut"]
+        with patch.dict(sys.modules, {"pydartsnut": fake_module}), patch.object(sys, "argv", agent_args), patch.object(entry, "run_emulator_ten_pin", fake_run):
             entry.main()
         self.assertIsNone(captured["secondary"])
 

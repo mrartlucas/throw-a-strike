@@ -10,7 +10,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Throw A Strike emulator runtime")
     parser.add_argument("--event-gallery", action="store_true", help="developer-only Screen 2 regulation event gallery")
     parser.add_argument("--screen2-window", action="store_true", help="show emulator-only secondary display window")
-    args = parser.parse_args()
+    args, _unknown_agent_args = parser.parse_known_args()
     if args.event_gallery:
         if args.screen2_window:
             run_visible_gallery(EmulatorSecondaryDisplayPort(visible=True))

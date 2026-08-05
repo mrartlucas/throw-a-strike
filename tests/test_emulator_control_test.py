@@ -108,17 +108,17 @@ class Phase0UPinfallRuntimeTests(unittest.TestCase):
         return step
 
     def start_throw_two_after_partial_hit(self):
-        sdk, clock, runtime, _ = self.start_quick_throw(64, 72, Clock(1, 2, 3.5, 5, 1000, 1001, 1002, 1003))
+        sdk, clock, runtime, _ = self.start_quick_throw(58, 72, Clock(1, 2, 3.5, 5, 1000, 1001, 1002, 1003))
         accepted = self.complete_current_throw(runtime, clock)
         self.assertEqual(accepted.phase, EmulatorControlTestPhase.ACCEPTED_HOLD)
-        self.assertEqual(runtime.round_snapshot.standing_pins, (7, 8, 9, 10))
+        self.assertEqual(runtime.round_snapshot.standing_pins, (7, 8, 9))
         clock.throw_two_started_at = runtime.accepted_timestamp + ACCEPTED_HOLD_SECONDS
         next_step = expire_accepted_hold(runtime, clock)
         self.assertEqual(next_step.phase, EmulatorControlTestPhase.ATTEMPT)
         return sdk, clock, runtime, next_step
 
     def test_hit_roll_pinfall_and_result_deadlines(self):
-        sdk, clock, runtime, roll = self.start_quick_throw(64, 72)
+        sdk, clock, runtime, roll = self.start_quick_throw(58, 72)
         self.assertIsNone(runtime.round_snapshot.first_result)
         self.assertIsNotNone(runtime.pinfall_resolution)
         self.assertEqual(runtime.pinfall_resolution.result_kind, BowlingThrowResultKind.PIN_HIT)
@@ -133,7 +133,7 @@ class Phase0UPinfallRuntimeTests(unittest.TestCase):
         first = runtime.round_snapshot.first_result
         self.assertEqual(accepted.phase, EmulatorControlTestPhase.ACCEPTED_HOLD)
         self.assertEqual(first.kind, BowlingThrowResultKind.PIN_HIT)
-        self.assertEqual(first.pins_knocked_down, (1, 2, 3, 4, 5, 6))
+        self.assertEqual(first.pins_knocked_down, (1, 2, 3, 4, 5, 6, 10))
         self.assertEqual(runtime.accepted_timestamp, runtime.pinfall_started_at + PINFALL_DURATION_SECONDS)
         clock.values.insert(0, runtime.accepted_timestamp + PINFALL_DURATION_SECONDS + 10)
         held = runtime.step()
@@ -200,7 +200,7 @@ class Phase0UPinfallRuntimeTests(unittest.TestCase):
     def test_already_down_pins_cannot_collide_and_partial_throw_two_completes(self):
         sdk, clock, runtime, _ = self.start_throw_two_after_partial_hit()
         clock.values[0:0] = [clock.throw_two_started_at + 0.1, clock.throw_two_started_at + 0.1]
-        sdk.queue_dart_hits((RawDartHit(4, 64, 72),))
+        sdk.queue_dart_hits((RawDartHit(4, 54, 23),))
         roll = runtime.step()
         self.assertEqual(roll.phase, EmulatorControlTestPhase.BALL_ROLL)
         self.assertNotEqual(runtime.pinfall_resolution.direct_hit_pin, 1)

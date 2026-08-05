@@ -266,9 +266,8 @@ class EmulatorControlTestRuntime:
             self._phase=EmulatorControlTestPhase.WRONG_COLOR_HOLD
             accepted=self._facade.submit_framebuffer(self._cached)
             return EmulatorControlTestStep(self._phase,self._selector.snapshot,self._presentation,self._cached,accepted)
-        blink=True if result.tick_timestamp is None else int(result.tick_timestamp*2)%2==0
         self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
-                                                self.active_player_number,self.active_player_color,blink,
+                                                self.active_player_number,self.active_player_color,
                                                 standing_pins=self._round.snapshot.standing_pins)
         if self._presentation.phase is ThrowControlPhase.EARLY_DART_RECOVERY:
             dart_commands=tuple(command for command in result.commands

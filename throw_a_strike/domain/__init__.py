@@ -64,10 +64,12 @@ from .ball_trajectory import (
     build_ball_trajectory, sample_ball_trajectory, sample_ball_trajectory_progress,
     ball_trajectory_point_at_progress, ball_trajectory_derivative_at_progress,
 )
-from .pinfall import (InvalidPinfallValueError, PinImpactBias, PinfallResolution,
+from .pinfall import (InvalidPinfallValueError, PinImpactBias, PinContactBand, PinfallResolution,
+    CONTACT_BAND_LEFT_MAX, CONTACT_BAND_NEAR_LEFT_MAX, CONTACT_BAND_CENTER_MAX, CONTACT_BAND_NEAR_RIGHT_MAX,
+    ARCADE_CONTACT_RADIUS_PIXELS, TRANSFER_ADJACENCY_PIXELS,
     PIN_RADIUS_PIXELS, BALL_PIN_CONTACT_RADIUS_PIXELS, COLLISION_SUBDIVISIONS,
     PINFALL_DURATION_SECONDS, PINFALL_WAVE_DELAY_SECONDS, PINFALL_PIN_DURATION_SECONDS,
-    PIN_CENTERS, PIN_CHILDREN, resolve_ball_pinfall, sample_ball_roll)
+    PIN_CENTERS, PIN_CHILDREN, classify_pin_contact_band, resolve_ball_pinfall, sample_ball_roll)
 from .schedule import (
     InvalidScheduleConfigurationError,
     PartyFrameSchedule,
@@ -133,7 +135,7 @@ __all__ = [
     "InvalidBallTrajectoryValueError", "BallTrajectory", "BallTrajectorySample",
     "build_ball_trajectory", "sample_ball_trajectory", "sample_ball_trajectory_progress",
     "ball_trajectory_point_at_progress", "ball_trajectory_derivative_at_progress",
-    "InvalidPinfallValueError", "PinImpactBias", "PinfallResolution", "PIN_RADIUS_PIXELS", "BALL_PIN_CONTACT_RADIUS_PIXELS", "COLLISION_SUBDIVISIONS", "PINFALL_DURATION_SECONDS", "PINFALL_WAVE_DELAY_SECONDS", "PINFALL_PIN_DURATION_SECONDS", "PIN_CENTERS", "PIN_CHILDREN", "resolve_ball_pinfall", "sample_ball_roll",
+    "InvalidPinfallValueError", "PinImpactBias", "PinContactBand", "PinfallResolution", "CONTACT_BAND_LEFT_MAX", "CONTACT_BAND_NEAR_LEFT_MAX", "CONTACT_BAND_CENTER_MAX", "CONTACT_BAND_NEAR_RIGHT_MAX", "ARCADE_CONTACT_RADIUS_PIXELS", "TRANSFER_ADJACENCY_PIXELS", "PIN_RADIUS_PIXELS", "BALL_PIN_CONTACT_RADIUS_PIXELS", "COLLISION_SUBDIVISIONS", "PINFALL_DURATION_SECONDS", "PINFALL_WAVE_DELAY_SECONDS", "PINFALL_PIN_DURATION_SECONDS", "PIN_CENTERS", "PIN_CHILDREN", "classify_pin_contact_band", "resolve_ball_pinfall", "sample_ball_roll",
     "InvalidMatchConfigError",
     "LOCKED_BRANDING",
     "MatchConfig",

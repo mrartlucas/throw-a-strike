@@ -247,7 +247,7 @@ class EmulatorTenPinRuntime:
             self._ball_started_at=darts[-1].timestamp; self._ball_trajectory=build_ball_trajectory(self._accepted_setup); self._pinfall_resolution=resolve_ball_pinfall(self._ball_trajectory,self._standing_pins)
             sample=sample_ball_roll(self._ball_trajectory,self._pinfall_resolution,0); self._phase=EmulatorTenPinPhase.BALL_ROLL; self._cached=render_ten_pin_ball_roll_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins,sample,PlayerColor.BLUE)
         else:
-            blink=True if result.tick_timestamp is None else int(result.tick_timestamp*2)%2==0; self._cached=render_ten_pin_attempt_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins,blink)
+            self._cached=render_ten_pin_attempt_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins)
         return self._step_obj(self._facade.submit_framebuffer(self._cached))
 
 def run_emulator_ten_pin(facade: DartsnutSdkFacade, clock: ClockPort, started_at: float, *, frame_seconds: float=1/30, sleeper: Callable[[float],object]=time.sleep, max_iterations: int|None=None, secondary_display: MemorySecondaryDisplayPort | None = None) -> None:

@@ -81,8 +81,6 @@ def _strip(buf, bowling):
 
 def _prompt_label(presentation, blink_on):
     prompt = presentation.primary_prompt
-    if prompt is ThrowControlPrompt.THROW_READY and not blink_on:
-        return None
     return None if prompt is None else prompt.label
 
 

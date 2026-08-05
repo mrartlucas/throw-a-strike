@@ -33,10 +33,10 @@ class TenPinRendererCorrectionTests(unittest.TestCase):
         return g.snapshot()
     def pixels_changed(self,a,b,ymin=88):
         return [(i//3)%128 for i in range(ymin*128*3,len(a),3) if a[i:i+3]!=b[i:i+3]]
-    def test_throw_ready_blink_changes_prompt_pixels_only(self):
+    def test_throw_ready_is_byte_identical_across_blink_ticks(self):
         p=self.presentation(); b=self.game(); on=render_ten_pin_attempt_rgb888(p,b,blink_on=True); off=render_ten_pin_attempt_rgb888(p,b,blink_on=False)
-        self.assertNotEqual(on,off); self.assertTrue(self.pixels_changed(on,off))
-        self.assertEqual(on[:88*128*3], off[:88*128*3])
+        self.assertEqual(on, off)
+        self.assertEqual(self.pixels_changed(on,off), [])
     def test_score_strip_does_not_touch_gameplay_area(self):
         p=self.presentation(); b=self.game((7,3,1)); f=render_ten_pin_attempt_rgb888(p,b)
         self.assertEqual(tuple(f[(84*128+64)*3:(84*128+64)*3+3]), (52,70,79))
