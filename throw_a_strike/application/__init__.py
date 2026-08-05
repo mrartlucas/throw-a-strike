@@ -67,6 +67,7 @@ from .regulation_presentation import (
     RegulationPresentationViewModel,
     THROW_READY_HOLD_SECONDS,
     event_label as regulation_presentation_event_label,
+    is_split_leave,
 )
 from .controller import (
     AcknowledgeResultCommand,
@@ -169,6 +170,7 @@ __all__ = (
     "RegulationPresentationViewModel",
     "THROW_READY_HOLD_SECONDS",
     "regulation_presentation_event_label",
+    "is_split_leave",
     "ApplicationCommandKind",
     "ConfigureCommand",
     "StartCommand",

@@ -17,7 +17,24 @@ from throw_a_strike.domain import BowlingThrowResultKind, PINFALL_DURATION_SECON
 from throw_a_strike.domain.bowling_round import FULL_RACK
 from throw_a_strike.platform import DartsnutButtonId, RawDartHit, FakeDartsnutSdk, DartsnutSdkFacade
 from throw_a_strike.runtime import EmulatorTenPinRuntime, EmulatorTenPinPhase
-from tests.test_emulator_ten_pin import Clock, resolution
+from throw_a_strike.application import PortCapabilities
+from throw_a_strike.domain import PinfallResolution, PinImpactBias
+
+
+class Clock:
+    def __init__(self, t=0): self.t=float(t); self.reads=0
+    @property
+    def capabilities(self): return PortCapabilities(True)
+    def monotonic_seconds(self): self.reads += 1; return self.t
+    def set(self,t): self.t=float(t)
+    def advance(self,dt): self.t += float(dt)
+
+
+def resolution(kind, before=FULL_RACK, knocked=()):
+    after=tuple(p for p in before if p not in knocked)
+    if kind is BowlingThrowResultKind.PIN_HIT:
+        return PinfallResolution(kind,before,knocked[0],0.5,64,72,0.0,-1.0,PinImpactBias.CENTER,((knocked[0],), tuple(knocked[1:])) if len(knocked)>1 else ((knocked[0],),),tuple(knocked),after)
+    return PinfallResolution(kind,before,None,1.0,64,10,0.0,-1.0,PinImpactBias.CENTER,(),(),before)
 
 
 class RegulationPresentationTimelineTests(unittest.TestCase):
@@ -42,6 +59,33 @@ class RegulationPresentationTimelineTests(unittest.TestCase):
                 self.assertEqual(event.label, label)
                 self.assertEqual(len(render_regulation_event_rgb888(event, 2)), EMULATOR_RGB888_BYTE_LENGTH)
                 self.assertEqual(len(render_regulation_event_view_model_rgb888(RegulationPresentationTimeline().view_model(99))), EMULATOR_RGB888_BYTE_LENGTH)
+
+    def test_renderer_draws_each_required_visible_label(self):
+        import throw_a_strike.rendering.regulation_event_rgb888 as renderer
+        labels = (
+            "THROW READY", "STRIKE", "SPARE", "SPLIT", "SPLIT CONVERTED",
+            "FIELD GOAL", "GUTTER", "MISS", "FOUL", "TURKEY", "GAME OVER",
+        )
+        seen=[]; original=renderer._center
+        def capture(buf, text, y, color, scale=1):
+            seen.append(text); return original(buf, text, y, color, scale)
+        with patch.object(renderer, "_center", capture):
+            for kind in (
+                RegulationPresentationEventKind.THROW_READY,
+                RegulationPresentationEventKind.STRIKE,
+                RegulationPresentationEventKind.SPARE,
+                RegulationPresentationEventKind.SPLIT,
+                RegulationPresentationEventKind.SPLIT_CONVERTED,
+                RegulationPresentationEventKind.FIELD_GOAL,
+                RegulationPresentationEventKind.GUTTER,
+                RegulationPresentationEventKind.MISS,
+                RegulationPresentationEventKind.FOUL,
+                RegulationPresentationEventKind.TURKEY,
+                RegulationPresentationEventKind.GAME_OVER,
+            ):
+                render_regulation_event_rgb888(RegulationPresentationEvent(kind, 0, 1.5, result_label=event_label(kind)), 0)
+        for label in labels:
+            self.assertIn(label, seen)
 
     def test_split_detection_uses_rack_geometry_without_scoring(self):
         self.assertTrue(is_split_leave((7, 10), FULL_RACK))

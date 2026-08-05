@@ -121,7 +121,6 @@ class RegulationPresentationTimeline:
     def __init__(self) -> None:
         self._events: list[RegulationPresentationEvent] = []
         self._active_ready: RegulationPresentationEvent | None = None
-        self._active_result: RegulationPresentationEvent | None = None
         self._terminal_event: RegulationPresentationEvent | None = None
         self._game_over_emitted = False
         self._ack_keys: set[tuple[int, int, str]] = set()
@@ -149,7 +148,7 @@ class RegulationPresentationTimeline:
     def throw_ready(self, started_at: float, *, frame_number: int | None = None, roll_number: int | None = None) -> RegulationPresentationEvent:
         started_at = _time(started_at, "started_at")
         event = RegulationPresentationEvent(RegulationPresentationEventKind.THROW_READY, started_at, started_at + THROW_READY_HOLD_SECONDS, frame_number, roll_number)
-        self._events.append(event); self._active_ready = event; self._active_result = None
+        self._events.append(event); self._active_ready = event
         return event
 
     def cancel_throw_ready(self) -> None:
@@ -189,7 +188,7 @@ class RegulationPresentationTimeline:
                 self._ack_keys.add(key)
                 label = event_label(event_kind)
                 event = RegulationPresentationEvent(event_kind, started_at, started_at + RESULT_HOLD_SECONDS, throw.frame_number, throw.throw_number, label, snapshot.match.players[0].bowling.confirmed_score)
-                self._events.append(event); events.append(event); self._active_result = event
+                self._events.append(event); events.append(event)
         if event_kind is RegulationPresentationEventKind.STRIKE:
             self._strike_streak += 1
         else:
@@ -209,7 +208,18 @@ class RegulationPresentationTimeline:
             raise InvalidPortValueError("snapshot must be exact SessionSnapshot")
         if snapshot.phase is not SessionPhase.GAME_OVER or self._game_over_emitted:
             return ()
-        self.cancel_throw_ready(); self._active_result = None; self._game_over_emitted = True
+        self.cancel_throw_ready(); self._game_over_emitted = True
         score = None if snapshot.match is None else snapshot.match.players[0].bowling.confirmed_score
         event = RegulationPresentationEvent(RegulationPresentationEventKind.GAME_OVER, started_at, started_at + RESULT_HOLD_SECONDS, result_label="GAME OVER", score=score)
         self._events.append(event); self._terminal_event = event; return (event,)
+
+__all__ = (
+    "RegulationPresentationEventKind",
+    "RegulationPresentationEvent",
+    "RegulationPresentationTimeline",
+    "RegulationPresentationViewModel",
+    "THROW_READY_HOLD_SECONDS",
+    "RESULT_HOLD_SECONDS",
+    "event_label",
+    "is_split_leave",
+)

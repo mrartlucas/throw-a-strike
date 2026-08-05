@@ -9,7 +9,7 @@ from .throw_control_rgb888 import _canvas, _center, _rect, _line, _CYAN, _YELLOW
 def render_regulation_event_rgb888(event: RegulationPresentationEvent | None, now: float) -> bytes:
     if event is not None and type(event) is not RegulationPresentationEvent:
         raise InvalidPortValueError("event must be exact RegulationPresentationEvent or None")
-    if event is not None and event.kind is RegulationPresentationEventKind.THROW_READY and now >= event.deadline:
+    if event is not None and event.kind is not RegulationPresentationEventKind.GAME_OVER and now >= event.deadline:
         event = None
     buf = _canvas(); _rect(buf, 0, 0, 128, 128, _HUD); _line(buf, 0, 14, 127, 14, _CYAN)
     _center(buf, "THROW A STRIKE", 5, _CYAN)
