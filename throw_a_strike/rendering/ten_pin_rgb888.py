@@ -102,7 +102,7 @@ def _status(buf, presentation, bowling, context, *, label=None, blink_on=True, d
     else:
         _strip(buf, bowling)
     _arrow(buf, presentation.curve_icon, 5, 115); _text(buf, presentation.curve_label, 19, 115, _WHITE)
-    _text(buf, f"{presentation.power_percent}%", 73, 115, _WHITE); _power_bar(buf, presentation.power_percent)
+    _text(buf, f"{presentation.power_percent}%", 73, 115, _WHITE); _power_bar(buf, presentation.power_percent, y=121)
     _text(buf, presentation.power_feedback_label, 72, 123, _MUTED)
 
 
@@ -158,7 +158,7 @@ def render_ten_pin_result_rgb888(presentation: ThrowControlPresentation, setup: 
 
 def render_ten_pin_wrong_color_rgb888(presentation: ThrowControlPresentation, bowling: BowlingSnapshot, standing_pins=FULL_RACK) -> bytes:
     frame = render_ten_pin_attempt_rgb888(presentation, bowling, standing_pins, blink_on=True)
-    buf = bytearray(frame); _rect(buf, 0, 94, 128, 20, _HUD); _center(buf, "WRONG COLOR", 94, _YELLOW); _center(buf, "USE BLUE DART", 102, _RED); return bytes(buf)
+    buf = bytearray(frame); _rect(buf, 0, 95, 128, 19, _HUD); _center(buf, "WRONG COLOR", 96, _YELLOW); _center(buf, "USE BLUE DART", 103, _RED); return bytes(buf)
 
 
 def render_ten_pin_foul_rgb888(presentation: ThrowControlPresentation, bowling: BowlingSnapshot, standing_pins=FULL_RACK, *, context: TenPinRenderContext) -> bytes:

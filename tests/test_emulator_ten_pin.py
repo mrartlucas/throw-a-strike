@@ -245,3 +245,41 @@ class TenPinRuntimeCorrectionTests(unittest.TestCase):
         sdk,clock,rt=self.make_runtime()
         with patch.object(r,'_text',capture): self.roll_to_result(rt,sdk,clock,10)
         self.assertIn('F1 R1', seen)
+
+class TenPinFoulDeadlineRegressionTests(unittest.TestCase):
+    def make_runtime(self):
+        sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
+        sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); return sdk,clock,rt
+    def foul_at(self, *, dart=None, button=None, at=30.0):
+        sdk,clock,rt=self.make_runtime(); clock.set(rt.throw_ready_started_at+at)
+        if dart is not None: sdk.queue_dart_hits((dart,))
+        if button is not None: sdk.queue_button_events((button,))
+        step=rt.step(); return sdk,clock,rt,step
+    def test_no_input_at_exact_ready_plus_30_fouls_at_deadline(self):
+        sdk,clock,rt,step=self.foul_at()
+        self.assertEqual(step.phase, EmulatorTenPinPhase.FOUL_HOLD); self.assertEqual(rt.result_started_at,30.0)
+    def test_legal_blue_dart_at_exact_deadline_is_foul_not_throw(self):
+        sdk,clock,rt,step=self.foul_at(dart=RawDartHit(0,64,72))
+        self.assertEqual(step.phase, EmulatorTenPinPhase.FOUL_HOLD); self.assertIsNone(rt.accepted_setup); self.assertEqual(rt.session_snapshot.last_throw.scored_value,0)
+    def test_legal_blue_dart_after_deadline_is_foul_not_throw(self):
+        sdk,clock,rt,step=self.foul_at(dart=RawDartHit(0,64,72), at=30.001)
+        self.assertEqual(step.phase, EmulatorTenPinPhase.FOUL_HOLD); self.assertIsNone(rt.accepted_setup); self.assertEqual(rt.result_started_at,30.0)
+    def test_control_button_at_deadline_uses_input_terminal_none_path(self):
+        sdk,clock,rt,step=self.foul_at(button=DartsnutButtonId.RIGHT)
+        self.assertEqual(step.phase, EmulatorTenPinPhase.FOUL_HOLD); self.assertEqual(rt.result_started_at,30.0)
+    def test_sparse_first_foul_observation_uses_logical_deadline(self):
+        sdk,clock,rt,step=self.foul_at(at=99.0)
+        self.assertEqual(rt.result_started_at,30.0); self.assertEqual(rt.session_snapshot.last_throw.scored_value,0)
+    def test_foul_hold_ends_at_ready_plus_31_5_and_next_attempt_starts_there(self):
+        sdk,clock,rt,step=self.foul_at(at=99.0); clock.set(31.5); step=rt.step()
+        self.assertEqual(step.phase, EmulatorTenPinPhase.ATTEMPT); self.assertEqual(rt.throw_ready_started_at,31.5)
+    def test_no_duplicate_zero_pin_roll_after_sparse_foul(self):
+        sdk,clock,rt,step=self.foul_at(at=99.0); hist=rt.bowling_snapshot.roll_history[0]
+        clock.set(30.75); rt.step(); clock.set(31.49); rt.step(); self.assertEqual(rt.bowling_snapshot.roll_history[0], hist)
+    def test_advanced_ready_timestamp_replaced_after_back_and_reconfirm(self):
+        sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
+        sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); first=rt.throw_ready_started_at
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.B,)); rt.step(); self.assertIsNone(rt.throw_ready_started_at)
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); self.assertGreater(rt.throw_ready_started_at, first)

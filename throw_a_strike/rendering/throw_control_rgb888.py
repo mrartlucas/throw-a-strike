@@ -81,11 +81,11 @@ def _arrow(buf,icon,x,y):
     else:
         _line(buf,x,y+9,x+5,y+9,_CYAN); _line(buf,x+5,y+9,x+9,y+4,_CYAN); _line(buf,x+9,y+4,x+9,y+8,_CYAN); _line(buf,x+9,y+4,x+5,y+4,_CYAN)
 
-def _power_bar(buf,power):
+def _power_bar(buf,power,*,y=118):
     """Render seven fixed segments derived only from the displayed percentage."""
     active=(power-30)//10
     for index in range(7):
-        _rect(buf,72+index*6,118,4,2,_CYAN if index < active else _MUTED)
+        _rect(buf,72+index*6,y,4,2,_CYAN if index < active else _MUTED)
 
 def render_throw_control_rgb888(presentation: ThrowControlPresentation, blink_on: bool=True, *, standing_pins=FULL_RACK) -> bytes:
     if type(presentation) is not ThrowControlPresentation or type(blink_on) is not bool: raise TypeError("invalid renderer argument")
