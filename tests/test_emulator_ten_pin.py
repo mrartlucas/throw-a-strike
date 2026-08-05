@@ -76,3 +76,96 @@ class TenPinRuntimeTests(unittest.TestCase):
         self.assertEqual(rt.phase, EmulatorTenPinPhase.GAME_OVER); reads=clock.reads; calls=len(sdk.calls); frames=len(sdk.submitted_framebuffers)
         rt.step(); self.assertEqual(clock.reads, reads); self.assertEqual(len(sdk.submitted_framebuffers), frames+1)
         self.assertNotIn(DartsnutSdkOperation.DART_HITS, sdk.calls[calls:])
+
+class TenPinRuntimeCorrectionTests(TenPinRuntimeTests):
+    def test_quick_starts_straight_70(self):
+        sdk,clock,rt=self.make_runtime(); self.assertEqual(rt.phase, EmulatorTenPinPhase.ATTEMPT)
+        self.assertEqual(rt._presentation.curve_label, "STR"); self.assertEqual(rt._presentation.power_percent, 70)
+    def test_legal_blue_dart_enters_ball_roll(self):
+        sdk,clock,rt=self.make_runtime()
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.GUTTER)):
+            sdk.queue_dart_hits((RawDartHit(4,64,84),)); self.assertEqual(rt.step().phase, EmulatorTenPinPhase.BALL_ROLL)
+    def test_ball_roll_one_clock_one_frame(self):
+        sdk,clock,rt=self.make_runtime()
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.GUTTER)):
+            sdk.queue_dart_hits((RawDartHit(0,64,84),)); rt.step()
+        reads=clock.reads; frames=len(sdk.submitted_framebuffers); clock.set(rt.ball_started_at+0.1); rt.step()
+        self.assertEqual(clock.reads, reads+1); self.assertEqual(len(sdk.submitted_framebuffers), frames+1)
+    def test_pinfall_one_clock_one_frame(self):
+        sdk,clock,rt=self.make_runtime()
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.PIN_HIT,FULL_RACK,(1,))):
+            sdk.queue_dart_hits((RawDartHit(0,64,72),)); rt.step()
+        clock.set(rt.ball_started_at+rt.ball_trajectory.duration_seconds); rt.step()
+        reads=clock.reads; frames=len(sdk.submitted_framebuffers); clock.set(rt.pinfall_started_at+0.1); rt.step()
+        self.assertEqual(clock.reads, reads+1); self.assertEqual(len(sdk.submitted_framebuffers), frames+1)
+    def test_score_committed_once_sparse_result(self):
+        sdk,clock,rt=self.make_runtime()
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.GUTTER)):
+            sdk.queue_dart_hits((RawDartHit(0,64,84),)); rt.step()
+        clock.set(rt.ball_started_at+rt.ball_trajectory.duration_seconds); rt.step(); hist=rt.bowling_snapshot.roll_history[0]
+        clock.set(clock.t+99); rt.step(); self.assertEqual(rt.bowling_snapshot.roll_history[0], hist)
+    def test_foul_zero_and_exact_deadline_cleanup(self):
+        sdk,clock,rt=self.make_runtime(); clock.set(30); step=rt.step(); self.assertEqual(step.phase, EmulatorTenPinPhase.FOUL_HOLD)
+        self.assertEqual(rt.session_snapshot.last_throw.scored_value,0); clock.set(99); rt.step(); self.assertIsNone(rt.result_started_at)
+    def test_sparse_result_hold_next_attempt_deadline(self):
+        sdk,clock,rt=self.make_runtime()
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.GUTTER)):
+            sdk.queue_dart_hits((RawDartHit(0,64,84),)); rt.step()
+        clock.set(rt.ball_started_at+rt.ball_trajectory.duration_seconds); rt.step(); deadline=rt.result_started_at+1.5
+        clock.set(deadline+99); self.assertEqual(rt.step().phase, EmulatorTenPinPhase.ATTEMPT)
+        clock.set(deadline+29.9); self.assertEqual(rt.step().phase, EmulatorTenPinPhase.ATTEMPT)
+    def test_stale_public_properties_clear_on_attempt(self):
+        sdk,clock,rt=self.make_runtime(); self.roll_with(rt,sdk,clock,resolution(BowlingThrowResultKind.GUTTER))
+        self.assertEqual(rt.phase, EmulatorTenPinPhase.ATTEMPT)
+        self.assertIsNone(rt.accepted_setup); self.assertIsNone(rt.ball_trajectory); self.assertIsNone(rt.ball_started_at); self.assertIsNone(rt.pinfall_resolution); self.assertIsNone(rt.pinfall_started_at); self.assertIsNone(rt.result_started_at)
+    def test_game_over_public_properties_clear(self):
+        sdk,clock,rt=self.make_runtime()
+        for _ in range(20): self.roll_with(rt,sdk,clock,resolution(BowlingThrowResultKind.GUTTER))
+        self.assertIsNone(rt.accepted_setup); self.assertIsNone(rt.ball_trajectory); self.assertIsNone(rt.result_started_at)
+    def test_pending_strike_bonus_unresolved_then_resolved(self):
+        sdk,clock,rt=self.make_runtime(); self.roll_with(rt,sdk,clock,resolution(BowlingThrowResultKind.PIN_HIT,FULL_RACK,FULL_RACK))
+        self.assertEqual(rt.confirmed_score,0); self.roll_with(rt,sdk,clock,resolution(BowlingThrowResultKind.GUTTER)); self.roll_with(rt,sdk,clock,resolution(BowlingThrowResultKind.GUTTER)); self.assertEqual(rt.confirmed_score,10)
+    def test_pending_spare_bonus_unresolved_then_resolved(self):
+        sdk,clock,rt=self.make_runtime(); self.roll_with(rt,sdk,clock,resolution(BowlingThrowResultKind.PIN_HIT,FULL_RACK,(1,2,3,4,5))); self.roll_with(rt,sdk,clock,resolution(BowlingThrowResultKind.PIN_HIT,rt.standing_pins,rt.standing_pins))
+        self.assertEqual(rt.confirmed_score,0); self.roll_with(rt,sdk,clock,resolution(BowlingThrowResultKind.GUTTER)); self.assertEqual(rt.confirmed_score,10)
+    def test_queued_dart_and_button_preserved_during_pinfall(self):
+        sdk,clock,rt=self.make_runtime()
+        with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.PIN_HIT,FULL_RACK,(1,))): sdk.queue_dart_hits((RawDartHit(0,64,72),)); rt.step()
+        clock.set(rt.ball_started_at+rt.ball_trajectory.duration_seconds); rt.step(); sdk.queue_dart_hits((RawDartHit(0,1,1),)); sdk.queue_button_events((DartsnutButtonId.RIGHT,)); clock.set(rt.pinfall_started_at+0.1); rt.step()
+        self.assertEqual((sdk.queued_dart_batch_count,sdk.queued_button_batch_count),(1,1))
+    def test_runner_invalid_facade_does_not_close(self):
+        from throw_a_strike.runtime import run_emulator_ten_pin
+        from throw_a_strike.application import InvalidPortValueError
+        with self.assertRaises(InvalidPortValueError): run_emulator_ten_pin(object(), Clock(), 0)
+    def test_runner_validation_closes_valid_facade(self):
+        from throw_a_strike.runtime import run_emulator_ten_pin
+        from throw_a_strike.application import InvalidPortValueError
+        for kwargs in ({'frame_seconds':-1},{'sleeper':None},{'max_iterations':True},{'max_iterations':-1}):
+            sdk=FakeDartsnutSdk()
+            with self.assertRaises(InvalidPortValueError): run_emulator_ten_pin(DartsnutSdkFacade(sdk), Clock(), 0, **kwargs)
+            self.assertEqual(sdk.close_count,1)
+    def test_runner_closes_on_normal_completion(self):
+        from throw_a_strike.runtime import run_emulator_ten_pin
+        sdk=FakeDartsnutSdk(False); run_emulator_ten_pin(DartsnutSdkFacade(sdk), Clock(), 0, max_iterations=0, sleeper=lambda _:None); self.assertEqual(sdk.close_count,1)
+    def test_tenth_open_ends_after_two(self): self._session_rolls([0,0]*10,0)
+    def test_tenth_spare_one_bonus(self): self._session_rolls([0,0]*9+[7,3,10],20)
+    def test_tenth_strike_two_bonus(self): self._session_rolls([0,0]*9+[10,7,2],19)
+    def test_tenth_xxx(self): self._session_rolls([0,0]*9+[10,10,10],30)
+    def test_tenth_x7_spare(self): self._session_rolls([0,0]*9+[10,7,3],20)
+    def test_tenth_x72(self): self._session_rolls([0,0]*9+[10,7,2],19)
+    def test_tenth_7_spare_x(self): self._session_rolls([0,0]*9+[7,3,10],20)
+    def test_tenth_gutter_spare_x(self): self._session_rolls([0,0]*9+[0,10,10],20)
+    def test_no_fourth_roll(self):
+        from throw_a_strike.application.session import GameSession, InvalidSessionTransitionError
+        from throw_a_strike.domain import MatchConfig
+        s=GameSession(); s.configure(MatchConfig(Mode.TEN_PIN,Theme.REGULAR,1,10,0,ControlStyle.QUICK)); s.start()
+        for pins in [0,0]*9+[10,10,10]: s.submit_throw(pins); snap=s.acknowledge_result(); (snap.phase is SessionPhase.FRAME_TRANSITION) and s.continue_transition()
+        with self.assertRaises(InvalidSessionTransitionError): s.submit_throw(10)
+    def _session_rolls(self, rolls, score):
+        from throw_a_strike.application.session import GameSession
+        from throw_a_strike.domain import MatchConfig
+        s=GameSession(); s.configure(MatchConfig(Mode.TEN_PIN,Theme.REGULAR,1,10,0,ControlStyle.QUICK)); s.start()
+        for pins in rolls:
+            s.submit_throw(pins); snap=s.acknowledge_result()
+            if snap.phase is SessionPhase.FRAME_TRANSITION: s.continue_transition()
+        self.assertEqual(s.snapshot().phase, SessionPhase.GAME_OVER); self.assertEqual(s.snapshot().match.players[0].bowling.confirmed_score, score)

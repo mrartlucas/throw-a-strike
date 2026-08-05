@@ -92,37 +92,7 @@ class EmulatorControlTestStep:
     @property
     def terminal(self): return self.phase is EmulatorControlTestPhase.TERMINAL
 
-def _nonnegative(value, name):
-    if isinstance(value,bool) or not isinstance(value,Real): raise InvalidPortValueError(f"{name} must be finite nonnegative")
-    result=float(value)
-    if not math.isfinite(result) or result<0: raise InvalidPortValueError(f"{name} must be finite nonnegative")
-    return result
-
-class _PlayerColorInputPort:
-    """Forward controls and the first dart belonging to the active player."""
-    def __init__(self, source, active_player_number):
-        self.source=source
-        # Validate immediately through the pure policy.
-        player_color_for_number(active_player_number)
-        self.active_player_number=active_player_number
-        self.wrong_event=None
-    @property
-    def capabilities(self): return self.source.capabilities
-    def poll(self):
-        events=self.source.poll(); self.wrong_event=None
-        chosen=None
-        for event in events:
-            if event.kind is InputEventKind.DART_HIT:
-                if is_emulator_dart_for_player(self.active_player_number,event.dart_index):
-                    if chosen is None: chosen=event
-                elif self.wrong_event is None: self.wrong_event=event
-        # A legal dart wins the batch. Controls retain their source order, and
-        # the chosen dart retains its position relative to those controls.
-        if chosen is not None:
-            self.wrong_event=None
-            return tuple(event for event in events
-                         if event.kind is not InputEventKind.DART_HIT or event is chosen)
-        return tuple(event for event in events if event.kind is not InputEventKind.DART_HIT)
+from throw_a_strike.runtime.emulator_common import PlayerColorInputPort as _PlayerColorInputPort, nonnegative as _nonnegative
 
 class EmulatorControlTestRuntime:
     def __init__(self, facade: DartsnutSdkFacade, clock: ClockPort, started_at: float):
