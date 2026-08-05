@@ -391,3 +391,11 @@ The playable emulator uses the existing regulation scoring/session stack as the 
 - The physical `DartsnutInputPort` adapter was not modified.
 - The secondary-display foundation is hardware-independent and does not assume an unverified Dartsnut Screen 2 API.
 - Screen 1 ten-pin rendering remains unchanged except for consuming the same runtime state while presentation events are tracked separately.
+
+### Phase 0X secondary display emulator preview record
+
+**Status: IMPLEMENTED - LOCAL TEST READY.** The emulator runtime now supports an optional, emulator-only Screen 2 preview adapter. Screen 1 remains the existing ten-pin RGB888 framebuffer submitted to the Dartsnut facade. Screen 2 uses a separate memory-backed RGB888 framebuffer rendered from `RegulationPresentationTimeline.view_model(...)` by the regulation event renderer, avoiding duplicated event classification in the preview layer.
+
+The preview and gallery visibly cover THROW READY, STRIKE, SPARE, SPLIT, SPLIT CONVERTED, FIELD GOAL, GUTTER, MISS, FOUL, TURKEY, and GAME OVER. THROW READY remains a single static 1.5-second logical cue per ready transition and is cancelled immediately by legal throws. TURKEY remains sequenced after STRIKE in the second half of the result hold. The gallery is developer-only and does not alter scoring or session state.
+
+This is emulator-only evidence. It does not identify, assume, or implement a physical Screen 2 SDK; it does not alter `DartsnutInputPort`, scoring, pinfall, controls, Screen 1 rendering, or the presentation-event rules.

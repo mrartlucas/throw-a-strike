@@ -1132,3 +1132,9 @@ IMPLEMENTED - SINGLE-PLAYER 10-PIN RETEST READY
 - `THROW_READY` is modeled as a one-shot 1.5-second logical cue that is cancelled by legal throws, Back transitions, result submission, foul, and game-over transitions.
 - Result callouts are derived from the existing `GameSession`/`BowlingGame` snapshots and pinfall result kind, preserving the existing scoring source.
 - Physical Screen 2 integration remains a later adapter task; this phase exposes pure event/view-model and RGB888 rendering boundaries only.
+
+### Phase 0X secondary display emulator preview
+
+Status: implemented on feature branch. A memory-backed `MemorySecondaryDisplayPort` and emulator-only `EmulatorSecondaryDisplayPort` now provide a Screen 2 preview surface fed exclusively by the existing `RegulationPresentationTimeline` view model and existing regulation RGB888 event renderer. The normal ten-pin runtime preserves Screen 1 frame submission and optionally mirrors Screen 2 event frames to the preview port.
+
+A developer-only event gallery is available with `python main.py --event-gallery` or `python -m throw_a_strike.runtime.secondary_display_gallery`. It renders every supported regulation presentation label without mutating scoring/session state and remains headless-test friendly through the memory adapter. No physical secondary-display SDK assumption or physical Dartsnut adapter change is part of this phase.
