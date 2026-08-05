@@ -160,6 +160,7 @@ class RuntimePresentationEventTests(unittest.TestCase):
     def test_advanced_power_back_and_reconfirmation_ready_events(self):
         sdk,clock,rt,step=self.make_runtime(advanced=True)
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
         clock.advance(.5); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
         self.assertEqual(rt.presentation_timeline.events[-1].kind, RegulationPresentationEventKind.THROW_READY)
         first_count=len(rt.presentation_timeline.events)

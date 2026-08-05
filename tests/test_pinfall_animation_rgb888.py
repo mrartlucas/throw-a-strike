@@ -66,7 +66,7 @@ class PinfallAnimationTests(unittest.TestCase):
         self.assertEqual(self.pixel(future, 54, 56), WHITE)
         self.assertNotEqual(active, future)
         self.assertNotEqual(falling, active)
-        self.assertEqual(self.pixel(finished, 64, 72), LANE)
+        self.assertEqual(self.pixel(finished, 64, 72), BLUE)
 
 
     def test_local_progress_zero_matches_upright_then_changes_and_disappears(self):
@@ -118,11 +118,11 @@ class PinfallAnimationTests(unittest.TestCase):
         original = deck_renderer._text
         with patch.object(deck_renderer, "_text", side_effect=lambda b, t, x, y, c, scale=1: (labels.append(t), original(b, t, x, y, c, scale))[1]):
             render_throw_result_rgb888(self.presentation, self.setup, PlayerColor.BLUE, self.sample, self.resolution)
-        self.assertIn("6 PINS", labels)
+        self.assertIn("8 PINS", labels)
         self.assertIn("D0 X62 Y72", labels)
         self.assertIn("STR", labels)
         self.assertIn("70%", labels)
-        self.assertIn("GOOD", labels)
+        self.assertIn("PERFECT", labels)
 
     def test_no_ball_during_non_ball_frames(self):
         prethrow = render_round_throw_rgb888(self.presentation, 1, 1, PlayerColor.BLUE)

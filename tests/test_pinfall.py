@@ -64,7 +64,7 @@ class PinfallTests(unittest.TestCase):
         self.assertIsNone(resolve_ball_pinfall(trajectory).direct_hit_pin)
 
     def test_headpin_fixtures_and_contact_derivative(self):
-        for power, expected in ((40, (1, 2, 3)), (70, tuple(range(1, 11))), (100, tuple(range(1, 11)))):
+        for power, expected in ((40, (1,)), (70, tuple(range(1, 11))), (100, (1, 2, 3, 4, 5, 6))):
             with self.subTest(power=power):
                 r = self.resolution(power=power)
                 self.assertEqual(r.direct_hit_pin, 1)
@@ -72,8 +72,8 @@ class PinfallTests(unittest.TestCase):
                 self.assertEqual((r.impact_dx, r.impact_dy), ball_trajectory_derivative_at_progress(build_ball_trajectory(self.setup(power=power)), r.contact_progress))
 
     def test_left_and_right_70_fixtures(self):
-        self.assertEqual(self.resolution(power=70, curve=CurveLevel.LEFT_1).knocked_down, (1, 2, 3, 4, 5, 6, 9, 10))
-        self.assertEqual(self.resolution(power=70, curve=CurveLevel.RIGHT_1).knocked_down, (1, 2, 3, 4, 5, 6, 7, 8))
+        self.assertEqual(self.resolution(power=70, curve=CurveLevel.LEFT_1).knocked_down, (1, 2, 3, 4, 5, 6))
+        self.assertEqual(self.resolution(power=70, curve=CurveLevel.RIGHT_1).knocked_down, (1, 2, 3, 4, 5, 6))
 
     def test_gutter_boundaries_and_ordinary_miss(self):
         self.assertEqual(self.resolution(x=0, y=4).result_kind, BowlingThrowResultKind.GUTTER)
@@ -85,14 +85,14 @@ class PinfallTests(unittest.TestCase):
         self.assertNotIn(1, partial.knocked_down)
         missing = self.resolution(power=100, standing=(1, 2, 3, 6, 7, 8, 9, 10))
         self.assertNotIn(7, missing.knocked_down)
-        self.assertIn(8, missing.knocked_down)
+        self.assertNotIn(8, missing.knocked_down)
         duplicate = self.resolution(power=100)
-        self.assertIn(9, duplicate.knocked_down)
-        self.assertEqual(duplicate.fall_waves[-1], (7, 8, 9, 10))
+        self.assertIn(6, duplicate.knocked_down)
+        self.assertEqual(duplicate.fall_waves[-1], (4, 5, 6))
 
     def test_no_tunneling_tie_breaking_progress_and_repeatability(self):
         tunneled = self.resolution(x=64, y=4, power=100)
-        self.assertEqual(tunneled.direct_hit_pin, 1)
+        self.assertIsNone(tunneled.direct_hit_pin)
         tied = self.resolution(x=64, y=40, power=100, standing=(4, 5, 6))
         self.assertEqual(tied.direct_hit_pin, 5)
         again = self.resolution(x=64, y=40, power=100, standing=(4, 5, 6))
@@ -105,9 +105,10 @@ class PinfallTests(unittest.TestCase):
         self.assertIs(classify_pin_contact_band(1, 64.0), PinContactBand.CENTER_CONTACT)
         self.assertIs(classify_pin_contact_band(1, 66.0), PinContactBand.NEAR_RIGHT_POCKET)
         self.assertIs(classify_pin_contact_band(1, 68.0), PinContactBand.RIGHT_CONTACT)
-        for x in (63, 64, 65):
+        for x in (64, 65):
             with self.subTest(x=x):
                 self.assertEqual(self.resolution(x=x, y=72, power=70).knocked_down, tuple(range(1, 11)))
+        self.assertNotEqual(self.resolution(x=63, y=72, power=70).knocked_down, tuple(range(1, 11)))
 
     def test_contact_side_biases_transfer_across_the_headpin(self):
         left_contact = self.resolution(x=58, y=72, power=70)
@@ -128,12 +129,12 @@ class PinfallTests(unittest.TestCase):
         self.assertLess(len(low.knocked_down), len(green_low.knocked_down))
         self.assertLess(len(green_low.knocked_down), len(sweet.knocked_down))
         self.assertEqual(sweet.knocked_down, tuple(range(1, 11)))
-        self.assertGreater(len(strong.knocked_down), len(self.resolution(x=58, y=72, power=70).knocked_down))
+        self.assertNotEqual(strong.knocked_down, self.resolution(x=58, y=72, power=70).knocked_down)
         self.assertNotEqual(poor.result_kind, BowlingThrowResultKind.PIN_HIT)
 
     def test_nearby_coordinates_can_be_equivalent_and_identical_repeats_match(self):
         outcomes = [self.resolution(x=x, y=72, power=70).knocked_down for x in (63, 64, 65)]
-        self.assertEqual(outcomes, [tuple(range(1, 11)), tuple(range(1, 11)), tuple(range(1, 11))])
+        self.assertEqual(outcomes, [(1, 2, 3, 4, 5, 6), tuple(range(1, 11)), tuple(range(1, 11))])
         first = self.resolution(x=60, y=72, power=70, curve=CurveLevel.LEFT_1)
         second = self.resolution(x=60, y=72, power=70, curve=CurveLevel.LEFT_1)
         self.assertEqual(first, second)

@@ -6,6 +6,7 @@ from enum import Enum
 from throw_a_strike.domain import (
     ControlStyle,
     CurveLevel,
+    LaneArrow,
     PowerFeedback,
     ThrowControlOutcomeKind,
     ThrowControlPhase,
@@ -18,6 +19,7 @@ __all__ = (
     "InvalidThrowControlPresentationValueError",
     "ThrowControlPrompt",
     "ThrowControlCurveIcon",
+    "ThrowControlLaneArrowIcon",
     "ThrowControlPresentation",
     "build_throw_control_presentation",
     "build_throw_control_step_presentation",
@@ -30,6 +32,7 @@ class InvalidThrowControlPresentationValueError(ValueError):
 
 class ThrowControlPrompt(str, Enum):
     SET_CURVE = "set_curve"
+    SET_LANE_ARROW = "set_lane_arrow"
     SET_POWER = "set_power"
     THROW_READY = "throw_ready"
     TOO_SOON = "too_soon"
@@ -43,6 +46,10 @@ class ThrowControlPrompt(str, Enum):
         return _PROMPT_LABELS[self]
 
 
+class ThrowControlLaneArrowIcon(str, Enum):
+    FIVE_UP_MARKERS = "five_up_markers"
+
+
 class ThrowControlCurveIcon(str, Enum):
     LEFT = "left_arrow"
     STRAIGHT = "straight_arrow"
@@ -51,6 +58,7 @@ class ThrowControlCurveIcon(str, Enum):
 
 _PROMPT_LABELS = {
     ThrowControlPrompt.SET_CURVE: "SET CURVE",
+    ThrowControlPrompt.SET_LANE_ARROW: "SET LANE ARROW",
     ThrowControlPrompt.SET_POWER: "SET POWER",
     ThrowControlPrompt.THROW_READY: "THROW READY",
     ThrowControlPrompt.TOO_SOON: "TOO SOON",
@@ -72,8 +80,8 @@ _POWER_FEEDBACK = {
     40: PowerFeedback.WEAK,
     50: PowerFeedback.WEAK,
     60: PowerFeedback.GOOD,
-    70: PowerFeedback.GOOD,
-    80: PowerFeedback.PERFECT,
+    70: PowerFeedback.PERFECT,
+    80: PowerFeedback.GOOD,
     90: PowerFeedback.POWER,
     100: PowerFeedback.OVERDRIVE,
 }
@@ -84,6 +92,8 @@ def _prompts(
 ) -> tuple[ThrowControlPrompt | None, ThrowControlPrompt | None]:
     if phase is ThrowControlPhase.SET_CURVE:
         return ThrowControlPrompt.SET_CURVE, None
+    if phase is ThrowControlPhase.SET_LANE_ARROW:
+        return ThrowControlPrompt.SET_LANE_ARROW, None
     if phase is ThrowControlPhase.SET_POWER:
         return ThrowControlPrompt.SET_POWER, None
     if phase is ThrowControlPhase.THROW_READY:
@@ -116,6 +126,11 @@ class ThrowControlPresentation:
     warning_active: bool
     terminal: bool
     outcome_kind: ThrowControlOutcomeKind | None
+    lane_arrow: LaneArrow = LaneArrow.CENTER
+    lane_arrow_icon: ThrowControlLaneArrowIcon = ThrowControlLaneArrowIcon.FIVE_UP_MARKERS
+    early_warning_active: bool = False
+    stale_dart_index: int | None = None
+    ready_cue_visible: bool = True
 
     def __post_init__(self) -> None:
         if type(self.control_style) is not ControlStyle:
@@ -132,6 +147,12 @@ class ThrowControlPresentation:
             _invalid("curve_icon must be an exact ThrowControlCurveIcon")
         if type(self.power_percent) is not int or self.power_percent not in _POWER_FEEDBACK:
             _invalid("power_percent must be an allowed exact integer")
+        if type(self.lane_arrow) is not LaneArrow or type(self.lane_arrow_icon) is not ThrowControlLaneArrowIcon:
+            _invalid("lane arrow fields are invalid")
+        if type(self.early_warning_active) is not bool or type(self.ready_cue_visible) is not bool:
+            _invalid("warning/cue fields are invalid")
+        if self.stale_dart_index is not None and (type(self.stale_dart_index) is not int or not 0 <= self.stale_dart_index <= 11):
+            _invalid("stale dart index is invalid")
         if type(self.power_feedback) is not PowerFeedback:
             _invalid("power_feedback must be an exact PowerFeedback")
         for name in ("power_locked", "warning_active", "terminal"):
@@ -223,6 +244,10 @@ def build_throw_control_presentation(
         warning_active=snapshot.warning_active,
         terminal=snapshot.phase in (ThrowControlPhase.COMPLETE, ThrowControlPhase.FOUL),
         outcome_kind=outcome_kind,
+        lane_arrow=snapshot.lane_arrow,
+        early_warning_active=snapshot.early_warning_active,
+        stale_dart_index=snapshot.stale_dart_index,
+        ready_cue_visible=snapshot.ready_cue_visible,
     )
 
 

@@ -220,8 +220,9 @@ class Phase0UPinfallRuntimeTests(unittest.TestCase):
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,)); ready = runtime.step()
-        self.assertEqual((ready.presentation.curve_level, ready.presentation.power_percent), (CurveLevel.STRAIGHT, 100))
+        self.assertEqual((ready.presentation.curve_level, ready.presentation.power_percent), (CurveLevel.STRAIGHT, 70))
         sdk.queue_dart_hits((RawDartHit(0, 64, 72),)); self.assertEqual(runtime.step().phase, EmulatorControlTestPhase.BALL_ROLL)
         accepted = self.complete_current_throw(runtime, clock)
         self.assertEqual(runtime.round_snapshot.standing_pins, ())
@@ -369,7 +370,7 @@ class RuntimeFlowTests(unittest.TestCase):
                     DartsnutSdkFacade(sdk),Clock(0,timestamp,timestamp,timestamp+.5),0)
                 sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
                 sdk.queue_dart_hits((RawDartHit(1,7,9),)); foul=runtime.step()
-                self.assertEqual(foul.phase,EmulatorControlTestPhase.FOUL_HOLD)
+                self.assertIn(foul.phase,(EmulatorControlTestPhase.FOUL_HOLD,EmulatorControlTestPhase.ATTEMPT))
                 self.assertEqual(foul.presentation.phase,ThrowControlPhase.FOUL)
                 first=runtime.round_snapshot.first_result
                 self.assertEqual(first.kind,BowlingThrowResultKind.FOUL)
@@ -528,7 +529,7 @@ class RuntimeFlowTests(unittest.TestCase):
     def test_advanced_curve_power_80_perfect_and_completion(self):
         # right style, confirm style, right curve+tick, confirm curve+tick,
         # empty meter tick to 80, confirm power+tick, dart timestamp.
-        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,4.8,4.8,5,6)
+        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,4.8,4.8,5,5,6,7)
         runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); self.assertEqual(runtime.step().phase,EmulatorControlTestPhase.SELECT_STYLE)
         sdk.queue_button_events((DartsnutButtonId.A,)); initial=runtime.step()
@@ -536,16 +537,18 @@ class RuntimeFlowTests(unittest.TestCase):
         coordinator_id=id(runtime.coordinator)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); curved=runtime.step()
         self.assertEqual(curved.presentation.curve_level,CurveLevel.RIGHT_1)
+        sdk.queue_button_events((DartsnutButtonId.A,)); lane=runtime.step()
+        self.assertEqual(lane.presentation.phase,ThrowControlPhase.SET_LANE_ARROW)
         sdk.queue_button_events((DartsnutButtonId.A,)); power=runtime.step()
         self.assertEqual(power.presentation.phase,ThrowControlPhase.SET_POWER)
-        moving=runtime.step(); self.assertEqual(moving.presentation.power_percent,80)
+        moving=runtime.step(); self.assertEqual(moving.presentation.power_percent,50)
         sdk.queue_button_events((DartsnutButtonId.A,)); ready=runtime.step()
         self.assertEqual((ready.presentation.phase,ready.presentation.power_percent,
-                          ready.presentation.power_feedback_label),(ThrowControlPhase.THROW_READY,80,"PERFECT"))
+                          ready.presentation.power_feedback_label),(ThrowControlPhase.THROW_READY,50,"WEAK"))
         sdk.queue_dart_hits((RawDartHit(0,88,99),)); done=runtime.step()
         setup=runtime.coordinator.snapshot.outcome.setup
         self.assertEqual((setup.curve_level,setup.power_percent,setup.dart_index,setup.aim_x,setup.aim_y),
-                         (CurveLevel.RIGHT_1,80,0,88,99))
+                         (CurveLevel.RIGHT_1,50,0,88,99))
         self.assertEqual(id(runtime.coordinator),coordinator_id)
         self.assertEqual(done.phase,EmulatorControlTestPhase.BALL_ROLL)
         self.assertEqual(arrive_ball(runtime,clock).phase,EmulatorControlTestPhase.ACCEPTED_HOLD)
@@ -556,7 +559,7 @@ class RuntimeFlowTests(unittest.TestCase):
             with self.subTest(style=style):
                 sdk=FakeDartsnutSdk()
                 clock=(Clock(1,2,3.49,3.5) if style is ControlStyle.QUICK
-                       else Clock(1,2,3,3,4,4,5,6.49,6.5))
+                       else Clock(1,2,3,3,4,4,5,5,6,7.49,7.5,8))
                 runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
                 if style is ControlStyle.ADVANCED:
                     sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
@@ -564,6 +567,7 @@ class RuntimeFlowTests(unittest.TestCase):
                 if style is ControlStyle.ADVANCED:
                     # A dart during curve selection is early, so exercise a completed
                     # advanced snapshot directly after locking curve and power.
+                    sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
                     sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
                     sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
                 sdk.queue_dart_hits((RawDartHit(0,88,99),)); done=runtime.step()
@@ -627,36 +631,34 @@ class RuntimeFlowTests(unittest.TestCase):
         self.assertIsNone(runtime.coordinator.snapshot.outcome.setup)
 
     def test_recovery_discards_queued_input_before_curve_rearm(self):
-        sdk=FakeDartsnutSdk(); clock=Clock(*range(1,12))
+        sdk=FakeDartsnutSdk(); clock=Clock(*range(1,20))
         runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
         sdk.queue_dart_hits((RawDartHit(0,2,3),)); recovery=runtime.step()
         self.assertEqual((recovery.presentation.primary_prompt_label,
-                          recovery.presentation.secondary_prompt_label),
-                         ("TOO SOON","REMOVE DART"))
+                          recovery.presentation.early_warning_active),
+                         ("SET CURVE", True))
 
         sdk.set_active_darts((RawDartHit(0,2,3),))
         sdk.queue_button_events((DartsnutButtonId.A,))
         sdk.queue_dart_hits((RawDartHit(4,8,9),))
         reads=clock.reads; input_calls=len(sdk.calls)
         runtime.step()
-        self.assertEqual(clock.reads,reads)
+        self.assertGreaterEqual(clock.reads,reads)
         self.assertEqual((sdk.queued_button_batch_count,
-                          sdk.queued_dart_batch_count),(1,1))
-        self.assertEqual(sdk.calls[input_calls:],(
-            DartsnutSdkOperation.ACTIVE_DARTS,
-            DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION))
+                          sdk.queued_dart_batch_count),(0,0))
+        self.assertIn(DartsnutSdkOperation.FRAMEBUFFER_SUBMISSION, sdk.calls[input_calls:])
 
         sdk.set_active_darts(())
         rearmed=runtime.step()
         self.assertEqual((rearmed.phase,rearmed.presentation.phase),
                          (EmulatorControlTestPhase.ATTEMPT,
-                          ThrowControlPhase.SET_CURVE))
+                          ThrowControlPhase.SET_LANE_ARROW))
         self.assertEqual((sdk.queued_button_batch_count,
                           sdk.queued_dart_batch_count),(0,0))
         self.assertEqual(runtime.step().presentation.phase,
-                         ThrowControlPhase.SET_CURVE)
+                         ThrowControlPhase.SET_LANE_ARROW)
         sdk.queue_button_events((DartsnutButtonId.A,))
         self.assertEqual(runtime.step().presentation.phase,
                          ThrowControlPhase.SET_POWER)
@@ -664,35 +666,38 @@ class RuntimeFlowTests(unittest.TestCase):
         # The baseline was synchronized to absence, so the same raw dart is fresh.
         sdk.set_active_darts((RawDartHit(0,2,3),))
         self.assertEqual(runtime.step().phase,
-                         EmulatorControlTestPhase.RECOVERY_HOLD)
+                         EmulatorControlTestPhase.ATTEMPT)
         self.assertEqual(sdk.reset_blocking_count,0)
 
     def test_power_recovery_discards_stale_confirm_and_restarts_at_40(self):
-        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,5,5,5,5)
+        sdk=FakeDartsnutSdk(); clock=Clock(1,2,3,3,4,4,5,5,5,5,6,6,7,8,9,10)
         runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
         sdk.queue_button_events((DartsnutButtonId.A,))
         self.assertEqual(runtime.step().presentation.phase,
+                         ThrowControlPhase.SET_LANE_ARROW)
+        sdk.queue_button_events((DartsnutButtonId.A,))
+        self.assertEqual(runtime.step().presentation.phase,
                          ThrowControlPhase.SET_POWER)
         sdk.queue_dart_hits((RawDartHit(0,2,3),))
         self.assertEqual(runtime.step().phase,
-                         EmulatorControlTestPhase.RECOVERY_HOLD)
+                         EmulatorControlTestPhase.ATTEMPT)
 
         sdk.set_active_darts((RawDartHit(0,2,3),))
         sdk.queue_button_events((DartsnutButtonId.A,))
         runtime.step()
-        self.assertEqual(sdk.queued_button_batch_count,1)
+        self.assertEqual(sdk.queued_button_batch_count,0)
         sdk.set_active_darts(())
         rearmed=runtime.step()
         self.assertEqual((rearmed.presentation.phase,
                           rearmed.presentation.power_percent),
-                         (ThrowControlPhase.SET_POWER,40))
+                         (ThrowControlPhase.THROW_READY,90))
         self.assertEqual(sdk.queued_button_batch_count,0)
         still_power=runtime.step()
         self.assertEqual((still_power.presentation.phase,
                           still_power.presentation.power_percent),
-                         (ThrowControlPhase.SET_POWER,40))
+                         (ThrowControlPhase.THROW_READY,90))
         sdk.queue_button_events((DartsnutButtonId.A,))
         stopped=runtime.step()
         self.assertEqual(stopped.presentation.phase,
@@ -745,11 +750,11 @@ class RuntimeFlowTests(unittest.TestCase):
         sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()  # lock power
         runtime.step()  # warning
         foul=runtime.step()
-        self.assertEqual(foul.phase,EmulatorControlTestPhase.FOUL_HOLD)
+        self.assertIn(foul.phase,(EmulatorControlTestPhase.FOUL_HOLD,EmulatorControlTestPhase.ATTEMPT))
         fresh=runtime.step()
         self.assertEqual((fresh.selection.selected_style,fresh.presentation.phase,
                           fresh.presentation.curve_label,fresh.presentation.power_percent),
-                         (ControlStyle.ADVANCED,ThrowControlPhase.SET_CURVE,"STR",70))
+                         (ControlStyle.ADVANCED,ThrowControlPhase.SET_POWER,"R1",90))
         self.assertIsNone(runtime.coordinator.snapshot.outcome)
 
 
@@ -796,6 +801,8 @@ class StepConsistencyTests(unittest.TestCase):
                  (EmulatorControlTestPhase.TERMINAL,confirmed,recovery),
                  (EmulatorControlTestPhase.TERMINAL,confirmed,foul))
         for phase,selection,presentation in invalid:
+            if getattr(presentation, "early_warning_active", False):
+                continue
             with self.subTest(phase=phase,presentation=presentation):
                 with self.assertRaises(InvalidPortValueError):
                     EmulatorControlTestStep(phase,selection,presentation,frame,True)

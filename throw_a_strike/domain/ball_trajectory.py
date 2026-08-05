@@ -4,10 +4,12 @@ from dataclasses import dataclass
 from math import floor, isfinite
 from numbers import Real
 
-from .throw_controls import CurveLevel, ThrowSetup
+from .throw_controls import CurveLevel, LaneArrow, ThrowSetup
+from .config import ControlStyle
 
 BALL_RADIUS_PIXELS = 3
-BALL_START_X = 64
+LANE_ARROW_START_X = {LaneArrow.FAR_LEFT: 36, LaneArrow.LEFT: 50, LaneArrow.CENTER: 64, LaneArrow.RIGHT: 78, LaneArrow.FAR_RIGHT: 92}
+BALL_START_X = LANE_ARROW_START_X[LaneArrow.CENTER]
 BALL_START_Y = 84
 BALL_MIN_X = 12
 BALL_MAX_X = 115
@@ -39,6 +41,9 @@ class BallTrajectory:
     duration_seconds: float
     arrival_dx: float
     arrival_dy: float
+    lane_arrow: LaneArrow = LaneArrow.CENTER
+    entry_angle: float = 0.0
+    control_style: ControlStyle = ControlStyle.QUICK
 
     def __post_init__(self) -> None:
         integer_fields = {
@@ -51,14 +56,18 @@ class BallTrajectory:
             raise InvalidBallTrajectoryValueError("trajectory integer fields must be exact ints")
         if not 0 <= self.raw_aim_x <= 127 or not 0 <= self.raw_aim_y <= 127:
             raise InvalidBallTrajectoryValueError("raw aim must be within the emulator input range")
-        if (self.start_x, self.start_y) != (BALL_START_X, BALL_START_Y):
-            raise InvalidBallTrajectoryValueError("trajectory start must be the exact ball start")
+        if type(self.control_style) is not ControlStyle:
+            raise InvalidBallTrajectoryValueError("control_style must be exact")
+        if type(self.lane_arrow) is not LaneArrow:
+            raise InvalidBallTrajectoryValueError("lane_arrow must be exact")
+        if self.start_y != BALL_START_Y or self.start_x != LANE_ARROW_START_X[self.lane_arrow]:
+            raise InvalidBallTrajectoryValueError("trajectory start must match lane arrow")
         if not BALL_MIN_X <= self.target_x <= BALL_MAX_X or not BALL_MIN_Y <= self.target_y <= BALL_MAX_Y:
             raise InvalidBallTrajectoryValueError("trajectory target must be within display bounds")
         if type(self.curve_level) is not CurveLevel:
             raise InvalidBallTrajectoryValueError("curve_level must be exact")
         float_fields = (self.control_x, self.control_y, self.curve_strength,
-                        self.duration_seconds, self.arrival_dx, self.arrival_dy)
+                        self.duration_seconds, self.arrival_dx, self.arrival_dy, self.entry_angle)
         if any(type(value) is not float or not isfinite(value) for value in float_fields):
             raise InvalidBallTrajectoryValueError("trajectory numeric metadata must be finite floats")
         if not BALL_MIN_X <= self.control_x <= BALL_MAX_X or not BALL_MIN_Y <= self.control_y <= BALL_MAX_Y:
@@ -90,16 +99,18 @@ def build_ball_trajectory(setup: ThrowSetup) -> BallTrajectory:
         raise InvalidBallTrajectoryValueError("setup must be an exact ThrowSetup")
     target_x = min(BALL_MAX_X, max(BALL_MIN_X, setup.aim_x))
     target_y = min(BALL_MAX_Y, max(BALL_MIN_Y, setup.aim_y))
-    mid_x = (BALL_START_X + target_x) / 2
+    start_x = LANE_ARROW_START_X[setup.lane_arrow]
+    mid_x = (start_x + target_x) / 2
     mid_y = (BALL_START_Y + target_y) / 2
     control_x = min(BALL_MAX_X, max(BALL_MIN_X,
                     mid_x + setup.curve_strength * MAX_CURVE_OFFSET_PIXELS))
     return BallTrajectory(
         setup.aim_x, setup.aim_y, target_x, target_y,
-        BALL_START_X, BALL_START_Y, control_x, mid_y,
+        start_x, BALL_START_Y, control_x, mid_y,
         setup.curve_level, setup.curve_strength, setup.power_percent,
         _DURATIONS[setup.power_percent],
         2 * (target_x - control_x), 2 * (target_y - mid_y),
+        setup.lane_arrow, float(2 * (target_x - control_x) / max(1, abs(2 * (target_y - mid_y)))), setup.control_style,
     )
 
 
