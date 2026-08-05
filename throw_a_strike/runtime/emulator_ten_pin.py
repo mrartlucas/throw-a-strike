@@ -153,10 +153,12 @@ class EmulatorTenPinRuntime:
         if mark == "/": return "SPARE"
         if pins > 0: return f"{pins} PINS"
         return "FOUL" if kind is BowlingThrowResultKind.FOUL else ("GUTTER" if kind is BowlingThrowResultKind.GUTTER else "MISS")
-    def _submit(self, pins, kind, timestamp):
+    def _submit(self, pins, kind, timestamp, pins_before=None, pins_after=None):
         self._presentation_timeline.cancel_throw_ready()
+        before = self._standing_pins if pins_before is None else pins_before
+        after = before if pins_after is None else pins_after
         self._session.submit_throw(pins); self._last_result_kind=kind; self._last_label=self._label(pins,kind); self._result_started_at=timestamp
-        self._presentation_timeline.acknowledge_result(self.session_snapshot, kind, timestamp)
+        self._presentation_timeline.acknowledge_result(self.session_snapshot, kind, timestamp, pins_before=before, pins_after=after)
     def _after_hold(self, now):
         snap=self._session.acknowledge_result()
         if snap.phase is SessionPhase.GAME_OVER:
@@ -191,14 +193,14 @@ class EmulatorTenPinRuntime:
                 if res.result_kind is BowlingThrowResultKind.PIN_HIT:
                     self._pinfall_started_at=deadline; self._phase=EmulatorTenPinPhase.PINFALL; self._cached=render_ten_pin_pinfall_rgb888(self._presentation,self._accepted_setup,PlayerColor.BLUE,sample,res,0,self.bowling_snapshot)
                     return self._step_obj(self._facade.submit_framebuffer(self._cached))
-                self._submit(0,res.result_kind,deadline); self._phase=EmulatorTenPinPhase.RESULT_HOLD; ctx=TenPinRenderContext(self.session_snapshot.last_throw.frame_number,self.session_snapshot.last_throw.throw_number); self._cached=render_ten_pin_result_rgb888(self._presentation,self._accepted_setup,PlayerColor.BLUE,sample,res,self.bowling_snapshot,self._last_label,context=ctx)
+                self._submit(0,res.result_kind,deadline,res.standing_before,res.standing_after); self._phase=EmulatorTenPinPhase.RESULT_HOLD; ctx=TenPinRenderContext(self.session_snapshot.last_throw.frame_number,self.session_snapshot.last_throw.throw_number); self._cached=render_ten_pin_result_rgb888(self._presentation,self._accepted_setup,PlayerColor.BLUE,sample,res,self.bowling_snapshot,self._last_label,context=ctx)
                 return self._step_obj(self._facade.submit_framebuffer(self._cached))
             self._cached=render_ten_pin_ball_roll_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins,sample,PlayerColor.BLUE)
             return self._step_obj(self._facade.submit_framebuffer(self._cached))
         if self._phase is EmulatorTenPinPhase.PINFALL:
             now=self._clock.monotonic_seconds(); deadline=self._pinfall_started_at+PINFALL_DURATION_SECONDS; sample=sample_ball_roll(self._ball_trajectory,self._pinfall_resolution,self._ball_trajectory.duration_seconds)
             if now>=deadline:
-                self._standing_pins=self._pinfall_resolution.standing_after; pins=len(self._pinfall_resolution.knocked_down); self._submit(pins,BowlingThrowResultKind.PIN_HIT,deadline)
+                self._standing_pins=self._pinfall_resolution.standing_after; pins=len(self._pinfall_resolution.knocked_down); self._submit(pins,BowlingThrowResultKind.PIN_HIT,deadline,self._pinfall_resolution.standing_before,self._pinfall_resolution.standing_after)
                 self._phase=EmulatorTenPinPhase.RESULT_HOLD; ctx=TenPinRenderContext(self.session_snapshot.last_throw.frame_number,self.session_snapshot.last_throw.throw_number); self._cached=render_ten_pin_result_rgb888(self._presentation,self._accepted_setup,PlayerColor.BLUE,sample,self._pinfall_resolution,self.bowling_snapshot,self._last_label,context=ctx)
                 return self._step_obj(self._facade.submit_framebuffer(self._cached))
             self._cached=render_ten_pin_pinfall_rgb888(self._presentation,self._accepted_setup,PlayerColor.BLUE,sample,self._pinfall_resolution,now-self._pinfall_started_at,self.bowling_snapshot)
@@ -230,7 +232,7 @@ class EmulatorTenPinRuntime:
             self._phase=EmulatorTenPinPhase.RECOVERY_HOLD; self._cached=render_ten_pin_attempt_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins)
         elif self._presentation.phase is ThrowControlPhase.FOUL:
             foul_deadline=self._throw_ready_started_at+THROW_FOUL_SECONDS
-            self._submit(0,BowlingThrowResultKind.FOUL,foul_deadline); self._phase=EmulatorTenPinPhase.FOUL_HOLD; ctx=TenPinRenderContext(self.session_snapshot.last_throw.frame_number,self.session_snapshot.last_throw.throw_number); self._cached=render_ten_pin_foul_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins,context=ctx)
+            self._submit(0,BowlingThrowResultKind.FOUL,foul_deadline,self._standing_pins,self._standing_pins); self._phase=EmulatorTenPinPhase.FOUL_HOLD; ctx=TenPinRenderContext(self.session_snapshot.last_throw.frame_number,self.session_snapshot.last_throw.throw_number); self._cached=render_ten_pin_foul_rgb888(self._presentation,self.bowling_snapshot,self._standing_pins,context=ctx)
         elif self._presentation.terminal:
             self._presentation_timeline.cancel_throw_ready()
             self._accepted_snapshot=result.snapshot; self._accepted_setup=result.snapshot.outcome.setup
