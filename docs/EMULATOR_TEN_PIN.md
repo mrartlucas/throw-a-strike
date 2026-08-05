@@ -57,3 +57,5 @@ python -m throw_a_strike.runtime.secondary_display_gallery
 The gallery is an emulator development tool only. It cycles through the real renderer labels for THROW READY, STRIKE, SPARE, SPLIT, SPLIT CONVERTED, FIELD GOAL, GUTTER, MISS, FOUL, TURKEY, and GAME OVER. Headless tests use the same adapter boundary with `MemorySecondaryDisplayPort`, so no desktop window is required in automation.
 
 No physical Screen 2 SDK, physical secondary-display API assumption, physical Dartsnut adapter change, scoring change, pinfall change, timing change, control change, or presentation-event reclassification is introduced.
+
+Phase 0X review follow-up keeps Screen 2 disabled during normal gameplay unless `--screen2-window` is supplied. The preview port stores only a bounded history by default, pumps pygame events, exits visible playback on QUIT, and closes pygame through the runtime/gallery lifecycle. The headless gallery still renders instantly for tests, while the visible gallery holds each event for a readable duration in the documented order before exiting or responding to user close.

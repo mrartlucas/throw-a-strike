@@ -8,7 +8,7 @@ from throw_a_strike.domain import BowlingThrowResultKind, PINFALL_DURATION_SECON
 from throw_a_strike.domain.bowling_round import FULL_RACK
 from throw_a_strike.platform import DartsnutButtonId, DartsnutSdkFacade, FakeDartsnutSdk, RawDartHit
 from throw_a_strike.rendering import EMULATOR_RGB888_BYTE_LENGTH
-from throw_a_strike.runtime import EmulatorTenPinPhase, EmulatorTenPinRuntime, MemorySecondaryDisplayPort, gallery_view_models, render_gallery
+from throw_a_strike.runtime import EmulatorTenPinPhase, EmulatorTenPinRuntime, MemorySecondaryDisplayPort, gallery_view_models, render_gallery, run_visible_gallery
 
 
 class Clock:
@@ -87,8 +87,71 @@ class Phase0XSecondaryDisplayTests(unittest.TestCase):
         labels=tuple(model.label for model in gallery_view_models())
         self.assertEqual(labels, ("THROW READY","STRIKE","SPARE","SPLIT","SPLIT CONVERTED","FIELD GOAL","GUTTER","MISS","FOUL","TURKEY","GAME OVER"))
         self.assertEqual(len(frames), len(labels))
-        self.assertEqual(secondary.framebuffers, frames)
+        self.assertEqual(len(secondary.framebuffers), 1)
+        self.assertEqual(secondary.latest_framebuffer, frames[-1])
         self.assertTrue(all(type(frame) is bytes and len(frame)==EMULATOR_RGB888_BYTE_LENGTH for frame in frames))
+
+    def test_normal_main_leaves_screen2_disabled_by_default(self):
+        import sys
+        import types
+        import main as entry
+        from unittest.mock import patch
+
+        class FakeDartsnut:
+            running = False
+            def get_dart_hits(self): return []
+            def get_active_darts(self): return []
+            def get_button_events(self): return {}
+            def reset_blocking_state(self): return None
+            def update_frame_buffer(self, frame): return True
+            def set_brightness(self, brightness): return None
+            def close(self): return None
+
+        captured = {}
+        def fake_run(facade, clock, started_at, **kwargs):
+            captured["secondary"] = kwargs.get("secondary_display", "missing")
+
+        fake_module = types.SimpleNamespace(Dartsnut=FakeDartsnut)
+        with patch.dict(sys.modules, {"pydartsnut": fake_module}), patch.object(sys, "argv", ["main.py"]), patch.object(entry, "run_emulator_ten_pin", fake_run):
+            entry.main()
+        self.assertIsNone(captured["secondary"])
+
+    def test_framebuffer_history_is_bounded_across_many_runtime_steps(self):
+        sdk,clock,secondary,rt,step=self.make_runtime()
+        for index in range(80):
+            clock.set(index / 30)
+            rt.step()
+        self.assertGreater(secondary.present_count, 80)
+        self.assertEqual(len(secondary.framebuffers), 1)
+        self.assertEqual(len(secondary.latest_framebuffer), EMULATOR_RGB888_BYTE_LENGTH)
+
+    def test_visible_gallery_order_progression_and_cleanup_are_deterministic(self):
+        class GalleryClock:
+            def __init__(self): self.t=0.0
+            def __call__(self): return self.t
+            def sleep(self, seconds): self.t += max(float(seconds), 0.25)
+
+        clock=GalleryClock(); secondary=MemorySecondaryDisplayPort(history_limit=11)
+        labels=run_visible_gallery(secondary, hold_seconds=0.5, clock=clock, sleeper=clock.sleep)
+        self.assertEqual(labels, ("THROW READY","STRIKE","SPARE","SPLIT","SPLIT CONVERTED","FIELD GOAL","GUTTER","MISS","FOUL","TURKEY","GAME OVER"))
+        self.assertEqual(len(secondary.framebuffers), 11)
+        self.assertEqual(secondary.present_count, 11)
+        self.assertTrue(secondary.closed)
+
+    def test_visible_gallery_quit_stops_and_cleans_up(self):
+        class QuittingPort(MemorySecondaryDisplayPort):
+            def __init__(self):
+                super().__init__(history_limit=11); self.pumps=0
+            def pump_events(self):
+                self.pumps += 1
+                return self.pumps < 5 and super().pump_events()
+        clock_value = {"t": 0.0}
+        def clock(): return clock_value["t"]
+        def sleeper(seconds): clock_value.__setitem__("t", clock_value["t"] + 1.0)
+        port=QuittingPort()
+        labels=run_visible_gallery(port, hold_seconds=2.0, clock=clock, sleeper=sleeper)
+        self.assertEqual(labels, ("THROW READY",))
+        self.assertTrue(port.closed)
 
 
 if __name__ == "__main__":

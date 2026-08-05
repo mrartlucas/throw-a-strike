@@ -2,7 +2,7 @@
 
 from throw_a_strike.adapters import SystemMonotonicClockPort
 from throw_a_strike.platform import DartsnutSdkFacade
-from throw_a_strike.runtime import EmulatorSecondaryDisplayPort, render_gallery, run_emulator_ten_pin
+from throw_a_strike.runtime import EmulatorSecondaryDisplayPort, render_gallery, run_emulator_ten_pin, run_visible_gallery
 
 
 def main() -> None:
@@ -12,14 +12,17 @@ def main() -> None:
     parser.add_argument("--screen2-window", action="store_true", help="show emulator-only secondary display window")
     args = parser.parse_args()
     if args.event_gallery:
-        render_gallery(EmulatorSecondaryDisplayPort(visible=args.screen2_window))
+        if args.screen2_window:
+            run_visible_gallery(EmulatorSecondaryDisplayPort(visible=True))
+        else:
+            render_gallery()
         return
     from pydartsnut import Dartsnut
 
     facade = DartsnutSdkFacade(Dartsnut())
     clock = SystemMonotonicClockPort()
     started_at = clock.monotonic_seconds()
-    secondary = EmulatorSecondaryDisplayPort(visible=args.screen2_window)
+    secondary = EmulatorSecondaryDisplayPort(visible=True) if args.screen2_window else None
     run_emulator_ten_pin(facade, clock, started_at, secondary_display=secondary)
 
 

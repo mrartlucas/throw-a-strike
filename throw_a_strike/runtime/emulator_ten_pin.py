@@ -259,4 +259,7 @@ def run_emulator_ten_pin(facade: DartsnutSdkFacade, clock: ClockPort, started_at
         if max_iterations is not None and (type(max_iterations) is not int or max_iterations<0): raise InvalidPortValueError("max_iterations must be nonnegative or None")
         runtime=EmulatorTenPinRuntime(facade,clock,started_at,secondary_display); count=0
         while (max_iterations is None or count<max_iterations) and facade.is_running(): runtime.step(); count+=1; sleeper(delay)
-    finally: facade.close()
+    finally:
+        if secondary_display is not None:
+            secondary_display.close()
+        facade.close()
