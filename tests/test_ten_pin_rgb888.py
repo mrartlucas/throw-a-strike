@@ -79,7 +79,7 @@ class TenPinRendererCorrectionTests(unittest.TestCase):
         from throw_a_strike.application import InvalidPortValueError, ThrowControlPresentation, ThrowControlCurveIcon
         from throw_a_strike.domain import PlayerColor, ThrowSetup, ControlStyle, CurveLevel, BowlingThrowResultKind, PinfallResolution, PinImpactBias, BallTrajectorySample, ThrowControlPhase, PowerFeedback, ThrowControlOutcomeKind
         from throw_a_strike.rendering.ten_pin_rgb888 import render_ten_pin_pinfall_rgb888
-        p=ThrowControlPresentation(ControlStyle.QUICK,ThrowControlPhase.COMPLETE,None,None,CurveLevel.STRAIGHT,ThrowControlCurveIcon.STRAIGHT,70,PowerFeedback.GOOD,True,False,True,ThrowControlOutcomeKind.THROW)
+        p=ThrowControlPresentation(ControlStyle.QUICK,ThrowControlPhase.COMPLETE,None,None,CurveLevel.STRAIGHT,ThrowControlCurveIcon.STRAIGHT,70,PowerFeedback.PERFECT,True,False,True,ThrowControlOutcomeKind.THROW)
         setup=ThrowSetup(ControlStyle.QUICK,0,64,72,CurveLevel.STRAIGHT,70); sample=BallTrajectorySample(0.5,64,72); res=PinfallResolution(BowlingThrowResultKind.GUTTER,(1,2,3,4,5,6,7,8,9,10),None,1.0,64,10,0.0,-1.0,PinImpactBias.CENTER,(),(),(1,2,3,4,5,6,7,8,9,10))
         b=self.game()
         for bad in (True,'1',float('nan'),float('inf'),float('-inf'),-0.1):
@@ -99,7 +99,7 @@ class TenPinRendererCorrectionTests(unittest.TestCase):
         from throw_a_strike.application import ThrowControlPresentation, ThrowControlCurveIcon
         from throw_a_strike.domain import PlayerColor, ThrowSetup, ControlStyle, CurveLevel, BowlingThrowResultKind, PinfallResolution, PinImpactBias, BallTrajectorySample, ThrowControlPhase, PowerFeedback, ThrowControlOutcomeKind
         from throw_a_strike.rendering.ten_pin_rgb888 import render_ten_pin_result_rgb888, TenPinRenderContext
-        p=ThrowControlPresentation(ControlStyle.QUICK,ThrowControlPhase.COMPLETE,None,None,CurveLevel.STRAIGHT,ThrowControlCurveIcon.STRAIGHT,70,PowerFeedback.GOOD,True,False,True,ThrowControlOutcomeKind.THROW)
+        p=ThrowControlPresentation(ControlStyle.QUICK,ThrowControlPhase.COMPLETE,None,None,CurveLevel.STRAIGHT,ThrowControlCurveIcon.STRAIGHT,70,PowerFeedback.PERFECT,True,False,True,ThrowControlOutcomeKind.THROW)
         setup=ThrowSetup(ControlStyle.QUICK,0,64,72,CurveLevel.STRAIGHT,70); sample=BallTrajectorySample(0.5,64,72); before=(1,2,3,4,5,6,7,8,9,10)
         labels=("STRIKE","SPARE","1 PINS","10 PINS","MISS","GUTTER","FOUL")
         seen=[]; orig=r._center

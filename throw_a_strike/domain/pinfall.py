@@ -57,7 +57,7 @@ CONTACT_BAND_NEAR_RIGHT_MAX = 3.25
 ARCADE_CONTACT_RADIUS_PIXELS = BALL_PIN_CONTACT_RADIUS_PIXELS
 BULLSEYE_CENTER_X = 64
 BULLSEYE_CENTER_Y = 64
-BULLSEYE_STRIKE_RADIUS_PIXELS = 8
+BULLSEYE_STRIKE_RADIUS_PIXELS = 7
 PIN_DIRECT_AIM_RADIUS_PIXELS = 7
 SPLIT_RECIPE_PRECISION_PIXELS = 2
 TRANSFER_ADJACENCY_PIXELS = 23
@@ -337,7 +337,7 @@ def resolve_ball_pinfall(trajectory: BallTrajectory, standing_before: tuple[int,
         dx, dy = trajectory.arrival_dx, trajectory.arrival_dy
         band = intent.contact_band or classify_pin_contact_band(pin, cx)
         bias=_bias(trajectory,pin,cx,dx)
-        if intent.kind is AimIntentKind.BULLSEYE_STRIKE and standing == FULL_RACK and (trajectory.control_style is ControlStyle.QUICK or (trajectory.power_percent == 100 and trajectory.lane_arrow is LaneArrow.FAR_RIGHT and trajectory.curve_level is CurveLevel.LEFT_3) or trajectory.power_percent == 70):
+        if intent.kind is AimIntentKind.BULLSEYE_STRIKE and standing == FULL_RACK and (trajectory.control_style is ControlStyle.QUICK or (trajectory.power_percent == 100 and trajectory.lane_arrow is LaneArrow.FAR_RIGHT and trajectory.curve_level is CurveLevel.LEFT_3)):
             knocked = standing; fall_waves=((1,), tuple(p for p in standing if p != 1))
         else:
             energy = _initial_energy(trajectory,pin,cx,dx)

@@ -99,13 +99,14 @@ def build_ball_trajectory(setup: ThrowSetup) -> BallTrajectory:
         raise InvalidBallTrajectoryValueError("setup must be an exact ThrowSetup")
     target_x = min(BALL_MAX_X, max(BALL_MIN_X, setup.aim_x))
     target_y = min(BALL_MAX_Y, max(BALL_MIN_Y, setup.aim_y))
-    mid_x = (BALL_START_X + target_x) / 2
+    start_x = LANE_ARROW_START_X[setup.lane_arrow]
+    mid_x = (start_x + target_x) / 2
     mid_y = (BALL_START_Y + target_y) / 2
     control_x = min(BALL_MAX_X, max(BALL_MIN_X,
                     mid_x + setup.curve_strength * MAX_CURVE_OFFSET_PIXELS))
     return BallTrajectory(
         setup.aim_x, setup.aim_y, target_x, target_y,
-        LANE_ARROW_START_X[setup.lane_arrow], BALL_START_Y, control_x, mid_y,
+        start_x, BALL_START_Y, control_x, mid_y,
         setup.curve_level, setup.curve_strength, setup.power_percent,
         _DURATIONS[setup.power_percent],
         2 * (target_x - control_x), 2 * (target_y - mid_y),

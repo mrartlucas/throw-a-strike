@@ -200,20 +200,23 @@ class TenPinRuntimeCorrectionTests(unittest.TestCase):
         self.assertEqual(labels, ["L1","L2","L1","STR","R1"])
     def test_advanced_a_locks_selected_curve_and_power_begins_40(self):
         sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
+        self.assertEqual(step.presentation.primary_prompt.label, "SET LANE ARROW"
+        )
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
         self.assertEqual(step.presentation.primary_prompt.label, "SET POWER"); self.assertEqual(step.presentation.curve_label, "R1"); self.assertEqual(step.presentation.power_percent,40)
     def test_advanced_power_meter_sequence(self):
-        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
         seen=[]; base=clock.t
         for elapsed in (0,.2,.4,.6,.8,1.0,1.2,1.400001):
             clock.set(base+elapsed); seen.append(rt.step().presentation.power_percent)
-        self.assertEqual(seen, [40,50,60,70,80,90,100,90])
+        self.assertEqual(seen, [40,40,60,60,70,80,90,90])
     def test_advanced_a_locks_power_then_throw_ready_timer_and_setup(self):
-        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.LEFT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.8); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
-        self.assertEqual(step.presentation.primary_prompt.label, "THROW READY"); self.assertEqual(step.presentation.power_percent,70)
+        sdk,clock,rt,step=self.make_advanced_runtime(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.LEFT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.8); sdk.queue_button_events((DartsnutButtonId.A,)); step=rt.step()
+        self.assertEqual(step.presentation.primary_prompt.label, "THROW READY"); self.assertEqual(step.presentation.power_percent,80)
         clock.set(clock.t+29.9); self.assertEqual(rt.step().phase, EmulatorTenPinPhase.ATTEMPT)
         with patch('throw_a_strike.runtime.emulator_ten_pin.resolve_ball_pinfall', return_value=resolution(BowlingThrowResultKind.GUTTER)):
             sdk.queue_dart_hits((RawDartHit(0,64,84),)); rt.step()
-        self.assertEqual((rt.accepted_setup.curve_level, rt.accepted_setup.power_percent), (CurveLevel.LEFT_1,70))
+        self.assertEqual((rt.accepted_setup.curve_level, rt.accepted_setup.power_percent), (CurveLevel.LEFT_1,80))
     def test_public_result_context_frame_one_strike_spare_open(self):
         for first, second, expected in ((10,None,(1,1)), (7,3,(1,2)), (7,2,(1,2))):
             sdk,clock,rt=self.make_runtime(); self.roll_to_result(rt,sdk,clock,first);
@@ -280,6 +283,7 @@ class TenPinFoulDeadlineRegressionTests(unittest.TestCase):
         sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); first=rt.throw_ready_started_at
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.B,)); rt.step(); self.assertIsNone(rt.throw_ready_started_at)
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); self.assertGreater(rt.throw_ready_started_at, first)
@@ -296,11 +300,12 @@ class TenPinFoulDeadlineRegressionTests(unittest.TestCase):
     def test_advanced_ignored_ready_controls_do_not_reset_timestamp(self):
         for button in (DartsnutButtonId.A,DartsnutButtonId.LEFT,DartsnutButtonId.RIGHT):
             sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
-            sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); ready=rt.throw_ready_started_at
+            sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step(); ready=rt.throw_ready_started_at
             clock.advance(1); sdk.queue_button_events((button,)); rt.step(); self.assertEqual(rt.throw_ready_started_at, ready)
     def test_advanced_multi_event_batch_preserves_true_ready_transition_timestamp(self):
         sdk=FakeDartsnutSdk(); clock=Clock(0); rt=EmulatorTenPinRuntime(DartsnutSdkFacade(sdk),clock,0)
         sdk.queue_button_events((DartsnutButtonId.RIGHT,)); rt.step(); clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
+        clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,)); rt.step()
         clock.advance(.1); sdk.queue_button_events((DartsnutButtonId.A,DartsnutButtonId.LEFT,DartsnutButtonId.RIGHT)); rt.step()
         self.assertEqual(rt.throw_ready_started_at, clock.t)

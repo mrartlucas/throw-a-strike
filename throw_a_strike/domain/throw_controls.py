@@ -310,6 +310,8 @@ class ThrowControlMachine:
                 self._enter_lane_arrow(command.timestamp)
             elif kind is ThrowControlCommandKind.DART_HIT:
                 self._mark_early(command)
+            elif kind is ThrowControlCommandKind.REARMED:
+                self._stale_dart_index = None
         elif self._phase is ThrowControlPhase.SET_LANE_ARROW:
             arrows = list(LaneArrow); index = arrows.index(self._lane_arrow)
             if kind is ThrowControlCommandKind.LEFT:

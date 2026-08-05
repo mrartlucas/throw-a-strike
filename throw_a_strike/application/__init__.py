@@ -101,6 +101,7 @@ from .throw_control_coordinator import (
 from .throw_control_presentation import (
     InvalidThrowControlPresentationValueError,
     ThrowControlCurveIcon,
+    ThrowControlLaneArrowIcon,
     ThrowControlPresentation,
     ThrowControlPrompt,
     build_throw_control_presentation,
@@ -197,6 +198,7 @@ __all__ = (
     "InvalidThrowControlPresentationValueError",
     "ThrowControlPrompt",
     "ThrowControlCurveIcon",
+    "ThrowControlLaneArrowIcon",
     "ThrowControlPresentation",
     "build_throw_control_presentation",
     "build_throw_control_step_presentation",

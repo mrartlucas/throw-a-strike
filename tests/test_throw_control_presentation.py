@@ -17,6 +17,7 @@ from throw_a_strike.application import (
 from throw_a_strike.domain import (
     ControlStyle,
     CurveLevel,
+    LaneArrow,
     PowerFeedback,
     ThrowControlCommand,
     ThrowControlCommandKind,
@@ -46,6 +47,9 @@ def advanced_snapshot(
         return machine.snapshot
     if phase is ThrowControlPhase.EARLY_DART_RECOVERY:
         machine.apply(ThrowControlCommand(ThrowControlCommandKind.DART_HIT, timestamp, 0, 1, 2))
+        return machine.snapshot
+    machine.apply(ThrowControlCommand(ThrowControlCommandKind.CONFIRM, timestamp))
+    if phase is ThrowControlPhase.SET_LANE_ARROW:
         return machine.snapshot
     machine.apply(ThrowControlCommand(ThrowControlCommandKind.CONFIRM, timestamp))
     if phase is ThrowControlPhase.SET_POWER:
@@ -80,7 +84,7 @@ def manual(**changes):
         curve_level=CurveLevel.STRAIGHT,
         curve_icon=ThrowControlCurveIcon.STRAIGHT,
         power_percent=70,
-        power_feedback=PowerFeedback.GOOD,
+        power_feedback=PowerFeedback.PERFECT,
         power_locked=False,
         warning_active=False,
         terminal=False,
@@ -94,7 +98,7 @@ class PublicApiTests(unittest.TestCase):
     def test_module_exports_exact_six_symbols_and_application_exports_them(self):
         expected = (
             "InvalidThrowControlPresentationValueError", "ThrowControlPrompt",
-            "ThrowControlCurveIcon", "ThrowControlPresentation",
+            "ThrowControlCurveIcon", "ThrowControlLaneArrowIcon", "ThrowControlPresentation",
             "build_throw_control_presentation", "build_throw_control_step_presentation",
         )
         self.assertEqual(presentation_module.__all__, expected)
@@ -110,7 +114,7 @@ class PublicApiTests(unittest.TestCase):
 
     def test_enum_values_and_order_are_exact(self):
         self.assertEqual([item.value for item in ThrowControlPrompt], [
-            "set_curve", "set_power", "throw_ready", "too_soon", "remove_dart",
+            "set_curve", "set_lane_arrow", "set_power", "throw_ready", "too_soon", "remove_dart",
             "throw_now", "foul", "zero_pins",
         ])
         self.assertEqual([item.value for item in ThrowControlCurveIcon], [
@@ -119,7 +123,7 @@ class PublicApiTests(unittest.TestCase):
 
     def test_prompt_labels_are_locked_and_have_no_invented_completion(self):
         self.assertEqual([item.label for item in ThrowControlPrompt], [
-            "SET CURVE", "SET POWER", "THROW READY", "TOO SOON", "REMOVE DART",
+            "SET CURVE", "SET LANE ARROW", "SET POWER", "THROW READY", "TOO SOON", "REMOVE DART",
             "THROW NOW", "FOUL", "0 PINS",
         ])
         labels = " ".join(item.label for item in ThrowControlPrompt)
@@ -141,12 +145,12 @@ class SemanticMappingTests(unittest.TestCase):
 
     def test_every_power_and_feedback_label(self):
         feedback = {40: PowerFeedback.WEAK, 50: PowerFeedback.WEAK, 60: PowerFeedback.GOOD,
-                    70: PowerFeedback.GOOD, 80: PowerFeedback.PERFECT,
+                    70: PowerFeedback.PERFECT, 80: PowerFeedback.GOOD,
                     90: PowerFeedback.POWER, 100: PowerFeedback.OVERDRIVE}
         for power, expected in feedback.items():
             value = manual(power_percent=power, power_feedback=expected)
             self.assertEqual(value.power_feedback_label, expected.name)
-        self.assertEqual(manual(power_percent=80, power_feedback=PowerFeedback.PERFECT).power_feedback_label, "PERFECT")
+        self.assertEqual(manual(power_percent=70, power_feedback=PowerFeedback.PERFECT).power_feedback_label, "PERFECT")
 
     def test_invalid_power_and_feedback_are_rejected(self):
         for power in (False, 39, 41, 110, 70.0):
@@ -158,9 +162,10 @@ class SemanticMappingTests(unittest.TestCase):
     def test_phase_prompt_terminal_and_outcome_mapping(self):
         cases = (
             (ThrowControlPhase.SET_CURVE, ThrowControlPrompt.SET_CURVE, None, False, None),
+            (ThrowControlPhase.SET_LANE_ARROW, ThrowControlPrompt.SET_LANE_ARROW, None, False, None),
             (ThrowControlPhase.SET_POWER, ThrowControlPrompt.SET_POWER, None, False, None),
             (ThrowControlPhase.THROW_READY, ThrowControlPrompt.THROW_READY, None, False, None),
-            (ThrowControlPhase.EARLY_DART_RECOVERY, ThrowControlPrompt.TOO_SOON, ThrowControlPrompt.REMOVE_DART, False, None),
+            (ThrowControlPhase.EARLY_DART_RECOVERY, ThrowControlPrompt.SET_CURVE, None, False, None),
             (ThrowControlPhase.COMPLETE, None, None, True, ThrowControlOutcomeKind.THROW),
             (ThrowControlPhase.FOUL, ThrowControlPrompt.FOUL, ThrowControlPrompt.ZERO_PINS, True, ThrowControlOutcomeKind.FOUL),
         )
@@ -191,7 +196,7 @@ class StyleFlowTests(unittest.TestCase):
         self.assertEqual((initial.primary_prompt, initial.curve_label, initial.curve_icon),
                          (ThrowControlPrompt.THROW_READY, "STR", ThrowControlCurveIcon.STRAIGHT))
         self.assertEqual((initial.power_percent, initial.power_locked, initial.power_feedback),
-                         (70, True, PowerFeedback.GOOD))
+                         (70, True, PowerFeedback.PERFECT))
         machine.apply(ThrowControlCommand(
             ThrowControlCommandKind.TICK,
             THROW_WARNING_SECONDS,
@@ -217,10 +222,10 @@ class StyleFlowTests(unittest.TestCase):
         self.assertEqual((moving.curve_level, moving.power_percent, moving.power_feedback, moving.power_locked),
                          (CurveLevel.RIGHT_2, 90, PowerFeedback.POWER, False))
         ready = build_throw_control_presentation(advanced_snapshot(phase=ThrowControlPhase.THROW_READY, curve=CurveLevel.LEFT_1, power=80))
-        self.assertEqual((ready.power_feedback, ready.power_locked), (PowerFeedback.PERFECT, True))
+        self.assertEqual((ready.power_feedback, ready.power_locked), (PowerFeedback.GOOD, True))
         recovery = build_throw_control_presentation(advanced_snapshot(phase=ThrowControlPhase.EARLY_DART_RECOVERY, curve=CurveLevel.RIGHT_1))
         self.assertEqual((recovery.curve_level, recovery.primary_prompt_label, recovery.secondary_prompt_label, recovery.power_locked),
-                         (CurveLevel.RIGHT_1, "TOO SOON", "REMOVE DART", False))
+                         (CurveLevel.RIGHT_1, "SET CURVE", None, False))
         for phase in (ThrowControlPhase.COMPLETE, ThrowControlPhase.FOUL):
             value = build_throw_control_presentation(advanced_snapshot(phase=phase, curve=CurveLevel.LEFT_2, power=100))
             self.assertEqual((value.curve_level, value.power_percent, value.power_feedback, value.power_locked),
@@ -293,7 +298,7 @@ class BuilderAndValidationTests(unittest.TestCase):
         for changes in (
             {"phase": ThrowControlPhase.SET_CURVE, "primary_prompt": ThrowControlPrompt.SET_CURVE, "power_locked": False},
             {"curve_level": CurveLevel.LEFT_1, "curve_icon": ThrowControlCurveIcon.LEFT},
-            {"power_percent": 80, "power_feedback": PowerFeedback.PERFECT},
+            {"power_percent": 80, "power_feedback": PowerFeedback.GOOD},
             {"power_locked": False},
         ):
             with self.assertRaises(InvalidThrowControlPresentationValueError):

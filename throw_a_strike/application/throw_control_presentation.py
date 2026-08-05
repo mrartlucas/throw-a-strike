@@ -58,6 +58,7 @@ class ThrowControlCurveIcon(str, Enum):
 
 _PROMPT_LABELS = {
     ThrowControlPrompt.SET_CURVE: "SET CURVE",
+    ThrowControlPrompt.SET_LANE_ARROW: "SET LANE ARROW",
     ThrowControlPrompt.SET_POWER: "SET POWER",
     ThrowControlPrompt.THROW_READY: "THROW READY",
     ThrowControlPrompt.TOO_SOON: "TOO SOON",
@@ -121,15 +122,15 @@ class ThrowControlPresentation:
     curve_icon: ThrowControlCurveIcon
     power_percent: int
     power_feedback: PowerFeedback
+    power_locked: bool
+    warning_active: bool
+    terminal: bool
+    outcome_kind: ThrowControlOutcomeKind | None
     lane_arrow: LaneArrow = LaneArrow.CENTER
     lane_arrow_icon: ThrowControlLaneArrowIcon = ThrowControlLaneArrowIcon.FIVE_UP_MARKERS
     early_warning_active: bool = False
     stale_dart_index: int | None = None
     ready_cue_visible: bool = True
-    power_locked: bool
-    warning_active: bool
-    terminal: bool
-    outcome_kind: ThrowControlOutcomeKind | None
 
     def __post_init__(self) -> None:
         if type(self.control_style) is not ControlStyle:
@@ -243,6 +244,10 @@ def build_throw_control_presentation(
         warning_active=snapshot.warning_active,
         terminal=snapshot.phase in (ThrowControlPhase.COMPLETE, ThrowControlPhase.FOUL),
         outcome_kind=outcome_kind,
+        lane_arrow=snapshot.lane_arrow,
+        early_warning_active=snapshot.early_warning_active,
+        stale_dart_index=snapshot.stale_dart_index,
+        ready_cue_visible=snapshot.ready_cue_visible,
     )
 
 

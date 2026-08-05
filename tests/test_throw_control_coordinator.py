@@ -149,28 +149,31 @@ class CoordinatorTests(unittest.TestCase):
     def test_advanced_flow_and_input_before_tick(self):
         batches = (
             (control("btn_right", sequence=9), control("btn_a", sequence=1)),
+            (control("btn_a", sequence=2),),
             (control("btn_a", 0.800),),
             (dart(2, index=3, x=11, y=99),),
         )
         coordinator, input_port, clock = self.make(
-            ControlStyle.ADVANCED, batches, (0, 0.800, 50)
+            ControlStyle.ADVANCED, batches, (0, 0, 0.800, 50)
         )
         first = coordinator.step()
         self.assertEqual([c.kind for c in first.commands], [
             ThrowControlCommandKind.RIGHT, ThrowControlCommandKind.CONFIRM
         ])
-        self.assertIs(first.snapshot.phase, ThrowControlPhase.SET_POWER)
+        self.assertIs(first.snapshot.phase, ThrowControlPhase.SET_LANE_ARROW)
         self.assertEqual(first.tick_timestamp, 0.0)
         second = coordinator.step()
-        self.assertIs(second.snapshot.phase, ThrowControlPhase.THROW_READY)
-        self.assertEqual(second.snapshot.locked_power_percent, 80)
-        self.assertIs(second.snapshot.power_feedback, PowerFeedback.PERFECT)
+        self.assertIs(second.snapshot.phase, ThrowControlPhase.SET_POWER)
         third = coordinator.step()
-        setup = third.snapshot.outcome.setup
+        self.assertIs(third.snapshot.phase, ThrowControlPhase.THROW_READY)
+        self.assertEqual(third.snapshot.locked_power_percent, 80)
+        self.assertIs(third.snapshot.power_feedback, PowerFeedback.GOOD)
+        fourth = coordinator.step()
+        setup = fourth.snapshot.outcome.setup
         self.assertEqual((setup.curve_level, setup.power_percent), (CurveLevel.RIGHT_1, 80))
         self.assertEqual((setup.dart_index, setup.aim_x, setup.aim_y), (3, 11, 99))
-        self.assertIsNone(third.tick_timestamp)
-        self.assertEqual((input_port.calls, clock.calls), (3, 2))
+        self.assertIsNone(fourth.tick_timestamp)
+        self.assertEqual((input_port.calls, clock.calls), (4, 3))
 
     def test_empty_and_ignored_batches_tick_without_returning_tick_command(self):
         coordinator, input_port, clock = self.make(
@@ -303,11 +306,13 @@ class CoordinatorTests(unittest.TestCase):
             ControlStyle.ADVANCED,
             (
                 (control("btn_right"), control("btn_a")),
+                (control("btn_a"),),
                 (control("btn_a", 0.800),),
                 (dart(2),),
             ),
-            (0, 0.800),
+            (0, 0, 0.800),
         )
+        advanced.step()
         advanced.step()
         advanced.step()
         advanced_completion = advanced.step()
@@ -382,13 +387,12 @@ class CoordinatorTests(unittest.TestCase):
             clocks=(1,),
         )
         recovery=coordinator.step().snapshot
-        self.assertIs(recovery.phase,ThrowControlPhase.EARLY_DART_RECOVERY)
+        self.assertIs(recovery.phase,ThrowControlPhase.SET_CURVE)
         calls=(input_port.calls,clock.calls)
         rearmed=coordinator.rearm(2)
         self.assertIs(rearmed.phase,ThrowControlPhase.SET_CURVE)
         self.assertEqual((input_port.calls,clock.calls),calls)
-        with self.assertRaises(InvalidThrowControlCoordinatorValueError):
-            coordinator.rearm(3)
+        self.assertIsNone(rearmed.stale_dart_index)
 
     def test_rearm_preserves_monotonic_validation(self):
         coordinator,_,_=self.make(
@@ -399,7 +403,7 @@ class CoordinatorTests(unittest.TestCase):
         coordinator.step()
         with self.assertRaises(InvalidThrowControlCoordinatorValueError):
             coordinator.rearm(1)
-        self.assertIs(coordinator.snapshot.phase,ThrowControlPhase.EARLY_DART_RECOVERY)
+        self.assertIs(coordinator.snapshot.phase,ThrowControlPhase.SET_CURVE)
 
 
 if __name__ == "__main__":

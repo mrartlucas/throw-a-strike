@@ -411,3 +411,7 @@ Phase 0X.1 review follow-up confirms no Screen 1 THROW READY blink path remains 
 ### Phase 0X.2 audit note
 
 The regulation emulator now has semantic Quick Play aim/contact resolution, five Advanced lane arrows, deterministic authored split/trick-shot recipes, risky overpower tuning, non-blocking early-dart warnings, and a one-shot Screen 1 THROW READY cue. Quick Play stays immediate with center arrow, straight curve, and 70% power. Advanced setup choices are preserved through early-dart warnings and Back navigation. Gutter and ordinary miss behavior remain the same boundary/result classes. No hidden RNG, multiplayer, audio, SDK Screen 2 integration, calibration flow, or rigid-body bowling physics was added.
+
+### Phase 0X.2 stabilization results
+
+Stabilization fixed the prior Phase 0X.2 compatibility breakages: lane-arrow trajectory geometry now derives midpoint and control point from the selected start arrow; setup `REARMED` clears stale darts in every non-blocking Advanced setup phase; and Advanced bullseye shots require deterministic arrow/curve/power alignment instead of receiving the Quick Play automatic bullseye strike. Existing tests were reconciled only where Phase 0X.2 intentionally replaced the old SET_CURVE -> SET_POWER flow and the old 70/80 feedback labels. The final validation run completed `PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v` with 669 tests, zero failures, and zero errors.
