@@ -88,3 +88,7 @@ Legal emulator darts build one deterministic ball trajectory, resolve one immuta
 Pin collision is swept over the full visible path: the quadratic Bézier is split into exactly 256 segments and each segment is intersected against standing pin circles using the exact 6-pixel contact radius. Ties choose earliest progress, then lowest pin number.
 
 PINFALL lasts 0.750 seconds. Waves start every 0.120 seconds, individual pins animate for 0.300 seconds, and the deterministic energy graph uses `power_percent // 10` with CENTER 3/3, LEFT 2/4, and RIGHT 4/2 child costs. Throw 2 uses exactly the survivors from Throw 1. A first-throw rack clear enters ROUND_COMPLETE after accepted hold; this is diagnostic completion only, with no scoring, multiplayer, audio, calibration, or secondary-display expansion.
+
+## Phase 0V Preservation Note
+
+The two-throw diagnostic emulator control test remains available for regression coverage after the normal emulator entry point moved to the single-player regulation 10-Pin runtime. It is still importable as `run_emulator_control_test` and continues to exercise the Phase 0U ball-roll and pinfall diagnostic flow.

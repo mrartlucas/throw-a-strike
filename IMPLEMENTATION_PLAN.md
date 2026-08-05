@@ -1116,3 +1116,12 @@ Phase 0U adds deterministic emulator-only swept ball-to-pin collision and pinfal
 Pinfall uses an authored deterministic energy graph: initial energy is `power_percent // 10`; CENTER sends through left/right costs 3/3, LEFT uses 2/4, and RIGHT uses 4/2. Propagation is breadth-first, never random, and missing/down pins do not receive or transmit energy.
 
 Pinfall animation lasts 0.750 seconds, waves begin every 0.120 seconds, and each pin fall lasts 0.300 seconds. Survivor racks persist into Throw 2; a first-throw rack clear completes the diagnostic round early while preserving the existing Throw 2 progression convention. This phase intentionally adds no scoring, multiplayer rotation, audio, physical calibration, physical `DartsnutInputPort` changes, or secondary-display work.
+
+## Phase 0V Status
+
+IMPLEMENTED - SINGLE-PLAYER 10-PIN RETEST READY
+
+- Added a one-player Blue-only regulation 10-Pin emulator runtime backed by the existing `GameSession`, `BowlingMatch`, and `BowlingGame` scoring path.
+- Added a ten-pin scoring HUD and game-over renderer for the Regular emulator theme.
+- Preserved the two-throw diagnostic emulator runtime for regression testing.
+- Scope remains locked: no multiplayer, additional modes, audio, calibration, physical input changes, or secondary display features were added.

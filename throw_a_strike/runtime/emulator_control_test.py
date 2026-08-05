@@ -12,7 +12,7 @@ from throw_a_strike.application import (ClockPort, InputEventKind, InvalidPortVa
     ThrowControlStyleSelector, build_throw_control_presentation, build_throw_control_step_presentation)
 from throw_a_strike.domain import (BowlingRoundMachine, BowlingThrowNumber, BowlingThrowResult,
     BallTrajectory, BowlingThrowResultKind, PlayerColor,
-    ThrowControlPhase, ThrowSetup, build_ball_trajectory, sample_ball_trajectory,
+    ThrowControlPhase, THROW_FOUL_SECONDS, ThrowSetup, build_ball_trajectory, sample_ball_trajectory,
     resolve_ball_pinfall, sample_ball_roll, PINFALL_DURATION_SECONDS,
     emulator_dart_indices_for_player, is_emulator_dart_for_player, player_color_for_number)
 from throw_a_strike.platform import DartsnutSdkFacade
@@ -92,37 +92,7 @@ class EmulatorControlTestStep:
     @property
     def terminal(self): return self.phase is EmulatorControlTestPhase.TERMINAL
 
-def _nonnegative(value, name):
-    if isinstance(value,bool) or not isinstance(value,Real): raise InvalidPortValueError(f"{name} must be finite nonnegative")
-    result=float(value)
-    if not math.isfinite(result) or result<0: raise InvalidPortValueError(f"{name} must be finite nonnegative")
-    return result
-
-class _PlayerColorInputPort:
-    """Forward controls and the first dart belonging to the active player."""
-    def __init__(self, source, active_player_number):
-        self.source=source
-        # Validate immediately through the pure policy.
-        player_color_for_number(active_player_number)
-        self.active_player_number=active_player_number
-        self.wrong_event=None
-    @property
-    def capabilities(self): return self.source.capabilities
-    def poll(self):
-        events=self.source.poll(); self.wrong_event=None
-        chosen=None
-        for event in events:
-            if event.kind is InputEventKind.DART_HIT:
-                if is_emulator_dart_for_player(self.active_player_number,event.dart_index):
-                    if chosen is None: chosen=event
-                elif self.wrong_event is None: self.wrong_event=event
-        # A legal dart wins the batch. Controls retain their source order, and
-        # the chosen dart retains its position relative to those controls.
-        if chosen is not None:
-            self.wrong_event=None
-            return tuple(event for event in events
-                         if event.kind is not InputEventKind.DART_HIT or event is chosen)
-        return tuple(event for event in events if event.kind is not InputEventKind.DART_HIT)
+from throw_a_strike.runtime.emulator_common import PlayerColorInputPort as _PlayerColorInputPort, nonnegative as _nonnegative
 
 class EmulatorControlTestRuntime:
     def __init__(self, facade: DartsnutSdkFacade, clock: ClockPort, started_at: float):
@@ -141,7 +111,7 @@ class EmulatorControlTestRuntime:
         self._accepted_timestamp=None; self._accepted_snapshot=None; self._accepted_setup=None
         self._ball_trajectory=None; self._ball_started_at=None
         self._pinfall_resolution=None; self._pinfall_started_at=None
-        self._recovery_dart_index=None
+        self._recovery_dart_index=None; self._throw_ready_started_at=None
     @property
     def phase(self): return self._phase
     @property
@@ -175,6 +145,7 @@ class EmulatorControlTestRuntime:
         self._ball_trajectory=None; self._ball_started_at=None
         self._pinfall_resolution=None; self._pinfall_started_at=None
         self._presentation=build_throw_control_presentation(self._coordinator.snapshot)
+        self._throw_ready_started_at=started_at if self._presentation.phase is ThrowControlPhase.THROW_READY else None
         self._cached=render_round_throw_rgb888(self._presentation,int(self._round.snapshot.throw_number),
                                                 self.active_player_number,self.active_player_color,
                                                 standing_pins=self._round.snapshot.standing_pins)
@@ -279,6 +250,11 @@ class EmulatorControlTestRuntime:
             return self._begin_attempt(selection.selected_style,selection.confirmed_at)
         result=self._coordinator.step()
         self._presentation=build_throw_control_step_presentation(result)
+        ready_events=tuple(e for e in result.events if e.kind is InputEventKind.CONTROL)
+        if self._presentation.phase is ThrowControlPhase.THROW_READY and ready_events:
+            self._throw_ready_started_at=ready_events[-1].timestamp
+        elif self._presentation.phase is ThrowControlPhase.SET_POWER:
+            self._throw_ready_started_at=None
         # The coordinator's established input-before-tick ordering decides the
         # deadline. A terminal tick (notably FOUL at/after 30 seconds) always
         # takes precedence over temporary wrong-dart feedback.
@@ -304,7 +280,7 @@ class EmulatorControlTestRuntime:
         elif self._presentation.phase is ThrowControlPhase.FOUL:
             rack=self._round.snapshot.standing_pins
             self._round.record_throw(BowlingThrowResult(BowlingThrowResultKind.FOUL,rack,(),rack,None,None,None))
-            self._foul_timestamp=result.tick_timestamp
+            self._foul_timestamp=self._throw_ready_started_at+THROW_FOUL_SECONDS
             self._phase=EmulatorControlTestPhase.FOUL_HOLD
         elif self._presentation.terminal:
             self._accepted_snapshot=result.snapshot

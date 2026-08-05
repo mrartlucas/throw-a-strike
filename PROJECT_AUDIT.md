@@ -378,3 +378,9 @@ The pure trajectory model retains raw aim, mapped display target, Bézier contro
 The emulator diagnostic round now resolves legal darts through a pure deterministic pinfall model: 6-pixel swept contact radius, exactly 256 collision subdivisions, immutable pin centers, immutable directed pin graph, and deterministic energy propagation. Runtime integration adds BALL_ROLL-to-PINFALL-to-ACCEPTED_HOLD flow while preserving wrong-color, FOUL, recovery, style, curve, and power behavior.
 
 Survivor racks are persisted after partial hits and rendered from the domain pin-center source of truth. First-throw rack clears complete the round early without adding regulation strike/spare scoring or frame scoring. No multiplayer, audio, calibration, secondary-display, or physical hardware scope was added.
+
+## Phase 0V Audit
+
+Status: IMPLEMENTED - SINGLE-PLAYER 10-PIN RETEST READY
+
+The playable emulator uses the existing regulation scoring/session stack as the sole source of truth. The runtime only tracks exact survivor pin identities for rendering/collision and submits pin counts into `GameSession`. The diagnostic control-test runtime remains present and covered by tests. The physical `DartsnutInputPort` was not changed.

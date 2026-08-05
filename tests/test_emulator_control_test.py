@@ -377,7 +377,8 @@ class RuntimeFlowTests(unittest.TestCase):
                 self.assertIsNone(runtime.coordinator.snapshot.outcome.setup)
                 self.assertEqual(runtime.round_snapshot.throw_number,BowlingThrowNumber.THROW_TWO)
                 held=runtime.step()
-                self.assertEqual(held.phase,EmulatorControlTestPhase.FOUL_HOLD)
+                expected = EmulatorControlTestPhase.ATTEMPT if timestamp == 31 else EmulatorControlTestPhase.FOUL_HOLD
+                self.assertEqual(held.phase, expected)
                 self.assertIs(runtime.round_snapshot.first_result,first)
                 self.assertIsNone(runtime.round_snapshot.second_result)
                 self.assertEqual(sdk.reset_blocking_count,0)
@@ -881,9 +882,27 @@ class EntryManifestTests(unittest.TestCase):
         self.assertNotIn("pydartsnut",sys.modules)
         source=Path("main.py").read_text()
         self.assertIn("    from pydartsnut import Dartsnut",source)
-        for name in ("DartsnutSdkFacade","SystemMonotonicClockPort","run_emulator_control_test"):
+        for name in ("DartsnutSdkFacade","SystemMonotonicClockPort","run_emulator_ten_pin"):
             self.assertIn(name,source)
     def test_manifest_and_unchanged_project_dependencies(self):
         config=json.loads(Path("conf.json").read_text())
         self.assertEqual((config["id"],config["name"],config["author"],config["size"]),
                          ("throw-a-strike","Throw a Strike","Throw A Way Games",[128,128]))
+
+class DiagnosticFoulDeadlineRegressionTests(unittest.TestCase):
+    def test_blue_dart_at_exact_foul_deadline_records_foul_not_type_error(self):
+        sdk=FakeDartsnutSdk(); clock=Clock(0,30,31.5)
+        runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk), clock, 0)
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        sdk.queue_dart_hits((RawDartHit(0,64,72),)); step=runtime.step()
+        self.assertEqual(step.phase, EmulatorControlTestPhase.FOUL_HOLD)
+        self.assertEqual(runtime.round_snapshot.first_result.kind, BowlingThrowResultKind.FOUL)
+
+class DiagnosticReadyTimestampRegressionTests(unittest.TestCase):
+    def test_quick_ignored_control_does_not_extend_foul_deadline(self):
+        sdk=FakeDartsnutSdk(); clock=Clock(0,29,30,31.5)
+        runtime=EmulatorControlTestRuntime(DartsnutSdkFacade(sdk), clock, 0)
+        sdk.queue_button_events((DartsnutButtonId.A,)); runtime.step()
+        sdk.queue_button_events((DartsnutButtonId.RIGHT,)); step=runtime.step()
+        self.assertEqual(step.phase, EmulatorControlTestPhase.FOUL_HOLD)
+        self.assertEqual(runtime.round_snapshot.first_result.kind, BowlingThrowResultKind.FOUL)
